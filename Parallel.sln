@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113 d17.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parallel.Core", "Parallel.Core\Parallel.Core.csproj", "{1391ED00-10D5-417A-982B-0A9A6A2295D4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parallel.Cli", "Parallel.Cli\Parallel.Cli.csproj", "{4BFE65E9-9534-4C85-B59F-1F64A998C76D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parallel.Service", "Parallel.Service\Parallel.Service.csproj", "{09C88AEF-288B-4F22-A3CE-04F79F5110F8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1391ED00-10D5-417A-982B-0A9A6A2295D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1391ED00-10D5-417A-982B-0A9A6A2295D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1391ED00-10D5-417A-982B-0A9A6A2295D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1391ED00-10D5-417A-982B-0A9A6A2295D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4BFE65E9-9534-4C85-B59F-1F64A998C76D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BFE65E9-9534-4C85-B59F-1F64A998C76D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BFE65E9-9534-4C85-B59F-1F64A998C76D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BFE65E9-9534-4C85-B59F-1F64A998C76D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09C88AEF-288B-4F22-A3CE-04F79F5110F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09C88AEF-288B-4F22-A3CE-04F79F5110F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09C88AEF-288B-4F22-A3CE-04F79F5110F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09C88AEF-288B-4F22-A3CE-04F79F5110F8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
