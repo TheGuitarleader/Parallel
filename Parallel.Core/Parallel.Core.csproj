@@ -1,9 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+      <TargetFramework>net9.0</TargetFramework>
+      <ImplicitUsings>enable</ImplicitUsings>
+      <Nullable>enable</Nullable>
+      <AssemblyName>Parallel</AssemblyName>
+      <AssemblyVersion>1.0.0</AssemblyVersion>
+      <Company>Kyle Ebbinga</Company>
+      <Copyright>Copyright $(Company). All Rights Reserved.</Copyright>
+      <FileVersion>$(AssemblyVersion)</FileVersion>
+      <Version>$(VersionPrefix)$(AssemblyVersion)</Version>
+      <Authors>$(Company)</Authors>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="FastRsyncNet" Version="2.4.3" />
+      <PackageReference Include="FastRsyncNet.Compression" Version="1.1.2" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.7" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Include="Serilog" Version="4.3.0" />
+      <PackageReference Include="SSH.NET" Version="2025.0.0" />
+    </ItemGroup>
 
 </Project>

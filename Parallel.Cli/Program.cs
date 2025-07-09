@@ -1,4 +1,6 @@
-﻿namespace Parallel.Cli
+﻿// Copyright 2025 Kyle Ebbinga
+
+namespace Parallel.Cli
 {
     internal class Program
     {
