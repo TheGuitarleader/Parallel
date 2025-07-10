@@ -8,9 +8,10 @@ using Microsoft.Extensions.Logging;
 using Parallel.Core.IO;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
-using Parallel.Service.Services;
+using Parallel.Server.Requests;
+using Parallel.Server.Services;
 
-namespace Parallel.Service
+namespace Parallel.Server
 {
     internal class Program
     {
@@ -47,6 +48,7 @@ namespace Parallel.Service
 
             // Other services
             builder.Services.AddSingleton(ParallelSettings.Load());
+            builder.Services.AddSingleton<RequestHandler>();
             builder.Services.AddSingleton<ProcessMonitor>();
 
             IHost host = builder.Build();
