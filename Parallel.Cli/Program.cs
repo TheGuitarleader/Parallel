@@ -1,12 +1,32 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.CommandLine;
+using System.Reflection;
+using Parallel.Core.IO;
+using Parallel.Core.Settings;
+
 namespace Parallel.Cli
 {
     internal class Program
     {
-        static void Main(string[] args)
+        internal static ParallelSettings Settings = new ParallelSettings();
+
+        public static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            Settings = ParallelSettings.Load();
+            string logFile = Path.Combine(PathBuilder.ProgramData, "Logs", $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log");
+            //Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.File(logFile).CreateLogger();
+            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
+
+            AssemblyName assembly = Assembly.GetExecutingAssembly().GetName();
+            Log.Information($"{assembly.Name} [Version {assembly.Version}]");
+
+            RootCommand rootCommand = new("Parallel file manager - Easily back up and sync massive amounts of files, and save on drive space in the process.");
+            Type[] types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsSubclassOf(typeof(Command)) && t.IsClass).ToArray();
+            foreach (var type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);
+
+            await rootCommand.InvokeAsync(args);
+            Settings.Save();
         }
     }
 }
