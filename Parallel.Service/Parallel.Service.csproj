@@ -24,4 +24,13 @@
       <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Using Include="Newtonsoft.Json" />
+      <Using Include="Serilog" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Parallel.Core\Parallel.Core.csproj" />
+    </ItemGroup>
+
 </Project>
