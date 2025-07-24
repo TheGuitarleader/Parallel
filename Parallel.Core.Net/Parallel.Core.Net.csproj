@@ -10,4 +10,9 @@
       <ProjectReference Include="..\Parallel.Core\Parallel.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Using Include="Newtonsoft.Json" />
+      <Using Include="Serilog" />
+    </ItemGroup>
+
 </Project>

@@ -3,18 +3,19 @@
 using System.CommandLine;
 using Parallel.Core.Net;
 using Parallel.Core.Net.Connections;
+using Parallel.Core.Settings;
 
 namespace Parallel.Cli.Commands
 {
     public class PingCommand : Command
     {
-        private Argument<string> Address = new("address", "The server address.");
-        private Argument<int> Port = new("port", "The server port.");
+        private Option<string> Address = new(["--host", "-h"], "The server address.");
+        private Option<int> Port = new(["--port", "-p"], "The server port.");
 
         public PingCommand() : base("ping", "Tests the connection to Parallel.")
         {
-            this.AddArgument(Address);
-            this.AddArgument(Port);
+            this.AddOption(Address);
+            this.AddOption(Port);
             this.SetHandler(async (address, port) =>
             {
                 IConnection connection = new TcpConnection(address, port);

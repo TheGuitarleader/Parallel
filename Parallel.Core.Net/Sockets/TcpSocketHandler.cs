@@ -47,18 +47,13 @@ namespace Parallel.Core.Net.Sockets
         {
             using (NetworkStream ns = new(Socket))
             {
-                Console.WriteLine("1");
                 while (!RawData.EndsWith(';'))
                 {
-                    Console.WriteLine("2");
                     byte[] buffer = new byte[Socket.ReceiveBufferSize];
                     int bytesRead = ns.Read(buffer, 0, Socket.ReceiveBufferSize);
                     RawData += Encoding.UTF8.GetString(buffer, 0, bytesRead);
                     Log.Debug(RawData);
-                    Console.WriteLine("3");
                 }
-
-                Console.WriteLine("4");
             }
 
             return JsonConvert.DeserializeObject<ServerRequest>(RawData.TrimEnd(';'));
@@ -69,8 +64,7 @@ namespace Parallel.Core.Net.Sockets
             try
             {
                 string json = JsonConvert.SerializeObject(data, Formatting.Indented);
-                byte[] bytes = Encoding.ASCII.GetBytes(Encryption.Encode(json));
-                Socket?.Send(bytes);
+                Socket?.Send(Encoding.UTF8.GetBytes(json + ";"));
                 Close();
                 return Task.CompletedTask;
             }

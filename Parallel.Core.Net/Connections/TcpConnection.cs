@@ -60,6 +60,7 @@ namespace Parallel.Core.Net.Connections
                     {
                         while (!returnedData.EndsWith(';'))
                         {
+                            Console.WriteLine("Waiting for response...");
                             byte[] buffer = new byte[socket.ReceiveBufferSize];
                             int bytesRead = ns.Read(buffer, 0, socket.ReceiveBufferSize);
                             returnedData += Encoding.UTF8.GetString(buffer, 0, bytesRead);
