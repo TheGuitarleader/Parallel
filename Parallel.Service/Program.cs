@@ -15,14 +15,14 @@ namespace Parallel.Service
 {
     internal class Program
     {
-        private static string _logFile = Path.Combine(PathBuilder.ProgramData, "Logs", "latest.txt");
+        internal static readonly string LogFile = Path.Combine(PathBuilder.ProgramData, "Logs", "latest.txt");
 
         static async Task Main(string[] args)
         {
             HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
             // Logging
-            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().WriteTo.File(_logFile).CreateLogger();
+            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().WriteTo.File(LogFile).CreateLogger();
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog();
 
@@ -57,8 +57,6 @@ namespace Parallel.Service
             lifetime.ApplicationStopped.Register(() =>
             {
                 settings.Save();
-                Log.CloseAndFlush();
-                File.Move(_logFile, Path.Combine(PathBuilder.ProgramData, "Logs", $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log"));
             });
 
             // Starts the application
