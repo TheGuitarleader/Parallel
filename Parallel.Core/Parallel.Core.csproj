@@ -37,8 +37,4 @@
         <Using Include="Serilog" />
     </ItemGroup>
 
-    <ItemGroup>
-        <Folder Include="HealthCheck\" />
-    </ItemGroup>
-
 </Project>

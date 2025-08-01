@@ -4,6 +4,7 @@ namespace Parallel.Core.Net.Connections
 {
     public interface IConnection
     {
-        Task<ServerResponse> SendRequestAsync(ServerRequest request);
+        ServerResponse SendRequest(ServerRequest request);
+        //Task<ServerResponse> SendRequestAsync(ServerRequest request);
     }
 }

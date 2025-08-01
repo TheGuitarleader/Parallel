@@ -16,7 +16,7 @@ namespace Parallel.Core.Net.Connections
         private readonly int _port;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServerConnection"/> class with the saved settings.
+        /// Initializes a new instance of the <see cref="TcpConnection"/> class with the saved settings.
         /// </summary>
         public TcpConnection()
         {
@@ -25,7 +25,7 @@ namespace Parallel.Core.Net.Connections
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServerConnection"/> class with a address and port.
+        /// Initializes a new instance of the <see cref="TcpConnection"/> class with a address and port.
         /// </summary>
         public TcpConnection(string address, int port)
         {
@@ -33,7 +33,7 @@ namespace Parallel.Core.Net.Connections
             _port = port;
         }
 
-        public async Task<ServerResponse> SendRequestAsync(ServerRequest request)
+        public ServerResponse SendRequest(ServerRequest request)
         {
             Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -45,10 +45,6 @@ namespace Parallel.Core.Net.Connections
                 socket.Connect(_address, _port);
                 if (socket.Connected)
                 {
-                    Console.WriteLine($"Connected: {socket.Connected}");
-                    Console.WriteLine($"Available: {socket.Available}");
-
-
                     // Sends an encrypted json request to the server.
                     string rawJson = JsonConvert.SerializeObject(request) + ";";
                     Log.Debug($"Sending request: '{rawJson}'");

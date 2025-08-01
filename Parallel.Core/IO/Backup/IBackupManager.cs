@@ -47,14 +47,14 @@ namespace Parallel.Core.IO.Backup
         bool Initialize();
 
         /// <summary>
-        /// Backs up an array of files as fast as possible.
+        /// Backs up a path. Can be either a file or directory.
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
         Task BackupFilesAsync(SystemFile[] files, IProgress progress);
 
         /// <summary>
-        /// Restores an array of files as fast as possible.
+        /// Restores a path. Can be either a file or directory.
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>

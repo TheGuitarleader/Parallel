@@ -36,9 +36,9 @@ namespace Parallel.Core.IO.Backup
                 SystemFile file = files.ElementAt(i);
                 if (file.IsDeleted)
                 {
+                    progress.Report(ProgressOperation.Archiving, file, i, files.Length);
                     Database.AddHistory(file.LocalPath, HistoryType.Archived);
                     Database.AddFile(file);
-                    progress.Report(ProgressOperation.Archiving, file, i, files.Length);
                 }
                 else
                 {
@@ -61,7 +61,6 @@ namespace Parallel.Core.IO.Backup
 
             if (!restoreFiles.Any()) return;
             await FileSystem.DownloadFilesAsync(restoreFiles, progress);
-
 
             for (int i = 0; i < files.Length; i++)
             {
