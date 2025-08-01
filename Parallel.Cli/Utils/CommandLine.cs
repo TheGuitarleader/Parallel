@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Entex Interactive, LLC
+﻿// Copyright 2025 Kyle Ebbinga
 
 using System.Text;
 using Parallel.Core.Utils;
@@ -14,7 +14,7 @@ namespace Parallel.Cli.Utils
             Console.ResetColor();
             return Console.ReadLine();
         }
-        
+
         public static string? ReadPassword(object value, ConsoleColor color = ConsoleColor.Gray)
         {
             string password = string.Empty;
@@ -35,7 +35,7 @@ namespace Parallel.Cli.Utils
                     password = password.Substring(0, password.Length - 1);
                 }
             } while (key.Key != ConsoleKey.Enter);
-            
+
             Console.WriteLine();
             return Encryption.Encode(password);
         }
@@ -69,13 +69,13 @@ namespace Parallel.Cli.Utils
             string remainingStr = $"{remaining.Hours:00}:{remaining.Minutes:00}:{remaining.Seconds:00} remaining";
             int barWidth = Console.WindowWidth - percentStr.Length - remainingStr.Length - 4;
             int filledWidth = Convert.ToInt32(percent * barWidth);
-            
+
             StringBuilder progressBar = new StringBuilder(barWidth);
             for (int i = 0; i < filledWidth; i++)
             {
                 progressBar.Append('#');
             }
-            
+
             for (int i = filledWidth; i < barWidth; i++)
             {
                 progressBar.Append('.');

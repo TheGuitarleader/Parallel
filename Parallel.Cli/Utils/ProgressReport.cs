@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Entex Interactive, LLC
+﻿// Copyright 2025 Kyle Ebbinga
 
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;

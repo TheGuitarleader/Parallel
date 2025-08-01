@@ -34,7 +34,7 @@ namespace Parallel.Service.Services
             try
             {
                 // Starts listening for requests over the TCP socket.
-                IPAddress address = string.IsNullOrEmpty(_settings.Address) ? IPAddress.Any : IPAddress.Parse( _settings.Address);
+                IPAddress address = string.IsNullOrEmpty(_settings.Address) ? IPAddress.Any : IPAddress.Parse(_settings.Address);
                 _listener.Bind(new IPEndPoint(address, _settings.ListenerPort));
                 _listener.Listen(5);
             }
@@ -57,7 +57,11 @@ namespace Parallel.Service.Services
         private void StartHandlingRequests(Socket socket, CancellationToken token)
         {
             TcpSocketHandler handler = new(socket);
-            Task handlerTask = Task.Run(() => AcceptRequestAsync(handler).ContinueWith(t => { t.Dispose(); }, token), token);
+            Task handlerTask = Task.Run(() => AcceptRequestAsync(handler).ContinueWith(t =>
+            {
+                t.Dispose();
+            }, token), token);
+
             _requestPool.Add(handlerTask);
         }
 

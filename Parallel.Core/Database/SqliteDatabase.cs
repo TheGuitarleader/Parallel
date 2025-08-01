@@ -36,7 +36,9 @@ namespace Parallel.Core.Database
             File.SetAttributes(FilePath, File.GetAttributes(FilePath) | FileAttributes.Hidden);
 
             // Create tables
-            RunQuery("CREATE TABLE IF NOT EXISTS `files` (`profile` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `LocalSize` LONG INTEGER NOT NULL, `RemoteSize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`profile`, `id`));");
+            RunQuery(
+                "CREATE TABLE IF NOT EXISTS `files` (`profile` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `LocalSize` LONG INTEGER NOT NULL, `RemoteSize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`profile`, `id`));");
+
             RunQuery("CREATE TABLE IF NOT EXISTS `history` (`profile` TEXT NOT NULL, `timestamp` LONG INTEGER NOT NULL, `id` TEXT NOT NULL, `path` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`profile`, `timestamp`));");
         }
 

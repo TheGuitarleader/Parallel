@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Entex Interactive, LLC
+﻿// Copyright 2025 Kyle Ebbinga
 
 using System.CommandLine;
 using System.Diagnostics;
@@ -11,13 +11,13 @@ namespace Parallel.Cli.Commands
 {
     public class ZipCommand : Command
     {
-        private Argument<string> sourceArg = new("path", "The source path of files to zip.");
-        private Option<bool> keepOpt = new(["--keep", "-k"], "If the original files should be kept.");
+        private readonly Argument<string> sourceArg = new("path", "The source path of files to zip.");
+        private readonly Option<bool> keepOpt = new(["--keep", "-k"], "If the original files should be kept.");
 
         private Stopwatch _sw = new Stopwatch();
-        private List<Task> _tasks = new List<Task>();
+        private readonly List<Task> _tasks = new List<Task>();
         private int _totalTasks = 0;
-        
+
         public ZipCommand() : base("zip", "Zips files in a directory.")
         {
             this.AddArgument(sourceArg);
@@ -32,14 +32,14 @@ namespace Parallel.Cli.Commands
                     CommandLine.WriteLine("No files found to zip!", ConsoleColor.Yellow);
                     return;
                 }
-                
+
                 CommandLine.WriteLine($"Zipping {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
                 _totalTasks = files.Length;
-                foreach (var file in files)
+                foreach (string file in files)
                 {
                     StartCompressFile(file, keep);
                 }
-                
+
                 await Task.WhenAll(_tasks);
                 CommandLine.WriteLine($"Successfully zipped {files.Length.ToString("N0")} files in {_sw.Elapsed}.", ConsoleColor.Green);
             }, sourceArg, keepOpt);
@@ -47,7 +47,11 @@ namespace Parallel.Cli.Commands
 
         private void StartCompressFile(string path, bool keep)
         {
-            Task compTask = Task.Run(() => { CompressFile(path, keep); });
+            Task compTask = Task.Run(() =>
+            {
+                CompressFile(path, keep);
+            });
+
             compTask.ContinueWith(t => t.Dispose());
             _tasks.Add(compTask);
         }
@@ -69,7 +73,7 @@ namespace Parallel.Cli.Commands
                     File.Delete(path);
                 }
             }
-            
+
             CommandLine.ProgressBar(_tasks.Count(t => t.IsCompleted), _totalTasks, _sw.Elapsed, ConsoleColor.DarkGray);
         }
     }
