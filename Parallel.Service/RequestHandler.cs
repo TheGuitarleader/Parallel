@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using Parallel.Core.Net;
 using Parallel.Service.Requests;
 
@@ -46,21 +47,21 @@ namespace Parallel.Service
                 throw new InvalidOperationException($"Type '{requestType.Name}' does not implement IRequest.");
 
             // Map parameters to object properties
-            foreach (var prop in requestType.GetProperties())
+            foreach (PropertyInfo? prop in requestType.GetProperties())
             {
-                if (request.Parameters.TryGetValue(prop.Name, out var value))
+                if (request.Parameters.TryGetValue(prop.Name, out string? value))
                 {
-                    var converted = Convert.ChangeType(value, prop.PropertyType);
+                    object? converted = Convert.ChangeType(value, prop.PropertyType);
                     prop.SetValue(instance, converted);
                 }
             }
 
             // Validate required properties
-            var validationResults = new List<ValidationResult>();
-            var context = new ValidationContext(instance, serviceProvider: null, items: null);
+            List<ValidationResult>? validationResults = new List<ValidationResult>();
+            ValidationContext? context = new ValidationContext(instance, serviceProvider: null, items: null);
             if (!Validator.TryValidateObject(instance, context, validationResults, validateAllProperties: true))
             {
-                var errors = string.Join("; ", validationResults.Select(r => r.ErrorMessage));
+                string? errors = string.Join("; ", validationResults.Select(r => r.ErrorMessage));
                 Log.Warning($"Validation failed for '{request.Name}': {errors}");
                 throw new InvalidOperationException($"Validation failed: {errors}");
             }

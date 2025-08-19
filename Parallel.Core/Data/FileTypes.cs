@@ -132,7 +132,7 @@ namespace Parallel.Core.Data
                 ".f4v" => FileCategory.Video,
                 ".webm" => FileCategory.Video,
 
-                _ => FileCategory.Other,
+                _ => FileCategory.Other
             };
         }
 
@@ -140,13 +140,12 @@ namespace Parallel.Core.Data
         {
             return type switch
             {
-                "Other" => FileCategory.Other,
                 "Document" => FileCategory.Document,
                 "Photo" => FileCategory.Photo,
                 "Music" => FileCategory.Music,
                 "Video" => FileCategory.Video,
 
-                _ => FileCategory.Other,
+                _ => FileCategory.Other
             };
         }
 
@@ -154,13 +153,12 @@ namespace Parallel.Core.Data
         {
             return type switch
             {
-                FileCategory.Other => "Other",
                 FileCategory.Document => "Document",
                 FileCategory.Photo => "Photo",
                 FileCategory.Music => "Music",
                 FileCategory.Video => "Video",
 
-                _ => "Other",
+                _ => "Other"
             };
         }
     }

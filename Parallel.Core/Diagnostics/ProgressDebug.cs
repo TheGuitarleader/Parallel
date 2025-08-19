@@ -7,7 +7,7 @@ namespace Parallel.Core.Diagnostics
     /// <summary>
     /// Represents a basic progress report debugger.
     /// </summary>
-    public class ProgressDebug : IProgress
+    public class ProgressDebug : IProgressReporter
     {
         private ProgressOperation currentOperation;
         private int progressPercentage;
@@ -22,11 +22,9 @@ namespace Parallel.Core.Diagnostics
                 currentOperation = operation;
             }
 
-            if (progressPercentage != num && num % 10 == 0)
-            {
-                progressPercentage = num;
-                Log.Information($"{operation}: {current} out of {total} ({progressPercentage}%)");
-            }
+            if (progressPercentage == num || num % 10 != 0) return;
+            Log.Information($"{operation}: {current} out of {total} ({progressPercentage}%)");
+            progressPercentage = num;
         }
 
         /// <inheritdoc />

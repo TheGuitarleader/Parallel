@@ -51,13 +51,13 @@ namespace Parallel.Core.IO.Backup
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
-        Task BackupFilesAsync(SystemFile[] files, IProgress progress);
+        Task BackupFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <summary>
         /// Restores a path. Can be either a file or directory.
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
-        Task RestoreFilesAsync(SystemFile[] files, IProgress progress);
+        Task RestoreFilesAsync(SystemFile[] files, IProgressReporter progress);
     }
 }

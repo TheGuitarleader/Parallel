@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Parallel.Core.Utils
@@ -34,6 +35,54 @@ namespace Parallel.Core.Utils
             byte[] data = Convert.FromBase64String(value);
             string decoded = Encoding.UTF8.GetString(data);
             return decoded;
+        }
+
+        /// <summary>
+        /// Encrypts a <see cref="Stream"/>.
+        /// </summary>
+        /// <param name="input">The input stream.</param>
+        /// <param name="output">The output stream.</param>
+        /// <param name="masterKey"></param>
+        /// <param name="timestamp"></param>
+        public static void EncryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp)
+        {
+            byte[] salt = HashGenerator.RandomBytes(16);
+            byte[] iv = HashGenerator.RandomBytes(16);
+            byte[] derivedKey = HashGenerator.HKDF(masterKey, salt, timestamp.ToISOString(), 32); // 256-bit key
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = derivedKey;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                {
+                    input.CopyTo(cryptoStream);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decrypts a <see cref="Stream"/>.
+        /// </summary>
+        /// <param name="input">The input stream.</param>
+        /// <param name="output">The output stream.</param>
+        /// <param name="masterKey"></param>
+        /// <param name="timestamp"></param>
+        /// <param name="salt"></param>
+        /// <param name="iv"></param>
+        public static void DecryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, byte[] salt, byte[] iv)
+        {
+            byte[] derivedKey = HashGenerator.HKDF(masterKey, salt, timestamp.ToISOString(), 32); // 256-bit key
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = derivedKey;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                {
+                    cryptoStream.CopyTo(output);
+                }
+            }
         }
     }
 }

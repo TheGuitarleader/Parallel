@@ -17,6 +17,16 @@ namespace Parallel.Core.Settings
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
 
+        /// <summary>
+        /// If the file system is encrypting files.
+        /// </summary>
+        public bool Encrypt { get; set; } = false;
+
+        /// <summary>
+        /// The master key used for encryption.
+        /// </summary>
+        public string? EncryptionKey { get; set; } = null;
+
         public FileSystemCredentials() { }
 
         public FileSystemCredentials(string root)

@@ -44,7 +44,7 @@ namespace Parallel.Core.IO.Scanning
                 scannedFiles.AddRange(files);
             }
 
-            Log.Information($"Backing up {scannedFiles.Where(x => x.IsDeleted.Equals(false)).Count()} files...");
+            Log.Information($"Backing up {scannedFiles.Where(x => !x.Deleted).Count()} files...");
             return scannedFiles.ToArray();
         }
 
@@ -89,7 +89,7 @@ namespace Parallel.Core.IO.Scanning
                         {
                             Log.Debug($"Is ignored -> {lfi.LocalPath}");
 
-                            lfi.IsDeleted = true;
+                            lfi.Deleted = true;
                             scannedFiles.Add(lfi);
                         }
 
@@ -98,7 +98,7 @@ namespace Parallel.Core.IO.Scanning
                             Log.Debug($"Changed -> {lfi.LocalPath}");
 
                             // Changed file
-                            dlf.IsDeleted = false;
+                            dlf.Deleted = false;
                             scannedFiles.Add(lfi);
                         }
 
@@ -109,7 +109,7 @@ namespace Parallel.Core.IO.Scanning
                         // Adds deleted files
                         Log.Debug($"Deleted -> {dlf.LocalPath}");
 
-                        dlf.IsDeleted = true;
+                        dlf.Deleted = true;
                         scannedFiles.Add(dlf);
                     }
                 }
@@ -118,7 +118,7 @@ namespace Parallel.Core.IO.Scanning
                     // Deletes ignored files
                     Log.Debug($"No contains Ignored -> {dlf.LocalPath}");
 
-                    dlf.IsDeleted = true;
+                    dlf.Deleted = true;
                     scannedFiles.Add(dlf);
                 }
             }

@@ -13,11 +13,14 @@ namespace Parallel.Core.IO
     /// </summary>
     public class PathBuilder
     {
-        public static string TempDirectory()
+        public static string TempDirectory
         {
-            string tempFolder = Path.Combine(Path.GetTempPath(), $"parallel_{UnixTime.Now.TotalMilliseconds}");
-            if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
-            return tempFolder;
+            get
+            {
+                string tempFolder = Path.Combine(Path.GetTempPath(), $"parallel_{UnixTime.Now.TotalMilliseconds}");
+                if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
+                return tempFolder;
+            }
         }
 
         /// <summary>
@@ -29,7 +32,7 @@ namespace Parallel.Core.IO
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Entex Interactive", "Parallel");
+                    return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Parallel");
                 }
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -39,7 +42,7 @@ namespace Parallel.Core.IO
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "Entex Interactive", "Parallel");
+                    return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "Parallel");
                 }
 
                 throw new PlatformNotSupportedException("Unsupported OS detected.");

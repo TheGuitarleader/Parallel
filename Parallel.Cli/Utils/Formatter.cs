@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Entex Interactive, LLC
+﻿// Copyright 2025 Kyle Ebbinga
 
 namespace Parallel.Cli.Utils
 {
@@ -23,7 +23,7 @@ namespace Parallel.Cli.Utils
         {
             return dateTime.ToLocalTime().ToString("MM/dd/yyyy hh:mmtt");
         }
-        
+
         public static string FromTimeSpan(TimeSpan timeSpan)
         {
             return $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}.{timeSpan.Milliseconds:N2}";

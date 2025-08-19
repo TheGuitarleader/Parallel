@@ -21,10 +21,9 @@ namespace Parallel.Cli
             AssemblyName assembly = Assembly.GetExecutingAssembly().GetName();
             Log.Information($"{assembly.Name} [Version {assembly.Version}]");
 
-            RootCommand rootCommand = new("Parallel file manager - Easily back up and sync massive amounts of files, and save on drive space in the process.");
+            RootCommand rootCommand = new("Parallel file manager - Easily back up and synchronize massive amounts of files, and free up drive space.");
             Type[] types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsSubclassOf(typeof(Command)) && t.IsClass).ToArray();
-            foreach (var type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);
-
+            foreach (Type? type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);
             await rootCommand.InvokeAsync(args);
             Settings.Save();
         }
