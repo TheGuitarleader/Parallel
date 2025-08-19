@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>disable</Nullable>
+        <AssemblyVersion>1.0.1.0</AssemblyVersion>
+        <Company>Entex Interactive, LLC</Company>
+        <Copyright>Copyright Entex Interactive, LLC. All Rights Reserved.</Copyright>
+        <FileVersion>$(AssemblyVersion)</FileVersion>
+        <Version>$(VersionPrefix)$(AssemblyVersion)</Version>
+        <Authors>$(Company)</Authors>
+        <AssemblyName>Parallel.Core</AssemblyName>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <RootNamespace>Parallel.Core</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FastRsyncNet" Version="2.4.3"/>
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0-preview.3.25171.6"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="Serilog" Version="4.2.1-dev-02352"/>
+        <PackageReference Include="SSH.NET" Version="2024.2.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="EntexSharp">
+            <HintPath>..\EntexSharp.dll</HintPath>
+        </Reference>
+        <Reference Include="Newtonsoft.Json">
+            <HintPath>C:\Users\kebbi\.nuget\packages\newtonsoft.json\13.0.3\lib\net6.0\Newtonsoft.Json.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Newtonsoft.Json"/>
+        <Using Include="Serilog"/>
+    </ItemGroup>
+
+</Project>

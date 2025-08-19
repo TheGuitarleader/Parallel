@@ -1,0 +1,167 @@
+﻿// Copyright 2025 Kyle Ebbinga
+
+using System.Data;
+using Parallel.Core.Data;
+using Parallel.Core.Utils;
+
+namespace Parallel.Core.Models
+{
+    /// <summary>
+    /// Represents a file managed by Parallel.
+    /// </summary>
+    public class SystemFile
+    {
+        /// <summary>
+        /// The unique identifier of the file.
+        /// </summary>
+        public string Id { get; } = string.Empty;
+
+        /// <summary>
+        /// The name of the file.
+        /// </summary>
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The path of the file on the local machine.
+        /// </summary>
+        public string LocalPath { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The path of the file in the backup file system.
+        /// </summary>
+        public string RemotePath { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The time the current file was last written to.
+        /// </summary>
+        public UnixTime LastWrite { get; set; } = UnixTime.Now;
+
+        /// <summary>
+        /// The time the file was either last saved or deleted.
+        /// </summary>
+        public UnixTime LastUpdate { get; set; } = UnixTime.Now;
+
+        /// <summary>
+        /// The size, in bytes, of the file on the local machine.
+        /// </summary>
+        public long LocalSize { get; set; } = 0;
+
+        /// <summary>
+        /// The size, in bytes, of the file in the remote backup.
+        /// </summary>
+        public long RemoteSize { get; set; } = 0;
+
+        /// <summary>
+        /// The category of the file.
+        /// </summary>
+        public FileCategory Type { get; set; } = FileCategory.Other;
+
+        /// <summary>
+        /// If the file is currently hidden on the local machine.
+        /// </summary>
+        public bool Hidden { get; set; } = false;
+
+        /// <summary>
+        /// If the file is currently read-only on the local machine.
+        /// </summary>
+        public bool ReadOnly { get; set; } = false;
+
+        /// <summary>
+        /// If the file is currently deleted on the local machine.
+        /// </summary>
+        public bool Deleted { get; set; } = false;
+
+        /// <summary>
+        /// If the file is encrypted in the backup.
+        /// </summary>
+        public bool Encrypted { get; set; } = false;
+
+        /// <summary>
+        /// The salt used to encrypt the file.
+        /// </summary>
+        public byte[] Salt { get; set; } = Array.Empty<byte>();
+
+        /// <summary>
+        /// The initialization vector used to encrypt the file.
+        /// </summary>
+        public byte[] IV { get; set; } = Array.Empty<byte>();
+
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SystemFile"/> class with default properties.
+        /// </summary>
+        public SystemFile(string path)
+        {
+            Id = HashGenerator.CreateSHA1(path);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SystemFile"/> class from a <see cref="FileInfo"/>.
+        /// </summary>
+        /// <param name="fileInfo"></param>
+        public SystemFile(FileInfo fileInfo)
+        {
+            Id = HashGenerator.CreateSHA1(fileInfo.FullName);
+            Name = fileInfo.Name;
+            LocalPath = fileInfo.FullName;
+            LocalSize = fileInfo.Length;
+            RemoteSize = fileInfo.Length;
+            Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
+            LastWrite = new UnixTime(fileInfo.LastWriteTime);
+            LastUpdate = UnixTime.Now;
+            Deleted = !fileInfo.Exists;
+
+            if (fileInfo.Attributes.HasFlag(FileAttributes.Hidden))
+            {
+                Hidden = true;
+            }
+
+            if (fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly))
+            {
+                ReadOnly = true;
+            }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SystemFile"/> class from a <see cref="SystemFile"/>.
+        /// </summary>
+        /// <param name="row"></param>
+        public SystemFile(DataRow row)
+        {
+            Id = row.Field<string>("id");
+            Name = row.Field<string>("name");
+            LocalPath = row.Field<string>("localpath");
+            RemotePath = row.Field<string>("remotepath");
+            LocalSize = Convert.ToInt64(row.Field<object>("localsize"));
+            RemoteSize = Convert.ToInt64(row.Field<object>("remotesize"));
+            LastWrite = UnixTime.FromMilliseconds(row.Field<long>("lastwrite"));
+            LastUpdate = UnixTime.FromMilliseconds(row.Field<long>("lastupdate"));
+            Type = (FileCategory)Enum.Parse(typeof(FileCategory), row.Field<string>("type"));
+            Hidden = Converter.ToBool(Convert.ToInt32(row.Field<object>("hidden")));
+            ReadOnly = Converter.ToBool(Convert.ToInt32(row.Field<object>("readonly")));
+            Deleted = Converter.ToBool(Convert.ToInt32(row.Field<object>("deleted")));
+        }
+
+        public bool Equals(SystemFile value)
+        {
+            bool?[] results =
+            [
+                this?.Id != null && value?.Id != null ? this.Id.Equals(value.Id) : (bool?)null,
+                this?.Name != null && value?.Name != null ? this.Name.Equals(value.Name) : (bool?)null,
+                this?.LocalPath != null && value?.LocalPath != null ? this.LocalPath.Equals(value.LocalPath) : (bool?)null,
+                this?.RemotePath != null && value?.RemotePath != null ? this.RemotePath.Equals(value.RemotePath) : (bool?)null,
+                value?.LocalSize != null ? this.LocalSize.Equals(value.LocalSize) : (bool?)null,
+                value?.RemoteSize != null ? this.RemoteSize.Equals(value.RemoteSize) : (bool?)null,
+                value?.Type != null ? this.Type.Equals(value.Type) : (bool?)null,
+                value?.Hidden != null ? this.Hidden.Equals(value.Hidden) : (bool?)null,
+                value?.ReadOnly != null ? this.ReadOnly.Equals(value.ReadOnly) : (bool?)null,
+                value?.Deleted != null ? this.Deleted.Equals(value.Deleted) : (bool?)null,
+                value?.Encrypted != null ? this.Encrypted.Equals(value.Encrypted) : (bool?)null,
+                this?.Salt != null && value?.Salt != null ? this.Salt.SequenceEqual(value.Salt) : (bool?)null,
+                this?.IV != null && value?.IV != null ? this.IV.SequenceEqual(value.IV) : (bool?)null,
+            ];
+
+            return results.All(b => b != null && (bool)b);
+        }
+    }
+}
