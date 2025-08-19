@@ -2,13 +2,15 @@
 
 namespace Parallel.Service.Responses
 {
-    public class MessageResponse
+    public class MessageResponse : IResponse
     {
-        public string Message { get; set; }
+        public string Message { get; }
+        public int Status { get; }
 
-        public MessageResponse(string message)
+        public MessageResponse(string message, int status)
         {
             Message = message;
+            Status = status;
         }
     }
 }

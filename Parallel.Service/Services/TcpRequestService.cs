@@ -57,23 +57,53 @@ namespace Parallel.Service.Services
         private void StartHandlingRequests(Socket socket, CancellationToken token)
         {
             TcpSocketHandler handler = new(socket);
-            Task handlerTask = Task.Run(() => AcceptRequestAsync(handler).ContinueWith(t =>
-            {
-                t.Dispose();
-            }, token), token);
+            Task<IResponse> handleTask = AcceptRequestAsync(handler);
+            Task timeoutTask = Task.Delay(TimeSpan.FromSeconds(30), token);
 
-            _requestPool.Add(handlerTask);
+            Task wrappedTask = Task.Run(async () =>
+            {
+                Task completed = await Task.WhenAny(handleTask, timeoutTask);
+                IResponse response;
+
+                if (completed == handleTask)
+                {
+                    try
+                    {
+                        response = await handleTask;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _logger.LogInformation($"[{handler.RemoteEndPoint}]: Request cancelled.");
+                        response = new MessageResponse("Request cancelled", 503);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"[{handler.RemoteEndPoint}]: Handler failed.");
+                        response = new ErrorResponse(ex, 500);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning($"[{handler.RemoteEndPoint}]: Timed out after 30 seconds.");
+                    response = new MessageResponse("Request timed out", 408);
+                }
+
+                await handler.RespondAsync(response);
+                handler.Close();
+            }, token);
+
+            _requestPool.Add(wrappedTask);
         }
 
-        private async Task AcceptRequestAsync(ISocketHandler handler)
+        private async Task<IResponse> AcceptRequestAsync(ISocketHandler handler)
         {
-            ServerRequest request = handler.Parse();
-            Log.Debug($"Received request '{handler.RawData}' from '{handler.RemoteEndPoint}' ({_requestPool.Count} active request{(_requestPool.Count == 1 ? string.Empty : "s")})");
-            IRequest requestInstance = _requests.CreateNew(request);
+            ServerRequest? request = handler.Parse();
+            if (request == null) return new MessageResponse("Unable to parse request", 401);
 
-            IResponse response = await requestInstance.ExecuteAsync();
-            await handler.RespondAsync(response);
-            Log.Debug($"Responding to '{handler.RemoteEndPoint}' with '{JsonConvert.SerializeObject(response)}' ({_requestPool.Count} active request{(_requestPool.Count == 1 ? string.Empty : "s")})");
+            Log.Debug($"Received request '{handler.RawData}' from '{handler.RemoteEndPoint}' ({_requestPool.Count} active request{(_requestPool.Count == 1 ? string.Empty : "s")})");
+            IRequest? requestInstance = _requests.CreateNew(request);
+            if (requestInstance == null) return new MessageResponse("Required fields are missing", 401);
+            return await requestInstance.ExecuteAsync();
         }
 
         public override async Task<Task> StopAsync(CancellationToken cancellationToken)

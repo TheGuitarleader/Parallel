@@ -4,5 +4,6 @@ namespace Parallel.Service.Responses
 {
     public interface IResponse
     {
+        int Status { get; }
     }
 }
