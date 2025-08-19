@@ -1,4 +1,5 @@
-# Parallel
+# [<img src="https://raw.githubusercontent.com/TheGuitarleader/Parallel/master/Parallel.Service/parallel-red.ico" alt="Parallel Icon" width="38" height="38">](https://github.com/TheGuitarleader/Parallel) Parallel
+
 [![.NET](https://img.shields.io/github/actions/workflow/status/TheGuitarleader/Parallel/dotnet.yml?&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/actions/workflows/dotnet.yml)
 
 Your files under your control.
