@@ -1,6 +1,5 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
-using Parallel.Core.Net.Sockets;
 using Parallel.Service.Responses;
 
 namespace Parallel.Service.Requests
@@ -9,7 +8,7 @@ namespace Parallel.Service.Requests
     {
         public override Task<IResponse> ExecuteAsync()
         {
-            return Task.FromResult<IResponse>(Success());
+            return Task.FromResult<IResponse>(Ok());
         }
     }
 }

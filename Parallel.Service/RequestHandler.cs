@@ -9,21 +9,17 @@ namespace Parallel.Service
 {
     public class RequestHandler
     {
-        private readonly Dictionary<string, Type> _requests;
+        public Dictionary<string, Type> Requests { get; }
 
         public RequestHandler()
         {
             Type[] types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).Where(t => typeof(BaseRequest).IsAssignableFrom(t) && !t.IsAbstract).ToArray();
-            _requests = types.ToDictionary(t => t.Name.Replace("Request", ""), t => t, StringComparer.OrdinalIgnoreCase);
+            Requests = types.ToDictionary(t => t.Name.Replace("Request", ""), t => t, StringComparer.OrdinalIgnoreCase);
 
-            // Logs if all requests registered.
-            if (_requests.Count == types.Length)
+            // Logs if any requests failed
+            if (Requests.Count != types.Length)
             {
-                Log.Information($"Successfully registered all {types.Length} requests");
-            }
-            else
-            {
-                int remaining = types.Length - _requests.Count;
+                int remaining = types.Length - Requests.Count;
                 Log.Warning($"Failed to register {remaining} requests");
             }
         }
@@ -33,28 +29,36 @@ namespace Parallel.Service
         /// </summary>
         /// <param name="request">The name of the request.</param>
         /// <returns>The corresponding <see cref="IRequest"/>. If none was found a help request will be returned.</returns>
-        public IRequest CreateNew(ServerRequest request)
+        public IRequest? CreateNew(ServerRequest request)
         {
-            if (!_requests.TryGetValue(request.Name, out Type? requestType))
+            Dictionary<string, string> headers = new Dictionary<string, string>(request.Parameters, StringComparer.OrdinalIgnoreCase);
+            if (!Requests.TryGetValue(request.Name, out Type? requestType))
             {
                 Log.Warning($"Unknown command: {request.Name}");
-                throw new InvalidOperationException($"Unknown command: {request.Name}");
+                return null;
             }
 
             // Instantiate the request object
             object? instance = Activator.CreateInstance(requestType);
-            if (instance is not IRequest requestInstance)
-                throw new InvalidOperationException($"Type '{requestType.Name}' does not implement IRequest.");
+            if (instance is not IRequest requestInstance) return null;
 
             // Map parameters to object properties
-            foreach (PropertyInfo? prop in requestType.GetProperties())
+            foreach (PropertyInfo prop in requestType.GetProperties())
             {
-                if (request.Parameters.TryGetValue(prop.Name, out string? value))
+                if (headers.TryGetValue(prop.Name, out string? value))
                 {
-                    object? converted = Convert.ChangeType(value, prop.PropertyType);
-                    prop.SetValue(instance, converted);
+                    try
+                    {
+                        object? converted = Convert.ChangeType(value, prop.PropertyType);
+                        prop.SetValue(instance, converted);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning($"Failed to convert '{value}' to {prop.PropertyType.Name} for property '{prop.Name}': {ex.Message}");
+                    }
                 }
             }
+
 
             // Validate required properties
             List<ValidationResult>? validationResults = new List<ValidationResult>();
@@ -63,7 +67,7 @@ namespace Parallel.Service
             {
                 string? errors = string.Join("; ", validationResults.Select(r => r.ErrorMessage));
                 Log.Warning($"Validation failed for '{request.Name}': {errors}");
-                throw new InvalidOperationException($"Validation failed: {errors}");
+                return null;
             }
 
             return requestInstance;

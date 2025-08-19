@@ -7,7 +7,7 @@ namespace Parallel.Core.Net.Connections
     public class ServerResponse
     {
         public ServerRequest Request { get; }
-        public bool IsSuccess { get; } = false;
+        public bool Success { get; } = false;
         public JToken? Data { get; }
 
         public ServerResponse(ServerRequest request)
@@ -18,7 +18,7 @@ namespace Parallel.Core.Net.Connections
         private ServerResponse(ServerRequest request, JToken? data, bool isSuccess)
         {
             Request = request;
-            IsSuccess = isSuccess;
+            Success = isSuccess;
             Data = data;
         }
 
