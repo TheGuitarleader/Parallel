@@ -1,4 +1,5 @@
 # Parallel
+[![.NET](https://img.shields.io/github/actions/workflow/status/TheGuitarleader/Parallel/dotnet.yml?&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/actions/workflows/dotnet.yml)
 
 Your files under your control.
 
@@ -19,10 +20,10 @@ Your computer already gives you enough to fight with — your files don't have t
 | **Open Source**               | ✅ Yes        | ❌ No        | ❌ No         | ❌ No       | ❌ No
 | **Local-first**               | ✅ Always     | ❌ Cloud-first | ❌ Cloud-first | ⚠️ Hybrid (Apple ecosystem) | ✅ Yes
 | **Modular storage options**   | ✅ Any (NAS, SSH, S3) | ❌ Vendor-locked | ❌ Vendor-locked | ❌ Vendor-locked | ❌ Local only
-| **Compression**               | ✅ Optional   | ❌ No        | ❌ No         | ❌ No       | ❌ No
+| **Compression**               | ✅ Always   | ❌ No        | ❌ No         | ❌ No       | ❌ No
 | **Encryption**                | ✅ Optional   | ❌ Vendor-controlled | ❌ Vendor-controlled | ❌ Vendor-controlled | ⚠️ Depends on drive encryption
 | **Cross-platform**            | ✅ Yes        | ✅ Yes       | ✅ Yes        | ⚠️ Apple-centric | ❌ Windows only
-| **Free to use**               | ✅ Fully      | ⚠️ 2GB free | ⚠️ 5GB free   | ⚠️ 5GB free | ✅ Yes
+| **Free to use**               | ✅ Always    | ⚠️ 2GB free | ⚠️ 5GB free   | ⚠️ 5GB free | ✅ Yes
 | **Max storage**               | ✅ Unlimited  | ⚠️ 2GB (free), 3TB (personal), 15TB (enterprise) | ⚠️ 5TB (personal), 25TB (enterprise) | ⚠️ 5GB–12TB (paid tiers) | ⚠️ Limited by drive size
 
 
@@ -45,8 +46,8 @@ Parallel is licensed under the **Creative Commons Attribution-NonCommercial-Shar
 
 * ✅ You can **use, modify, and share** this code freely.
 * ✅ You can **build on it**, fork it, and remix it — as long as you credit the original.
-* 🚫 You **cannot sell** this code or use it in commercial products.
-* 🚫 You **cannot claim it as your own** or strip attribution.
+* ❌ You **cannot sell** this code or use it in commercial products.
+* ❌ You **cannot claim it as your own** or strip attribution.
 * 🔁 If you make changes and share them, you must use the same license
 
 ## 💬 Contact
