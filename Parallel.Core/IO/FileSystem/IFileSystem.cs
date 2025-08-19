@@ -38,7 +38,7 @@ namespace Parallel.Core.IO.FileSystem
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
-        Task DownloadFilesAsync(SystemFile[] files, IProgress progress);
+        Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <summary>
         /// Returns the parent directory name.
@@ -78,6 +78,6 @@ namespace Parallel.Core.IO.FileSystem
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
-        Task UploadFilesAsync(SystemFile[] files, IProgress progress);
+        Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress);
     }
 }

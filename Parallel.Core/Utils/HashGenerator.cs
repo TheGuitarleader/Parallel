@@ -10,6 +10,40 @@ namespace Parallel.Core.Utils
     /// </summary>
     public static class HashGenerator
     {
+        public static byte[] RandomBytes(int length)
+        {
+            byte[] bytes = new byte[length];
+            using RandomNumberGenerator rng = RandomNumberGenerator.Create();
+            rng.GetBytes(bytes);
+            return bytes;
+        }
+
+        public static byte[] HKDF(string masterKey, byte[] salt, string info, int length)
+        {
+            using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(masterKey)))
+            {
+                byte[] prk = hmac.ComputeHash(salt);
+                byte[] infoBytes = Encoding.UTF8.GetBytes(info);
+                byte[] output = new byte[length];
+                byte[] previous = new byte[0];
+                int iterations = (int)Math.Ceiling((double)length / hmac.HashSize * 8);
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    byte[] input = new byte[previous.Length + infoBytes.Length + 1];
+                    Buffer.BlockCopy(previous, 0, input, 0, previous.Length);
+                    Buffer.BlockCopy(infoBytes, 0, input, previous.Length, infoBytes.Length);
+                    input[input.Length - 1] = (byte)(i + 1);
+
+                    previous = hmac.ComputeHash(input);
+                    Buffer.BlockCopy(previous, 0, output, i * previous.Length, previous.Length);
+                }
+
+                Array.Resize(ref output, length);
+                return output;
+            }
+        }
+
         /// <summary>
         /// Generates a random hash.
         /// </summary>

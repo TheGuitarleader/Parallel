@@ -58,9 +58,9 @@ namespace Parallel.Core.IO.Backup
         }
 
         /// <inheritdoc />
-        public abstract Task BackupFilesAsync(SystemFile[] files, IProgress progress);
+        public abstract Task BackupFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <inheritdoc />
-        public abstract Task RestoreFilesAsync(SystemFile[] files, IProgress progress);
+        public abstract Task RestoreFilesAsync(SystemFile[] files, IProgressReporter progress);
     }
 }

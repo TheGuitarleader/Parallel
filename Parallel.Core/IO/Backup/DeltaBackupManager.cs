@@ -18,13 +18,13 @@ namespace Parallel.Core.IO.Backup
         public DeltaBackupManager(ProfileConfig profile) : base(profile) { }
 
         /// <inheritdoc />
-        public override Task BackupFilesAsync(SystemFile[] files, IProgress progress)
+        public override Task BackupFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }
 
         /// <inheritdoc />
-        public override Task RestoreFilesAsync(SystemFile[] files, IProgress progress)
+        public override Task RestoreFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }

@@ -69,7 +69,7 @@ namespace Parallel.Core.IO.Recovery
             foreach (DataRow row in dt.Rows)
             {
                 SystemFile lf = new SystemFile(row);
-                if (lf.IsDeleted)
+                if (lf.Deleted)
                 {
                     rp.DeletedFiles.Add(lf);
                 }

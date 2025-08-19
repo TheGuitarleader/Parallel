@@ -55,7 +55,7 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc/>
-        public async Task DownloadFilesAsync(SystemFile[] files, IProgress progress)
+        public async Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             if (!files.Any()) return;
             for (int i = 0; i < files.Length; i++)
@@ -137,7 +137,7 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc/>
-        public async Task UploadFilesAsync(SystemFile[] files, IProgress progress)
+        public async Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             if (!files.Any()) return;
             for (int i = 0; i < files.Length; i++)

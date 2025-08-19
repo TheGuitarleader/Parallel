@@ -59,17 +59,32 @@ namespace Parallel.Core.Models
         /// <summary>
         /// If the file is currently hidden on the local machine.
         /// </summary>
-        public bool IsHidden { get; set; } = false;
+        public bool Hidden { get; set; } = false;
 
         /// <summary>
         /// If the file is currently read-only on the local machine.
         /// </summary>
-        public bool IsReadOnly { get; set; } = false;
+        public bool ReadOnly { get; set; } = false;
 
         /// <summary>
         /// If the file is currently deleted on the local machine.
         /// </summary>
-        public bool IsDeleted { get; set; } = false;
+        public bool Deleted { get; set; } = false;
+
+        /// <summary>
+        /// If the file is encrypted in the backup.
+        /// </summary>
+        public bool Encrypted { get; set; } = false;
+
+        /// <summary>
+        /// The salt used to encrypt the file.
+        /// </summary>
+        public byte[] Salt { get; set; } = Array.Empty<byte>();
+
+        /// <summary>
+        /// The initialization vector used to encrypt the file.
+        /// </summary>
+        public byte[] IV { get; set; } = Array.Empty<byte>();
 
 
         /// <summary>
@@ -94,16 +109,16 @@ namespace Parallel.Core.Models
             Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
             LastWrite = new UnixTime(fileInfo.LastWriteTime);
             LastUpdate = UnixTime.Now;
-            IsDeleted = !fileInfo.Exists;
+            Deleted = !fileInfo.Exists;
 
             if (fileInfo.Attributes.HasFlag(FileAttributes.Hidden))
             {
-                IsHidden = true;
+                Hidden = true;
             }
 
             if (fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly))
             {
-                IsReadOnly = true;
+                ReadOnly = true;
             }
         }
 
@@ -122,9 +137,9 @@ namespace Parallel.Core.Models
             LastWrite = UnixTime.FromMilliseconds(row.Field<long>("lastwrite"));
             LastUpdate = UnixTime.FromMilliseconds(row.Field<long>("lastupdate"));
             Type = (FileCategory)Enum.Parse(typeof(FileCategory), row.Field<string>("type"));
-            IsHidden = Converter.ToBool(Convert.ToInt32(row.Field<object>("hidden")));
-            IsReadOnly = Converter.ToBool(Convert.ToInt32(row.Field<object>("readonly")));
-            IsDeleted = Converter.ToBool(Convert.ToInt32(row.Field<object>("deleted")));
+            Hidden = Converter.ToBool(Convert.ToInt32(row.Field<object>("hidden")));
+            ReadOnly = Converter.ToBool(Convert.ToInt32(row.Field<object>("readonly")));
+            Deleted = Converter.ToBool(Convert.ToInt32(row.Field<object>("deleted")));
         }
 
         public bool Equals(SystemFile value)
@@ -138,9 +153,12 @@ namespace Parallel.Core.Models
                 value?.LocalSize != null ? this.LocalSize.Equals(value.LocalSize) : (bool?)null,
                 value?.RemoteSize != null ? this.RemoteSize.Equals(value.RemoteSize) : (bool?)null,
                 value?.Type != null ? this.Type.Equals(value.Type) : (bool?)null,
-                value?.IsHidden != null ? this.IsHidden.Equals(value.IsHidden) : (bool?)null,
-                value?.IsReadOnly != null ? this.IsReadOnly.Equals(value.IsReadOnly) : (bool?)null,
-                value?.IsDeleted != null ? this.IsDeleted.Equals(value.IsDeleted) : (bool?)null
+                value?.Hidden != null ? this.Hidden.Equals(value.Hidden) : (bool?)null,
+                value?.ReadOnly != null ? this.ReadOnly.Equals(value.ReadOnly) : (bool?)null,
+                value?.Deleted != null ? this.Deleted.Equals(value.Deleted) : (bool?)null,
+                value?.Encrypted != null ? this.Encrypted.Equals(value.Encrypted) : (bool?)null,
+                this?.Salt != null && value?.Salt != null ? this.Salt.SequenceEqual(value.Salt) : (bool?)null,
+                this?.IV != null && value?.IV != null ? this.IV.SequenceEqual(value.IV) : (bool?)null,
             ];
 
             return results.All(b => b != null && (bool)b);

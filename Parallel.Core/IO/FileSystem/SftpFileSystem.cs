@@ -82,7 +82,7 @@ namespace Parallel.Core.IO.FileSystem
             }
         }
 
-        public Task DownloadFilesAsync(SystemFile[] files, IProgress progress)
+        public Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }
@@ -163,7 +163,7 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc />
-        public async Task UploadFilesAsync(SystemFile[] files, IProgress progress)
+        public async Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             using SftpClient sftp = new SftpClient(_connectionInfo);
             sftp.Connect();

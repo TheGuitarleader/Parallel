@@ -115,7 +115,7 @@ namespace Parallel.Core.Database
         public bool AddFile(SystemFile file)
         {
             return RunQuery(
-                       $"INSERT OR REPLACE INTO files (profile, id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted) VALUES(\"{ProfileId}\", \"{file.Id}\", \"{file.Name}\", \"{file.LocalPath}\", \"{file.RemotePath}\", {file.LastWrite.TotalMilliseconds}, {file.LastUpdate.TotalMilliseconds}, {file.LocalSize}, {file.RemoteSize}, \"{file.Type.ToString()}\", {Converter.ToInt32(file.IsHidden)}, {Converter.ToInt32(file.IsReadOnly)}, {Converter.ToInt32(file.IsDeleted)});") >
+                       $"INSERT OR REPLACE INTO files (profile, id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted) VALUES(\"{ProfileId}\", \"{file.Id}\", \"{file.Name}\", \"{file.LocalPath}\", \"{file.RemotePath}\", {file.LastWrite.TotalMilliseconds}, {file.LastUpdate.TotalMilliseconds}, {file.LocalSize}, {file.RemoteSize}, \"{file.Type.ToString()}\", {Converter.ToInt32(file.Hidden)}, {Converter.ToInt32(file.ReadOnly)}, {Converter.ToInt32(file.Deleted)});") >
                    0;
         }
 

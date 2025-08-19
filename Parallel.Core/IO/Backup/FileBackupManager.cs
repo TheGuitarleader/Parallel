@@ -25,16 +25,16 @@ namespace Parallel.Core.IO.Backup
         public FileBackupManager(ProfileConfig profile) : base(profile) { }
 
         /// <inheritdoc/>
-        public override async Task BackupFilesAsync(SystemFile[] files, IProgress progress)
+        public override async Task BackupFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             if (!files.Any()) return;
-            SystemFile[] backupFiles = files.Where(f => !f.IsDeleted).ToArray();
+            SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();
             Log.Information($"Backing up {backupFiles.Length} files...");
             await FileSystem.UploadFilesAsync(backupFiles, progress);
             for (int i = 0; i < files.Length; i++)
             {
                 SystemFile file = files.ElementAt(i);
-                if (file.IsDeleted)
+                if (file.Deleted)
                 {
                     progress.Report(ProgressOperation.Archiving, file, i, files.Length);
                     Database.AddHistory(file.LocalPath, HistoryType.Archived);
@@ -55,9 +55,9 @@ namespace Parallel.Core.IO.Backup
         }
 
         /// <inheritdoc/>
-        public override async Task RestoreFilesAsync(SystemFile[] files, IProgress progress)
+        public override async Task RestoreFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            SystemFile[] restoreFiles = files.Where(f => f.IsDeleted).ToArray();
+            SystemFile[] restoreFiles = files.Where(f => f.Deleted).ToArray();
 
             if (!restoreFiles.Any()) return;
             await FileSystem.DownloadFilesAsync(restoreFiles, progress);

@@ -7,12 +7,36 @@ namespace Parallel.Cli.Utils
 {
     public class CommandLine
     {
-        public static string? ReadLine(object value, ConsoleColor color = ConsoleColor.Gray)
+        public static string? ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
         {
             Console.ForegroundColor = color;
             Console.Write($"> {value}: ");
             Console.ResetColor();
             return Console.ReadLine();
+        }
+
+        public static bool ReadBool(object value, bool defaultValue, ConsoleColor color = ConsoleColor.Gray)
+        {
+            HashSet<string> trueValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "y", "yes", "true", "1" };
+            HashSet<string> falseValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "n", "no", "false", "0" };
+
+            Console.ForegroundColor = color;
+            Console.Write($"> {value}: ");
+
+            bool result = defaultValue;
+            string? input = Console.ReadLine()?.Trim();
+            if (!string.IsNullOrEmpty(input) && trueValues.Contains(input))
+            {
+                result = true;
+            }
+
+            if (!string.IsNullOrEmpty(input) && falseValues.Contains(input))
+            {
+                result = false;
+            }
+
+            Console.ResetColor();
+            return result;
         }
 
         public static string? ReadPassword(object value, ConsoleColor color = ConsoleColor.Gray)

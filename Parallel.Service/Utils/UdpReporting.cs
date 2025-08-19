@@ -2,20 +2,23 @@
 
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
+using Parallel.Core.Net;
 
-namespace Parallel.Cli.Utils
+namespace Parallel.Service.Utils
 {
-    public class ProgressReport : IProgressReporter
+    public class UdpReporting : IProgressReporter
     {
+        private readonly Communication _comms = new Communication();
+
         public void Report(ProgressOperation operation, SystemFile file, int current, int total)
         {
             int percent = current * 100 / total;
-            CommandLine.WriteLine($"[{percent}%] {operation}: {file.LocalPath}");
+            //_comms.Send($"[{percent}%] {operation}: {file.LocalPath}");
         }
 
         public void Failed(Exception exception, SystemFile file)
         {
-            CommandLine.WriteLine($"Failed to upload file: '{file.LocalPath}'", ConsoleColor.Red);
+            //_comms.Send($"Failed to upload file: '{file.LocalPath}'");
         }
     }
 }

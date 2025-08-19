@@ -17,7 +17,7 @@ namespace Parallel.Core.Diagnostics
     /// <summary>
     /// Defines a provider for progress updates.
     /// </summary>
-    public interface IProgress
+    public interface IProgressReporter
     {
         /// <summary>
         /// Reports a progress update.
