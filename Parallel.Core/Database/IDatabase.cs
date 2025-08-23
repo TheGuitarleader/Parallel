@@ -72,16 +72,28 @@ namespace Parallel.Core.Database
 
         #region Files
 
+        /// <summary>
+        /// Adds a new file or updates an existing one.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddFileAsync(SystemFile file);
 
         #endregion
 
         #region History
 
+        /// <summary>
+        /// Adds a new history.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="type"></param>
+        /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddHistoryAsync(string path, HistoryType type);
 
         #endregion
 
         Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool b);
+        Task<SystemFile?> GetFileAsync(string path);
     }
 }

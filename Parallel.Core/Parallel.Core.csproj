@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>disable</Nullable>
+        <Nullable>enable</Nullable>
         <AssemblyVersion>1.0.1.0</AssemblyVersion>
         <Company>Entex Interactive, LLC</Company>
         <Copyright>Copyright Entex Interactive, LLC. All Rights Reserved.</Copyright>

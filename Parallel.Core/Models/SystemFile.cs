@@ -92,16 +92,8 @@ namespace Parallel.Core.Models
         /// </summary>
         public SystemFile(string path)
         {
+            FileInfo fileInfo = new FileInfo(path);
             Id = HashGenerator.CreateSHA1(path);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SystemFile"/> class from a <see cref="FileInfo"/>.
-        /// </summary>
-        /// <param name="fileInfo"></param>
-        public SystemFile(FileInfo fileInfo)
-        {
-            Id = HashGenerator.CreateSHA1(fileInfo.FullName);
             Name = fileInfo.Name;
             LocalPath = fileInfo.FullName;
             LocalSize = fileInfo.Length;

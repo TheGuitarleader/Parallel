@@ -11,6 +11,8 @@ namespace Parallel.Cli.Commands
 {
     public class ConfigCommand : Command
     {
+        private Option<string> configOpt = new(["--config", "-c"], "The profile configuration to use.");
+
         private Command addCmd = new("add", "Adds a new profile configuration.");
         private Command editCmd = new("edit", "Edits a profile configuration.");
         private Command viewCmd = new("view", "Shows the profile configuration.");
