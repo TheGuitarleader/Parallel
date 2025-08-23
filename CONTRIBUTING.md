@@ -16,9 +16,11 @@ Parallel is:
     `git clone https://github.com/TheGuitarleader/Parallel.git`
 2. Create a new branch:  
     `git checkout -b feature/your-feature-name`
+    `git checkout -b patch/your-patch-name`
 3. Make your changes with clear, modular commits.
 4. Push and open a **Pull Request** (PR):
     `git push origin feature/your-feature-name`
+    `git push origin patch/your-patch-name`
 
 ## 🔍 Pull Request Guidelines
 
