@@ -17,7 +17,7 @@ namespace Parallel.Core.Settings
 
         /// <summary>
         /// The hostname or address of the database.
-        /// <para>If using a <see cref="SqliteDatabase"/>, this will be a file path.</para>
+        /// <para>If using a <see cref="SqliteContext"/>, this will be a file path.</para>
         /// </summary>
         public string Address { get; set; } = string.Empty;
 

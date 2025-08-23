@@ -31,7 +31,7 @@ namespace Parallel.Core.IO.Scanning
             _db = backup.Database;
         }
 
-        /// <summary>
+        /*/// <summary>
         /// Scans all marked backup locations for file changes.
         /// </summary>
         /// <returns></returns>
@@ -46,18 +46,7 @@ namespace Parallel.Core.IO.Scanning
 
             Log.Information($"Backing up {scannedFiles.Where(x => !x.Deleted).Count()} files...");
             return scannedFiles.ToArray();
-        }
-
-        /// <summary>
-        /// Asynchronously scans for file changes in a directory.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="ignoreFolders"></param>
-        /// <returns></returns>
-        public Task<SystemFile[]> GetFileChangesAsync(string path, string[] ignoreFolders)
-        {
-            return Task.Run(() => GetFileChanges(path, ignoreFolders));
-        }
+        }*/
 
         /// <summary>
         /// Scans for file changes in a directory.
@@ -65,26 +54,24 @@ namespace Parallel.Core.IO.Scanning
         /// <param name="path"></param>
         /// <param name="ignoreFolders"></param>
         /// <returns>A list of files that have changed since the last backup.</returns>
-        public SystemFile[] GetFileChanges(string path, string[] ignoreFolders)
+        public async Task<SystemFile[]> GetFileChangesAsync(string path, string[] ignoreFolders)
         {
             if (!Directory.Exists(path)) return Array.Empty<SystemFile>();
 
             List<SystemFile> scannedFiles = new();
-            List<string> systemFiles = FileScanner.GetFiles(path, ".", ignoreFolders).ToList();
-            DataTable dataTable = _db.GetFiles(path, false);
+            List<string> localFiles = FileScanner.GetFiles(path, ".", ignoreFolders).ToList();
+            List<SystemFile> remoteFiles = (await _db.GetFilesAsync(path, false)).ToList();
             Stopwatch sw = Stopwatch.StartNew();
 
-            foreach (DataRow row in dataTable.Rows)
+            foreach (SystemFile rsf in remoteFiles.ToArray())
             {
-                SystemFile dlf = new(row);
-
                 // Checks if the local file has a valid path and is part of a backup folder.
-                if (dlf.LocalPath != null && dlf.LocalPath.Contains(path))
+                if (rsf.LocalPath != null && rsf.LocalPath.Contains(path))
                 {
                     // Checks if a LocalFile exists on the current file system.
-                    if (File.Exists(dlf.LocalPath) && dlf.RemotePath != null)
+                    if (File.Exists(rsf.LocalPath) && rsf.RemotePath != null)
                     {
-                        SystemFile lfi = new(new FileInfo(dlf.LocalPath));
+                        SystemFile lfi = new(new FileInfo(rsf.LocalPath));
                         if (IsIgnored(lfi.LocalPath, ignoreFolders))
                         {
                             Log.Debug($"Is ignored -> {lfi.LocalPath}");
@@ -93,52 +80,52 @@ namespace Parallel.Core.IO.Scanning
                             scannedFiles.Add(lfi);
                         }
 
-                        if (dlf.LastWrite.TotalMilliseconds < lfi.LastWrite.TotalMilliseconds)
+                        if (rsf.LastWrite.TotalMilliseconds < lfi.LastWrite.TotalMilliseconds)
                         {
                             Log.Debug($"Changed -> {lfi.LocalPath}");
 
                             // Changed file
-                            dlf.Deleted = false;
+                            rsf.Deleted = false;
                             scannedFiles.Add(lfi);
                         }
 
-                        systemFiles.Remove(lfi.LocalPath);
+                        localFiles.Remove(lfi.LocalPath);
                     }
                     else
                     {
                         // Adds deleted files
-                        Log.Debug($"Deleted -> {dlf.LocalPath}");
+                        Log.Debug($"Deleted -> {rsf.LocalPath}");
 
-                        dlf.Deleted = true;
-                        scannedFiles.Add(dlf);
+                        rsf.Deleted = true;
+                        scannedFiles.Add(rsf);
                     }
                 }
                 else
                 {
                     // Deletes ignored files
-                    Log.Debug($"No contains Ignored -> {dlf.LocalPath}");
+                    Log.Debug($"No contains Ignored -> {rsf.LocalPath}");
 
-                    dlf.Deleted = true;
-                    scannedFiles.Add(dlf);
+                    rsf.Deleted = true;
+                    scannedFiles.Add(rsf);
                 }
             }
 
-            Log.Debug($"{systemFiles.Count} files are untracked! Adding...");
-            if (systemFiles.Count > 0)
+            Log.Debug($"{localFiles.Count} files are untracked! Adding...");
+            if (localFiles.Count > 0)
             {
-                foreach (string file in systemFiles.ToArray())
+                foreach (string file in localFiles.ToArray())
                 {
                     if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
                     {
                         Log.Debug($"Created -> {file}");
                         scannedFiles.Add(new SystemFile(new FileInfo(file)));
-                        systemFiles.Remove(file);
+                        localFiles.Remove(file);
                     }
                 }
             }
 
-            Log.Debug($"{systemFiles.Count} files remaining.");
-            Log.Information($"Found {dataTable.Rows.Count.ToString("N0")} files in '{path}'. ({sw.ElapsedMilliseconds}ms)");
+            Log.Debug($"{localFiles.Count} files remaining.");
+            Log.Information($"Found {localFiles.Count.ToString("N0")} files in '{path}'. ({sw.ElapsedMilliseconds}ms)");
             return scannedFiles.ToArray();
         }
 

@@ -99,5 +99,15 @@ namespace Parallel.Core.IO
                 _ => null
             };
         }
+
+        public static bool IsDirectory(string path)
+        {
+            return Directory.Exists(path) && !File.Exists(path);
+        }
+
+        public static bool IsFile(string path)
+        {
+            return !Directory.Exists(path) && File.Exists(path);
+        }
     }
 }
