@@ -37,21 +37,6 @@ Your computer already gives you enough to fight with — your files don't have t
 
 Parallel is currently in early development. Expect rapid iteration, breaking changes, and lots of modular experimentation. Contributions, feedback, and testing are welcome!
 
-## 🤝 Contributing
-
-Want to help shape the future of file storage? Open an issue, submit a pull request, or reach out with ideas. Parallel is built for transparency — and that includes its development.
-
-## 📄 License
-
-Parallel is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)** license.
-
-* ✅ You can **use, modify, and share** this code freely.
-* ✅ You can **build on it**, fork it, and remix it — as long as you credit the original.
-* ❌ You **cannot sell** this code or use it in commercial products.
-* ❌ You **cannot claim it as your own** or strip attribution.
-* 🔁 If you make changes and share them, you must use the same license
-
 ## 💬 Contact
 
 For questions and ideas, reach out via our [GitHub Issues](https://github.com/TheGuitarleader/Parallel/issues).
-
