@@ -71,7 +71,7 @@ namespace Parallel.Cli.Commands
                 if (await _database?.AddFileAsync(result)!)
                 {
                     File.Copy(tempFile, systemFile.LocalPath, true);
-                    //if(File.Exists(tempFile)) File.Delete(tempFile);
+                    if(File.Exists(tempFile)) File.Delete(tempFile);
                 }
                 else
                 {
