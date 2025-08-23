@@ -4,8 +4,8 @@ namespace Parallel.Service.Responses
 {
     public class MessageResponse : IResponse
     {
-        public string Message { get; }
         public int Status { get; }
+        public string Message { get; }
 
         public MessageResponse(string message, int status)
         {

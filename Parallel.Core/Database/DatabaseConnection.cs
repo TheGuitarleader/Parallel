@@ -24,8 +24,8 @@ namespace Parallel.Core.Database
                 default: return null;
 
                 case DatabaseProvider.Local:
-                    IDatabase db = new SqliteDatabase(profile.Database, profile.Id);
-                    if (!File.Exists(profile.Database.Address)) db.Initialize();
+                    IDatabase db = new SqliteContext(profile.Database, profile.Id);
+                    if (!File.Exists(profile.Database.Address)) db.InitializeAsync();
                     return db;
             }
         }

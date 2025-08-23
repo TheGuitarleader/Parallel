@@ -64,7 +64,7 @@ namespace Parallel.Core.IO.Recovery
         /// <returns></returns>
         public RecoveryPoint Save()
         {
-            RecoveryPoint rp = new(Profile.BackupDirectories, Profile.IgnoreDirectories);
+            /*RecoveryPoint rp = new(Profile.BackupDirectories, Profile.IgnoreDirectories);
             DataTable dt = Database.GetFiles();
             foreach (DataRow row in dt.Rows)
             {
@@ -79,7 +79,8 @@ namespace Parallel.Core.IO.Recovery
                 }
             }
 
-            return rp;
+            return rp;*/
+            return new RecoveryPoint(ArraySegment<string>.Empty, ArraySegment<string>.Empty);
         }
     }
 }
