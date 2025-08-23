@@ -4,11 +4,25 @@ Thanks for your interest in contributing to Parallel! This project is built on t
 
 ## 🛠 Development Philosophy
 
-Parallel is:
-- **Modular**: Each component should be independently testable and replaceable.
-- **Audit-friendly**: Changes should be traceable, documented, and intentional.
-- **Local-first**: Avoid assumptions about cloud dependencies.
-- **Legacy-worthy**: Code should be expressive, maintainable, and built to last.
+1. Keep It Modular
+- Break stuff into clean, reusable pieces.
+- If it’s hard to test or swap out, it’s probably trying to do too much.
+2. Make It Readable
+- Code should be easy to follow—even after a long weekend.
+- Comments explain why, not repeat what the code already says.
+3. Refactor Without Fear
+- If something feels clunky, fix it.
+- Clean code isn’t a luxury—it’s how you stay sane.
+4. Risk Logic Should Reflect Intent
+- Don’t just crunch numbers—build systems that know when to lean in or back off.
+- Confidence matters. Volatility matters. Make them talk to each other.
+5. Protect the Flow
+- Use PRs, reviews, and CI/CD to keep things smooth and predictable.
+- Not about gatekeeping—just making sure changes are solid before they land.
+6. Style Is Part of the System
+- Whether it’s your gear, your UI, or your commit messages—make it feel like you.
+- Expressive systems are easier to care about.
+
 
 ## 🧱 Getting Started
 
