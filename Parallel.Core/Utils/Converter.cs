@@ -16,12 +16,7 @@ namespace Parallel.Core.Utils
         /// <returns>If 1 true, false otherwise.</returns>
         public static bool ToBool(double value)
         {
-            if (value.Equals(1))
-            {
-                return true;
-            }
-
-            return false;
+            return value.Equals(1);
         }
 
         /// <summary>
@@ -31,6 +26,8 @@ namespace Parallel.Core.Utils
         /// <returns>If 1 true, false otherwise.</returns>
         public static int ToInt32(bool value)
         {
+            return value ? 1 : 0;
+
             if (value)
             {
                 return 1;

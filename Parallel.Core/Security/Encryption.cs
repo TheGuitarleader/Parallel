@@ -51,6 +51,9 @@ namespace Parallel.Core.Utils
             systemFile.Salt = HashGenerator.RandomBytes(16);
             systemFile.IV = HashGenerator.RandomBytes(16);
             systemFile.Encrypted = true;
+            input.Position = 0;
+
+            Console.WriteLine($"Unencrypted stream length: {input.Length}");
 
             byte[] derivedKey = HashGenerator.HKDF(masterKey, systemFile.Salt, systemFile.LastWrite.ToISOString(), 32);
             using (Aes aes = Aes.Create())
@@ -74,8 +77,13 @@ namespace Parallel.Core.Utils
         /// <param name="output"></param>
         /// <param name="systemFile"></param>
         /// <param name="masterKey"></param>
-        public static void DecryptStream(Stream input, Stream output, SystemFile systemFile, string masterKey)
+        public static SystemFile DecryptStream(Stream input, Stream output, SystemFile systemFile, string masterKey)
         {
+            systemFile.Encrypted = false;
+            input.Position = 0;
+
+            Console.WriteLine($"Encrypted stream length: {input.Length}");
+
             byte[] derivedKey = HashGenerator.HKDF(masterKey, systemFile.Salt, systemFile.LastWrite.ToISOString(), 32);
             using (Aes aes = Aes.Create())
             {
@@ -87,6 +95,8 @@ namespace Parallel.Core.Utils
                     cryptoStream.CopyTo(output);
                 }
             }
+
+            return systemFile;
         }
     }
 }

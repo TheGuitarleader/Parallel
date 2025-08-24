@@ -2,6 +2,7 @@
 
 using System.Data;
 using Parallel.Core.Data;
+using Parallel.Core.Diagnostics;
 using Parallel.Core.Utils;
 
 namespace Parallel.Core.Models
@@ -115,23 +116,26 @@ namespace Parallel.Core.Models
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SystemFile"/> class from a <see cref="SystemFile"/>.
+        /// Initializes a new instance of the <see cref="SystemFile"/> class.
         /// </summary>
         /// <param name="row"></param>
-        public SystemFile(DataRow row)
+        public SystemFile(string profile, string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, long encrypted, byte[] salt, byte[] iv)
         {
-            Id = row.Field<string>("id");
-            Name = row.Field<string>("name");
-            LocalPath = row.Field<string>("localpath");
-            RemotePath = row.Field<string>("remotepath");
-            LocalSize = Convert.ToInt64(row.Field<object>("localsize"));
-            RemoteSize = Convert.ToInt64(row.Field<object>("remotesize"));
-            LastWrite = UnixTime.FromMilliseconds(row.Field<long>("lastwrite"));
-            LastUpdate = UnixTime.FromMilliseconds(row.Field<long>("lastupdate"));
-            Type = (FileCategory)Enum.Parse(typeof(FileCategory), row.Field<string>("type"));
-            Hidden = Converter.ToBool(Convert.ToInt32(row.Field<object>("hidden")));
-            ReadOnly = Converter.ToBool(Convert.ToInt32(row.Field<object>("readonly")));
-            Deleted = Converter.ToBool(Convert.ToInt32(row.Field<object>("deleted")));
+            Id = id;
+            Name = name;
+            LocalPath = localpath;
+            RemotePath = remotepath;
+            LastWrite = UnixTime.FromMilliseconds(lastwrite);
+            LastUpdate = UnixTime.FromMilliseconds(lastupdate);
+            LocalSize = localsize;
+            RemoteSize = remotesize;
+            //Type = type;
+            Hidden = Converter.ToBool(hidden);
+            ReadOnly = Converter.ToBool(readOnly);
+            Deleted = Converter.ToBool(deleted);
+            Encrypted = Converter.ToBool(encrypted);
+            Salt = salt;
+            IV = iv;
         }
 
         public bool Equals(SystemFile value)

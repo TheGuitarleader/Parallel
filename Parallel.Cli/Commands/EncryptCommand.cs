@@ -65,19 +65,19 @@ namespace Parallel.Cli.Commands
                 string tempFile = Path.Combine(PathBuilder.TempDirectory, Path.GetFileName(systemFile.LocalPath)) + ".tmp";
                 CommandLine.WriteLine($"Writing to {tempFile}", ConsoleColor.DarkGray);
 
-                using FileStream openFile = new FileStream(systemFile.LocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using FileStream createFile = new FileStream(tempFile, FileMode.OpenOrCreate);
-                SystemFile result = Encryption.EncryptStream(openFile, createFile, systemFile, masterKey);
-                if (await _database?.AddFileAsync(result)!)
+                await using (FileStream openFile = new FileStream(systemFile.LocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                await using (FileStream createFile = new FileStream(tempFile, FileMode.OpenOrCreate))
                 {
-                    File.Copy(tempFile, systemFile.LocalPath, true);
-                    if(File.Exists(tempFile)) File.Delete(tempFile);
+                    SystemFile result = Encryption.EncryptStream(openFile, createFile, systemFile, masterKey);
+                    if (!await _database?.AddFileAsync(result)!)
+                    {
+                        CommandLine.WriteLine($"Failed to decrypt file: {systemFile.LocalPath}", ConsoleColor.Red);
+                        if(File.Exists(tempFile)) File.Delete(tempFile);
+                    }
                 }
-                else
-                {
-                    CommandLine.WriteLine($"Failed to encrypt file: {systemFile.LocalPath}", ConsoleColor.Red);
-                    if(File.Exists(tempFile)) File.Delete(tempFile);
-                }
+
+                File.Copy(tempFile, systemFile.LocalPath, true);
+                //if(File.Exists(tempFile)) File.Delete(tempFile);
             }
 
             //CommandLine.ProgressBar(_tasks.Count(t => t.IsCompleted), _totalTasks, _sw.Elapsed, ConsoleColor.DarkGray);
