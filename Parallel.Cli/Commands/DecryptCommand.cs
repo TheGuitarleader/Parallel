@@ -56,7 +56,7 @@ namespace Parallel.Cli.Commands
         private async Task DecryptDirectoryAsync(string path, string masterKey)
         {
             CommandLine.WriteLine($"Scanning for files in {path}...", ConsoleColor.DarkGray);
-            string[] files = Directory.EnumerateFiles(path, $"*", SearchOption.AllDirectories).Where(f => !f.EndsWith(".gz")).ToArray();
+            string[] files = Directory.EnumerateFiles(path, $"*", SearchOption.AllDirectories).ToArray();
             if (files.Length == 0)
             {
                 CommandLine.WriteLine("No files found to decrypt!", ConsoleColor.Yellow);

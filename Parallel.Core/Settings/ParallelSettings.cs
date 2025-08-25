@@ -66,5 +66,17 @@ namespace Parallel.Core.Settings
             if (!Directory.Exists(PathBuilder.ProgramData)) Directory.CreateDirectory(PathBuilder.ProgramData);
             File.WriteAllText(ConfigFile, JsonConvert.SerializeObject(this, Formatting.Indented));
         }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="action"></param>
+        public void ForEachProfile(Action<ProfileConfig> action)
+        {
+            foreach (ProfileConfig? profile in Profiles.Select(ProfileConfig.Load))
+            {
+                if (profile != null) action(profile);
+            }
+        }
     }
 }

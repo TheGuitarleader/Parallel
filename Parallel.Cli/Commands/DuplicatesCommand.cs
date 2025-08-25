@@ -14,34 +14,15 @@ namespace Parallel.Cli.Commands
     public class DuplicatesCommand : Command
     {
         private Argument<string> sourceArg = new("path", "The directory to scan.");
-        private Option<string> credsOpt = new(["--credentials", "-c"], "The file system credentials to use.");
 
         public DuplicatesCommand() : base("duplicates", "Scans a directory for duplicate files.")
         {
             this.AddArgument(sourceArg);
-            this.AddOption(credsOpt);
-            this.SetHandler((path, config) =>
-            {
-                ProfileConfig profile = ProfileConfig.Load(Program.Settings, config);
-                ScanForDuplicateFiles(path, profile);
-            }, sourceArg, credsOpt);
+            this.SetHandler(ScanForDuplicateFiles, sourceArg);
         }
 
-        private void ScanForDuplicateFiles(string path, ProfileConfig profile)
+        private void ScanForDuplicateFiles(string path)
         {
-            IBackupManager backup = BackupManager.CreateNew(profile);
-            if (!backup.Initialize())
-            {
-                CommandLine.WriteLine("Failed to connect to backup file system!", ConsoleColor.Red);
-                return;
-            }
-
-            if (!Directory.Exists(path))
-            {
-                CommandLine.WriteLine("The provided directory is invalid!", ConsoleColor.Yellow);
-                return;
-            }
-
             CommandLine.WriteLine($"Scanning for duplicate files in {path}...", ConsoleColor.DarkGray);
             Dictionary<string, SystemFile[]> duplicates = FileScanner.GetDuplicateFiles(path);
             Dictionary<string, string[]> result = duplicates.ToDictionary(k => k.Key, v => v.Value.Select(l => l.LocalPath).ToArray());
