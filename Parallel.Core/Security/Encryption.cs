@@ -2,6 +2,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using Parallel.Core.Models;
 
 namespace Parallel.Core.Utils
 {
@@ -40,49 +41,62 @@ namespace Parallel.Core.Utils
         /// <summary>
         /// Encrypts a <see cref="Stream"/>.
         /// </summary>
-        /// <param name="input">The input stream.</param>
-        /// <param name="output">The output stream.</param>
+        /// <param name="input"></param>
+        /// <param name="output"></param>
+        /// <param name="systemFile"></param>
         /// <param name="masterKey"></param>
-        /// <param name="timestamp"></param>
-        public static void EncryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp)
+        /// <returns></returns>
+        public static SystemFile EncryptStream(Stream input, Stream output, SystemFile systemFile, string masterKey)
         {
-            byte[] salt = HashGenerator.RandomBytes(16);
-            byte[] iv = HashGenerator.RandomBytes(16);
-            byte[] derivedKey = HashGenerator.HKDF(masterKey, salt, timestamp.ToISOString(), 32); // 256-bit key
+            systemFile.Salt = HashGenerator.RandomBytes(16);
+            systemFile.IV = HashGenerator.RandomBytes(16);
+            systemFile.Encrypted = true;
+            input.Position = 0;
+
+            Console.WriteLine($"Unencrypted stream length: {input.Length}");
+
+            byte[] derivedKey = HashGenerator.HKDF(masterKey, systemFile.Salt, systemFile.LastWrite.ToISOString(), 32);
             using (Aes aes = Aes.Create())
             {
                 aes.Key = derivedKey;
-                aes.IV = iv;
+                aes.IV = systemFile.IV;
                 aes.Mode = CipherMode.CBC;
                 using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateEncryptor(), CryptoStreamMode.Write))
                 {
                     input.CopyTo(cryptoStream);
                 }
             }
+
+            return systemFile;
         }
 
         /// <summary>
         /// Decrypts a <see cref="Stream"/>.
         /// </summary>
-        /// <param name="input">The input stream.</param>
-        /// <param name="output">The output stream.</param>
+        /// <param name="input"></param>
+        /// <param name="output"></param>
+        /// <param name="systemFile"></param>
         /// <param name="masterKey"></param>
-        /// <param name="timestamp"></param>
-        /// <param name="salt"></param>
-        /// <param name="iv"></param>
-        public static void DecryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, byte[] salt, byte[] iv)
+        public static SystemFile DecryptStream(Stream input, Stream output, SystemFile systemFile, string masterKey)
         {
-            byte[] derivedKey = HashGenerator.HKDF(masterKey, salt, timestamp.ToISOString(), 32); // 256-bit key
+            systemFile.Encrypted = false;
+            input.Position = 0;
+
+            Console.WriteLine($"Encrypted stream length: {input.Length}");
+
+            byte[] derivedKey = HashGenerator.HKDF(masterKey, systemFile.Salt, systemFile.LastWrite.ToISOString(), 32);
             using (Aes aes = Aes.Create())
             {
                 aes.Key = derivedKey;
-                aes.IV = iv;
+                aes.IV = systemFile.IV;
                 aes.Mode = CipherMode.CBC;
                 using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
                 {
                     cryptoStream.CopyTo(output);
                 }
             }
+
+            return systemFile;
         }
     }
 }

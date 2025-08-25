@@ -1,6 +1,7 @@
 # [<img src="https://raw.githubusercontent.com/TheGuitarleader/Parallel/master/Parallel.Service/parallel-red.ico" alt="Parallel Icon" width="38" height="38">](https://github.com/TheGuitarleader/Parallel) Parallel
 
-[![.NET](https://img.shields.io/github/actions/workflow/status/TheGuitarleader/Parallel/dotnet.yml?&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/actions/workflows/dotnet.yml) [![latest version](https://img.shields.io/github/v/release/TheGuitarleader/Parallel?label=Latest%20release&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest)
+[![.NET](https://img.shields.io/github/actions/workflow/status/TheGuitarleader/Parallel/dotnet.yml?label=Main%20build&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/actions/workflows/dotnet.yml) [![latest version](https://img.shields.io/github/v/release/TheGuitarleader/Parallel?label=Latest%20release&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest) [![GitHub Downloads](https://img.shields.io/github/downloads/TheGuitarleader/Parallel/total?style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest)
+
 
 Your files under your control.
 

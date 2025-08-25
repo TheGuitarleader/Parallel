@@ -37,8 +37,8 @@ namespace Parallel.Core.IO.Backup
                 if (file.Deleted)
                 {
                     progress.Report(ProgressOperation.Archiving, file, i, files.Length);
-                    Database.AddHistory(file.LocalPath, HistoryType.Archived);
-                    Database.AddFile(file);
+                    await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
+                    await Database.AddFileAsync(file);
                 }
                 else
                 {
@@ -47,8 +47,8 @@ namespace Parallel.Core.IO.Backup
                     if (remote is not null)
                     {
                         file.RemoteSize = remote.RemoteSize;
-                        Database.AddHistory(file.LocalPath, HistoryType.Synced);
-                        Database.AddFile(file);
+                        await Database.AddHistoryAsync(file.LocalPath, HistoryType.Synced);
+                        await Database.AddFileAsync(file);
                     }
                 }
             }
@@ -68,6 +68,18 @@ namespace Parallel.Core.IO.Backup
                 Log.Information($"Restoring file: {file.LocalPath}...");
                 file.RemotePath = PathBuilder.Remote(file.LocalPath, Profile.FileSystem);
             }
+        }
+
+        /// <inheritdoc />
+        public override Task DecryptFilesAsync(SystemFile[] files, IProgressReporter progress)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public override Task EncryptFilesAsync(SystemFile[] files, IProgressReporter progress)
+        {
+            throw new NotImplementedException();
         }
     }
 }

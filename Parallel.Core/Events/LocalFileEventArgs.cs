@@ -13,7 +13,7 @@ namespace Parallel.Core.Events
 
         public LocalFileEventArgs(string file)
         {
-            SystemFile = new SystemFile(new FileInfo(file));
+            SystemFile = new SystemFile(file);
         }
     }
 }
