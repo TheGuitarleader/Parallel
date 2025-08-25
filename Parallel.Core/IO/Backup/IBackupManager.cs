@@ -59,14 +59,5 @@ namespace Parallel.Core.IO.Backup
         /// <param name="files"></param>
         /// <param name="progress"></param>
         Task RestoreFilesAsync(SystemFile[] files, IProgressReporter progress);
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="files"></param>
-        /// <param name="progress"></param>
-        Task DecryptFilesAsync(SystemFile[] files, IProgressReporter progress);
-
-        Task EncryptFilesAsync(SystemFile[] files, IProgressReporter progress);
     }
 }

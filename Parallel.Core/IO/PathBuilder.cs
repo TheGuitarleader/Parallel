@@ -17,7 +17,7 @@ namespace Parallel.Core.IO
         {
             get
             {
-                string tempFolder = Path.Combine(Path.GetTempPath(), $"parallel_{UnixTime.Now.TotalMilliseconds}");
+                string tempFolder = Path.Combine(Path.GetTempPath(), $"parallel_{UnixTime.Now.TotalSeconds}");
                 if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
                 return tempFolder;
             }
