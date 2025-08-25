@@ -46,28 +46,20 @@ namespace Parallel.Core.Utils
         /// <param name="systemFile"></param>
         /// <param name="masterKey"></param>
         /// <returns></returns>
-        public static SystemFile EncryptStream(Stream input, Stream output, SystemFile systemFile, string masterKey)
+        public static void EncryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, byte[] salt, byte[] iv)
         {
-            systemFile.Salt = HashGenerator.RandomBytes(16);
-            systemFile.IV = HashGenerator.RandomBytes(16);
-            systemFile.Encrypted = true;
             input.Position = 0;
-
-            Console.WriteLine($"Unencrypted stream length: {input.Length}");
-
-            byte[] derivedKey = HashGenerator.HKDF(masterKey, systemFile.Salt, systemFile.LastWrite.ToISOString(), 32);
+            byte[] derivedKey = HashGenerator.HKDF(masterKey, salt, timestamp.ToISOString(), 32);
             using (Aes aes = Aes.Create())
             {
                 aes.Key = derivedKey;
-                aes.IV = systemFile.IV;
+                aes.IV = iv;
                 aes.Mode = CipherMode.CBC;
                 using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateEncryptor(), CryptoStreamMode.Write))
                 {
                     input.CopyTo(cryptoStream);
                 }
             }
-
-            return systemFile;
         }
 
         /// <summary>
@@ -77,26 +69,20 @@ namespace Parallel.Core.Utils
         /// <param name="output"></param>
         /// <param name="systemFile"></param>
         /// <param name="masterKey"></param>
-        public static SystemFile DecryptStream(Stream input, Stream output, SystemFile systemFile, string masterKey)
+        public static void DecryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, byte[] salt, byte[] iv)
         {
-            systemFile.Encrypted = false;
             input.Position = 0;
-
-            Console.WriteLine($"Encrypted stream length: {input.Length}");
-
-            byte[] derivedKey = HashGenerator.HKDF(masterKey, systemFile.Salt, systemFile.LastWrite.ToISOString(), 32);
+            byte[] derivedKey = HashGenerator.HKDF(masterKey, salt, timestamp.ToISOString(), 32);
             using (Aes aes = Aes.Create())
             {
                 aes.Key = derivedKey;
-                aes.IV = systemFile.IV;
+                aes.IV = iv;
                 aes.Mode = CipherMode.CBC;
                 using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
                 {
                     cryptoStream.CopyTo(output);
                 }
             }
-
-            return systemFile;
         }
     }
 }
