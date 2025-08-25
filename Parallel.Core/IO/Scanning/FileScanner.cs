@@ -71,7 +71,7 @@ namespace Parallel.Core.IO.Scanning
                     // Checks if a LocalFile exists on the current file system.
                     if (File.Exists(rsf.LocalPath) && rsf.RemotePath != null)
                     {
-                        SystemFile lfi = new(new FileInfo(rsf.LocalPath));
+                        SystemFile lfi = new(rsf.LocalPath);
                         if (IsIgnored(lfi.LocalPath, ignoreFolders))
                         {
                             Log.Debug($"Is ignored -> {lfi.LocalPath}");
@@ -118,7 +118,7 @@ namespace Parallel.Core.IO.Scanning
                     if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
                     {
                         Log.Debug($"Created -> {file}");
-                        scannedFiles.Add(new SystemFile(new FileInfo(file)));
+                        scannedFiles.Add(new SystemFile(file));
                         localFiles.Remove(file);
                     }
                 }
@@ -281,7 +281,7 @@ namespace Parallel.Core.IO.Scanning
             IEnumerable<string> files = GetFiles(path, "*");
             foreach (string file in files)
             {
-                SystemFile entry = new(new FileInfo(file));
+                SystemFile entry = new(file);
                 if (dict.TryGetValue(entry.Name, out List<SystemFile> value))
                 {
                     SystemFile key = value.FirstOrDefault();

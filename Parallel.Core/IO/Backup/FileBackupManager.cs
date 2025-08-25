@@ -69,5 +69,17 @@ namespace Parallel.Core.IO.Backup
                 file.RemotePath = PathBuilder.Remote(file.LocalPath, Profile.FileSystem);
             }
         }
+
+        /// <inheritdoc />
+        public override Task DecryptFilesAsync(SystemFile[] files, IProgressReporter progress)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public override Task EncryptFilesAsync(SystemFile[] files, IProgressReporter progress)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

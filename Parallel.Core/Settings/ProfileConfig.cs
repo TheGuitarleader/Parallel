@@ -112,10 +112,8 @@ namespace Parallel.Core.Settings
         /// <summary>
         /// Loads settings from a file.
         /// </summary>
-        public static ProfileConfig Load(string name)
+        public static ProfileConfig Load(string path)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-            string path = Path.Combine(ParallelSettings.ProfilesDir, name + ".json");
             if (File.Exists(path))
             {
                 string json = File.ReadAllText(path);
@@ -123,6 +121,7 @@ namespace Parallel.Core.Settings
             }
             else
             {
+                string name = Path.GetFileNameWithoutExtension(path);
                 return new ProfileConfig(name, new DatabaseCredentials(), new FileSystemCredentials());
             }
         }
@@ -131,9 +130,9 @@ namespace Parallel.Core.Settings
         /// Loads credentials from the app configuration.
         /// </summary>
         /// <returns>A <see cref="ProfileConfig"/> instance.</returns>
-        public static ProfileConfig Load(ParallelSettings settings, string name)
+        public static ProfileConfig? Load(ParallelSettings settings, string name)
         {
-            ProfileConfig profile = Load(Path.GetFileNameWithoutExtension(settings.Profiles.FirstOrDefault()));
+            ProfileConfig profile = Load(settings.Profiles.First());
             if (!string.IsNullOrEmpty(name))
             {
                 string path = Path.Combine(ParallelSettings.ProfilesDir, name + ".json");
