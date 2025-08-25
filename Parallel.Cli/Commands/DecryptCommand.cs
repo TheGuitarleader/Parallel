@@ -84,19 +84,20 @@ namespace Parallel.Cli.Commands
                 await using (FileStream openFile = new FileStream(systemFile.LocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 await using (FileStream createFile = new FileStream(tempFile, FileMode.OpenOrCreate))
                 {
-                    SystemFile result = Encryption.DecryptStream(openFile, createFile, systemFile, masterKey);
-                    if (!await _database?.AddFileAsync(result)!)
+                    systemFile.Encrypted = false;
+
+                    Encryption.DecryptStream(openFile, createFile, masterKey, systemFile.LastWrite, systemFile.Salt, systemFile.IV);
+                    if (!await _database?.AddFileAsync(systemFile)!)
                     {
                         CommandLine.WriteLine($"Failed to decrypt file: {systemFile.LocalPath}", ConsoleColor.Red);
                         if(File.Exists(tempFile)) File.Delete(tempFile);
+                        return;
                     }
                 }
 
                 File.Copy(tempFile, systemFile.LocalPath, true);
                 if(File.Exists(tempFile)) File.Delete(tempFile);
             }
-
-            //CommandLine.ProgressBar(_tasks.Count(t => t.IsCompleted), _totalTasks, _sw.Elapsed, ConsoleColor.DarkGray);
         }
     }
 }
