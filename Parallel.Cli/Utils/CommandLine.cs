@@ -73,7 +73,24 @@ namespace Parallel.Cli.Utils
 
         public static void WriteLine(object value, ConsoleColor color = ConsoleColor.Gray)
         {
+            Log.Information(value.ToString()!);
             Console.ForegroundColor = color;
+            Console.WriteLine($"> {value}");
+            Console.ResetColor();
+        }
+
+        public static void WriteWarning(object value)
+        {
+            Log.Warning(value.ToString()!);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"> {value}");
+            Console.ResetColor();
+        }
+
+        public static void WriteError(object value)
+        {
+            Log.Error(value.ToString()!);
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"> {value}");
             Console.ResetColor();
         }
