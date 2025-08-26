@@ -14,7 +14,7 @@ namespace Parallel.Cli.Commands
     public class DecryptCommand : Command
     {
         private readonly Argument<string> _sourceArg = new("path", "The source path of files to zip.");
-        private readonly Option<string> _configOpt = new(["--config", "-c"], "The profile configuration to use.");
+        private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
         private IDatabase? _database;
         private Stopwatch _sw = new Stopwatch();
@@ -26,15 +26,15 @@ namespace Parallel.Cli.Commands
             this.AddArgument(_sourceArg);
             this.SetHandler(async (path, config) =>
             {
-                ProfileConfig? profile = ProfileConfig.Load(Program.Settings, config);
-                if (profile == null)
+                VaultConfig? vault = VaultConfig.Load(Program.Settings, config);
+                if (vault == null)
                 {
-                    CommandLine.WriteLine("No active profile was found!", ConsoleColor.Yellow);
+                    CommandLine.WriteLine("No active vault was found!", ConsoleColor.Yellow);
                     return;
                 }
 
-                _database = DatabaseConnection.CreateNew(profile);
-                string masterKey = profile.FileSystem.EncryptionKey ?? throw new ArgumentException("No encryption key provided!");
+                _database = DatabaseConnection.CreateNew(vault);
+                string masterKey = vault.FileSystem.EncryptionKey ?? throw new ArgumentException("No encryption key provided!");
                 if (PathBuilder.IsDirectory(path))
                 {
                     await DecryptDirectoryAsync(path, masterKey);
