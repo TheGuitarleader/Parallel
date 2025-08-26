@@ -33,25 +33,11 @@ namespace Parallel.Cli.Commands
 
                 CommandLine.WriteLine($"Unzipping {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
                 _totalTasks = files.Length;
-                foreach (string file in files)
-                {
-                    StartDecompressFile(file, keep);
-                }
-
+                _tasks.AddRange(files.Select(file => Task.Run(() => DecompressFile(file, keep))));
                 await Task.WhenAll(_tasks);
+
                 CommandLine.WriteLine($"Successfully unzipped {files.Length.ToString("N0")} files in {_sw.Elapsed}.", ConsoleColor.Green);
             }, sourceArg, keepOpt);
-        }
-
-        private void StartDecompressFile(string path, bool keep)
-        {
-            Task decompTask = Task.Run(() =>
-            {
-                DecompressFile(path, keep);
-            });
-
-            decompTask.ContinueWith(t => t.Dispose());
-            _tasks.Add(decompTask);
         }
 
         private void DecompressFile(string path, bool keep)
