@@ -3,13 +3,18 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Parallel.Core.Utils
+namespace Parallel.Core.Security
 {
     /// <summary>
     /// Provides functionality for generating random hashes. This class cannot be inherited.
     /// </summary>
     public static class HashGenerator
     {
+        /// <summary>
+        /// Generates a random series of bytes.
+        /// </summary>
+        /// <param name="length"></param>
+        /// <returns></returns>
         public static byte[] RandomBytes(int length)
         {
             byte[] bytes = new byte[length];
@@ -75,6 +80,19 @@ namespace Parallel.Core.Utils
         {
             ArgumentException.ThrowIfNullOrEmpty(value);
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLower();
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static byte[] CheckSum(string path)
+        {
+            if(!File.Exists(path)) return [];
+            using FileStream fs = File.OpenRead(path);
+            using SHA256 sha256 = SHA256.Create();
+            return sha256.ComputeHash(fs);
         }
     }
 }

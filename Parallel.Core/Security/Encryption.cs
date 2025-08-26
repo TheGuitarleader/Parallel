@@ -3,6 +3,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Parallel.Core.Models;
+using Parallel.Core.Security;
 
 namespace Parallel.Core.Utils
 {
