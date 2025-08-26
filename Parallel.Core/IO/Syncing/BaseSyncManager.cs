@@ -2,20 +2,20 @@
 
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
-using Parallel.Core.Events;
+using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 
-namespace Parallel.Core.IO.Backup
+namespace Parallel.Core.IO.Syncing
 {
     /// <summary>
     /// Represents the base way of backing up files to an associated file system.
     /// </summary>
-    public abstract class BaseFileManager : IBackupManager
+    public abstract class BaseSyncManager : ISyncManager
     {
         /// <inheritdoc />
-        public ProfileConfig Profile { get; }
+        public VaultConfig Vault { get; }
 
         /// <inheritdoc />
         public IDatabase Database { get; set; }
@@ -23,20 +23,14 @@ namespace Parallel.Core.IO.Backup
         /// <inheritdoc />
         public IFileSystem FileSystem { get; set; }
 
-        /// <inheritdoc />
-        public string MachineName { get; } = Environment.MachineName;
-
-        /// <inheritdoc />
-        public string RootFolder { get; set; }
-
         /// <summary>
         ///
         /// </summary>
-        /// <param name="profile"></param>
-        public BaseFileManager(ProfileConfig profile)
+        /// <param name="vault"></param>
+        public BaseSyncManager(VaultConfig vault)
         {
-            FileSystem = FileSystemManager.CreateNew(profile.FileSystem);
-            Profile = profile;
+            FileSystem = FileSystemManager.CreateNew(vault.FileSystem);
+            Vault = vault;
         }
 
         /// <inheritdoc />
@@ -44,10 +38,10 @@ namespace Parallel.Core.IO.Backup
         {
             try
             {
-                Database = DatabaseConnection.CreateNew(Profile);
+                Database = DatabaseConnection.CreateNew(Vault);
                 bool fsInit = (FileSystem != null) && FileSystem.PingAsync().Result >= 0;
-                Profile.IgnoreDirectories.Add(Profile.FileSystem.RootDirectory);
-                if (Profile != null) Profile.SaveToFile();
+                Vault.IgnoreDirectories.Add(Vault.FileSystem.RootDirectory);
+                if (Vault != null) Vault.SaveToFile();
                 return fsInit;
             }
             catch (Exception ex)
@@ -58,9 +52,9 @@ namespace Parallel.Core.IO.Backup
         }
 
         /// <inheritdoc />
-        public abstract Task BackupFilesAsync(SystemFile[] files, IProgressReporter progress);
+        public abstract Task PushFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <inheritdoc />
-        public abstract Task RestoreFilesAsync(SystemFile[] files, IProgressReporter progress);
+        public abstract Task PullFilesAsync(SystemFile[] files, IProgressReporter progress);
     }
 }

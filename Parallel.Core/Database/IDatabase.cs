@@ -29,19 +29,19 @@ namespace Parallel.Core.Database
         Cloned,
 
         /// <summary>
-        /// A file that has been deleted from the backup.
+        /// A file that has been deleted from the vault.
         /// </summary>
         Pruned,
 
         /// <summary>
-        /// A file that was deleted and has been restored.
+        /// A file that was pulled from the vault.
         /// </summary>
-        Restored,
+        Pulled,
 
         /// <summary>
-        /// A newly synced file.
+        /// A file that was pushed to the vault.
         /// </summary>
-        Synced
+        Pushed
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ namespace Parallel.Core.Database
     public interface IDatabase
     {
         /// <summary>
-        /// The identifier to the profile for this database.
+        /// The identifier to the vault for this database.
         /// </summary>
         string ProfileId { get; }
 
@@ -93,7 +93,7 @@ namespace Parallel.Core.Database
 
         #endregion
 
-        Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool b);
+        Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted);
         Task<SystemFile?> GetFileAsync(string path);
     }
 }
