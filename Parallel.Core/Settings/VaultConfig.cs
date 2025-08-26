@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.IO.FileSystem;
+using Parallel.Core.Security;
 using Parallel.Core.Utils;
 
 namespace Parallel.Core.Settings
@@ -12,15 +13,15 @@ namespace Parallel.Core.Settings
     /// <summary>
     /// Represents a back-up connection.
     /// </summary>
-    public class ProfileConfig
+    public class VaultConfig
     {
         /// <summary>
-        /// A unique hash used to identify the profile.
+        /// A unique hash used to identify the vault.
         /// </summary>
         public string Id { get; } = HashGenerator.GenerateHash(12, true);
 
         /// <summary>
-        /// The name of the profile.
+        /// The name of the vault.
         /// </summary>
         public string Name { get; set; } = "Default";
 
@@ -80,14 +81,14 @@ namespace Parallel.Core.Settings
 
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ProfileConfig"/> class.
+        /// Initializes a new instance of the <see cref="VaultConfig"/> class.
         /// </summary>
         /// <param name="id"></param>
         /// <param name="name"></param>
         /// <param name="database"></param>
         /// <param name="fileSystem"></param>
         [JsonConstructor]
-        public ProfileConfig(string id, string name, DatabaseCredentials database, FileSystemCredentials fileSystem)
+        public VaultConfig(string id, string name, DatabaseCredentials database, FileSystemCredentials fileSystem)
         {
             Id = id;
             Name = name;
@@ -96,12 +97,12 @@ namespace Parallel.Core.Settings
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ProfileConfig"/> class.
+        /// Initializes a new instance of the <see cref="VaultConfig"/> class.
         /// </summary>
         /// <param name="name"></param>
         /// <param name="database"></param>
         /// <param name="fileSystem"></param>
-        public ProfileConfig(string name, DatabaseCredentials database, FileSystemCredentials fileSystem)
+        public VaultConfig(string name, DatabaseCredentials database, FileSystemCredentials fileSystem)
         {
             Id = HashGenerator.GenerateHash(12, true);
             Name = name;
@@ -112,39 +113,39 @@ namespace Parallel.Core.Settings
         /// <summary>
         /// Loads settings from a file.
         /// </summary>
-        public static ProfileConfig? Load(string path)
+        public static VaultConfig? Load(string path)
         {
             if (!File.Exists(path)) return null;
             string json = File.ReadAllText(path);
-            return JsonConvert.DeserializeObject<ProfileConfig>(json);
+            return JsonConvert.DeserializeObject<VaultConfig>(json);
         }
 
         /// <summary>
         /// Loads credentials from the app configuration.
         /// </summary>
-        /// <returns>A <see cref="ProfileConfig"/> instance.</returns>
-        public static ProfileConfig? Load(ParallelSettings settings, string name)
+        /// <returns>A <see cref="VaultConfig"/> instance.</returns>
+        public static VaultConfig? Load(ParallelSettings settings, string name)
         {
-            ProfileConfig? profile = Load(settings.Profiles.First());
-            return string.IsNullOrEmpty(name) ? profile : Load(Path.Combine(ParallelSettings.ProfilesDir, name + ".json"));
+            VaultConfig? vault = Load(settings.Vaults.First());
+            return string.IsNullOrEmpty(name) ? vault : Load(Path.Combine(ParallelSettings.VaultsDir, name + ".json"));
         }
 
         /// <summary>
         /// Saves credentials to a file.
         /// </summary>
-        /// <param name="profile">The current profile to save.</param>
-        public static void Save(ProfileConfig profile)
+        /// <param name="vault">The current vault to save.</param>
+        public static void Save(VaultConfig vault)
         {
-            if (!Directory.Exists(ParallelSettings.ProfilesDir)) Directory.CreateDirectory(ParallelSettings.ProfilesDir);
-            string path = Path.Combine(ParallelSettings.ProfilesDir, profile.Name + ".json");
-            Log.Debug($"Saving profile file: {path}");
+            if (!Directory.Exists(ParallelSettings.VaultsDir)) Directory.CreateDirectory(ParallelSettings.VaultsDir);
+            string path = Path.Combine(ParallelSettings.VaultsDir, vault.Name + ".json");
+            Log.Debug($"Saving vault file: {path}");
             if (!File.Exists(path))
             {
                 Log.Debug("Creating file -> " + path);
                 File.Create(path).Close();
             }
 
-            File.WriteAllText(path, JsonConvert.SerializeObject(profile, Formatting.Indented));
+            File.WriteAllText(path, JsonConvert.SerializeObject(vault, Formatting.Indented));
         }
 
         /// <summary>

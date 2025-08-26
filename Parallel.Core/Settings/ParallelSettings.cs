@@ -19,7 +19,7 @@ namespace Parallel.Core.Settings
         /// <summary>
         /// The location of files for different file system credentials./>.
         /// </summary>
-        public static string ProfilesDir { get; } = Path.Combine(PathBuilder.ProgramData, "Profiles");
+        public static string VaultsDir { get; } = Path.Combine(PathBuilder.ProgramData, "Vaults");
 
         /// <summary>
         /// The address that will accept incoming commands.
@@ -37,7 +37,7 @@ namespace Parallel.Core.Settings
         /// The profiles to use.
         /// <para>The CLI defaults to the first in the list.</para>
         /// </summary>
-        public HashSet<string> Profiles { get; } = new HashSet<string>();
+        public HashSet<string> Vaults { get; } = new HashSet<string>();
 
 
         /// <summary>
@@ -71,11 +71,12 @@ namespace Parallel.Core.Settings
         ///
         /// </summary>
         /// <param name="action"></param>
-        public void ForEachProfile(Action<ProfileConfig> action)
+        public void ForEachVault(Action<VaultConfig> action)
         {
-            foreach (ProfileConfig? profile in Profiles.Select(ProfileConfig.Load))
+            foreach (string path in Directory.GetFiles(VaultsDir, "*.json", SearchOption.TopDirectoryOnly))
             {
-                if (profile != null) action(profile);
+                VaultConfig? vault = VaultConfig.Load(path);
+                if (vault != null) action(vault);
             }
         }
     }
