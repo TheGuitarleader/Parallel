@@ -2,6 +2,7 @@
 
 using System.CommandLine;
 using System.Diagnostics;
+using System.Text;
 using Parallel.Cli.Utils;
 using Parallel.Core.Database;
 using Parallel.Core.IO;

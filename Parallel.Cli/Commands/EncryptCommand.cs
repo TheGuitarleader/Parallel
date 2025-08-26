@@ -88,8 +88,8 @@ namespace Parallel.Cli.Commands
                 await using (FileStream openFile = new FileStream(systemFile.LocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 await using (FileStream createFile = new FileStream(tempFile, FileMode.OpenOrCreate))
                 {
-                    systemFile.Salt = HashGenerator.RandomBytes(16);
-                    systemFile.IV = HashGenerator.RandomBytes(16);
+                    systemFile.Salt = HashGenerator.GenerateHash(16);
+                    systemFile.IV = HashGenerator.GenerateHash(16);
                     systemFile.Encrypted = true;
 
                     Encryption.EncryptStream(openFile, createFile, masterKey, systemFile.LastWrite, systemFile.Salt, systemFile.IV);

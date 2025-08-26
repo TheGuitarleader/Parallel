@@ -87,12 +87,12 @@ namespace Parallel.Core.Security
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        public static byte[] CheckSum(string path)
+        public static string? CheckSum(string path)
         {
-            if(!File.Exists(path)) return [];
+            if (!File.Exists(path)) return null;
             using FileStream fs = File.OpenRead(path);
             using SHA256 sha256 = SHA256.Create();
-            return sha256.ComputeHash(fs);
+            return Convert.ToHexString(sha256.ComputeHash(fs)).ToLowerInvariant();
         }
     }
 }

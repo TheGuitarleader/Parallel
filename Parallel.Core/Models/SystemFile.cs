@@ -81,17 +81,17 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The salt used to encrypt the file.
         /// </summary>
-        public byte[] Salt { get; set; } = [];
+        public string Salt { get; set; }
 
         /// <summary>
         /// The initialization vector used to encrypt the file.
         /// </summary>
-        public byte[] IV { get; set; } = [];
+        public string IV { get; set; }
 
         /// <summary>
         /// The checksum used to check if the file has changed.
         /// </summary>
-        public byte[] CheckSum { get; set; } = [];
+        public string? CheckSum { get; set; }
 
 
         /// <summary>
@@ -112,16 +112,32 @@ namespace Parallel.Core.Models
             ReadOnly = fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly);
             Deleted = !fileInfo.Exists;
             Encrypted = false;
-            Salt = HashGenerator.RandomBytes(16);
-            IV = HashGenerator.RandomBytes(16);
+            Salt = HashGenerator.GenerateHash(16);
+            IV = HashGenerator.GenerateHash(16);
             CheckSum = HashGenerator.CheckSum(path);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemFile"/> class.
         /// </summary>
-        /// <param name="row"></param>
-        public SystemFile(string vault, string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, long encrypted, byte[] salt, byte[] iv, byte[] checksum)
+        /// <param name="vault"></param>
+        /// <param name="id"></param>
+        /// <param name="name"></param>
+        /// <param name="localpath"></param>
+        /// <param name="remotepath"></param>
+        /// <param name="lastwrite"></param>
+        /// <param name="lastupdate"></param>
+        /// <param name="localsize"></param>
+        /// <param name="remotesize"></param>
+        /// <param name="type"></param>
+        /// <param name="hidden"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="deleted"></param>
+        /// <param name="encrypted"></param>
+        /// <param name="salt"></param>
+        /// <param name="iv"></param>
+        /// <param name="checksum"></param>
+        public SystemFile(string vault, string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, long encrypted, string salt, string iv, string checksum)
         {
             Id = id;
             Name = name;
