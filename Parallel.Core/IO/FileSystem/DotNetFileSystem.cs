@@ -17,15 +17,15 @@ namespace Parallel.Core.IO.FileSystem
     /// </summary>
     public class DotNetFileSystem : IFileSystem
     {
-        private readonly FileSystemCredentials _credentials;
+        private readonly VaultConfig _vault;
 
         /// <summary>
         /// Represents an <see cref="IFileSystem"/> for interacting with physical machine hardware.
         /// </summary>
-        /// <param name="credentials">The credentials to log in with.</param>
-        public DotNetFileSystem(FileSystemCredentials credentials)
+        /// <param name="vault">The vault to use.</param>
+        public DotNetFileSystem(VaultConfig vault)
         {
-            _credentials = credentials;
+            _vault = vault;
         }
 
         /// <inheritdoc/>
@@ -83,7 +83,7 @@ namespace Parallel.Core.IO.FileSystem
         public Task<Dictionary<string, SystemFile>> GetFilesAsync()
         {
             Dictionary<string, SystemFile> files = new Dictionary<string, SystemFile>();
-            foreach (string file in Directory.GetFiles(PathBuilder.RootDirectory(_credentials), "*.gz", SearchOption.AllDirectories))
+            foreach (string file in Directory.GetFiles(PathBuilder.RootDirectory(_vault), "*.gz", SearchOption.AllDirectories))
             {
                 FileInfo fi = new(file);
                 files.Add(fi.FullName, new SystemFile(file)
@@ -132,7 +132,7 @@ namespace Parallel.Core.IO.FileSystem
         public Task<long> PingAsync()
         {
             Stopwatch sw = Stopwatch.StartNew();
-            if (!Directory.Exists(PathBuilder.RootDirectory(_credentials))) return Task.FromResult<long>(-1);
+            if (!Directory.Exists(PathBuilder.RootDirectory(_vault))) return Task.FromResult<long>(-1);
             return Task.FromResult(sw.ElapsedMilliseconds);
         }
 
@@ -144,7 +144,7 @@ namespace Parallel.Core.IO.FileSystem
             {
                 Stopwatch sw = new Stopwatch();
                 SystemFile file = files[i];
-                file.RemotePath = PathBuilder.Remote(file.LocalPath, _credentials);
+                file.RemotePath = PathBuilder.Remote(file.LocalPath, _vault);
 
                 progress.Report(ProgressOperation.Uploading, file, i, files.Length);
                 if (File.Exists(file.RemotePath)) File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));

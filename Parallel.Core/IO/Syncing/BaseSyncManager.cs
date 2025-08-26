@@ -29,7 +29,7 @@ namespace Parallel.Core.IO.Syncing
         /// <param name="vault"></param>
         public BaseSyncManager(VaultConfig vault)
         {
-            FileSystem = FileSystemManager.CreateNew(vault.FileSystem);
+            FileSystem = FileSystemManager.CreateNew(vault);
             Vault = vault;
         }
 
@@ -39,10 +39,10 @@ namespace Parallel.Core.IO.Syncing
             try
             {
                 Database = DatabaseConnection.CreateNew(Vault);
-                bool fsInit = (FileSystem != null) && FileSystem.PingAsync().Result >= 0;
+                FileSystem.CreateDirectoryAsync(PathBuilder.RootDirectory(Vault));
                 Vault.IgnoreDirectories.Add(Vault.FileSystem.RootDirectory);
-                if (Vault != null) Vault.SaveToFile();
-                return fsInit;
+                Vault.SaveToFile();
+                return FileSystem.PingAsync().Result >= 0;
             }
             catch (Exception ex)
             {

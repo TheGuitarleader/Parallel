@@ -55,8 +55,8 @@ namespace Parallel.Core.Database
         public async Task<bool> AddFileAsync(SystemFile file)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = @"INSERT OR REPLACE INTO files (vault, id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, encrypted, salt, iv) VALUES (@ProfileId, @Id, @Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @Encrypted, @Salt, @IV);";
-            return await connection.ExecuteAsync(sql, new { ProfileId, file.Id, file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.Encrypted, file.Salt, file.IV }) > 0;
+            string sql = @"INSERT OR REPLACE INTO files (vault, id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, encrypted, salt, iv, checksum) VALUES (@ProfileId, @Id, @Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @Encrypted, @Salt, @IV, @CheckSum);";
+            return await connection.ExecuteAsync(sql, new { ProfileId, file.Id, file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.Encrypted, file.Salt, file.IV, file.CheckSum }) > 0;
         }
 
         /// <inheritdoc />

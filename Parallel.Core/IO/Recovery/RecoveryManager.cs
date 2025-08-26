@@ -29,7 +29,7 @@ namespace Parallel.Core.IO.Recovery
         {
             Vault = vault;
             Database = DatabaseConnection.CreateNew(vault);
-            FileSystem = FileSystemManager.CreateNew(vault.FileSystem);
+            FileSystem = FileSystemManager.CreateNew(vault);
         }
 
         public bool Initialize()

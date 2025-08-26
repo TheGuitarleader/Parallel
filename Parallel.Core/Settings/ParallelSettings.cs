@@ -79,5 +79,20 @@ namespace Parallel.Core.Settings
                 if (vault != null) action(vault);
             }
         }
+
+        public async Task ForEachVaultAsync(Func<VaultConfig, Task> actionAsync)
+        {
+            List<Task> tasks = new();
+            foreach (string path in Directory.GetFiles(VaultsDir, "*.json", SearchOption.TopDirectoryOnly))
+            {
+                VaultConfig? vault = VaultConfig.Load(path);
+                if (vault != null)
+                {
+                    tasks.Add(actionAsync(vault));
+                }
+            }
+
+            await Task.WhenAll(tasks);
+        }
     }
 }

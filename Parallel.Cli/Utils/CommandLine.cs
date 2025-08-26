@@ -7,12 +7,12 @@ namespace Parallel.Cli.Utils
 {
     public class CommandLine
     {
-        public static string? ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
+        public static string ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
         {
             Console.ForegroundColor = color;
             Console.Write($"> {value}: ");
             Console.ResetColor();
-            return Console.ReadLine();
+            return Console.ReadLine() ?? string.Empty;
         }
 
         public static bool ReadBool(object value, bool defaultValue, ConsoleColor color = ConsoleColor.Gray)

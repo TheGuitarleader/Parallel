@@ -32,6 +32,8 @@ namespace Parallel.Core.IO.Backup
             SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();
             Log.Information($"Backing up {backupFiles.Length} files...");
             await FileSystem.UploadFilesAsync(backupFiles, progress);
+
+            Console.WriteLine($"Successfully pushed {backupFiles.Length} files.", ConsoleColor.Green);
             for (int i = 0; i < files.Length; i++)
             {
                 SystemFile file = files.ElementAt(i);
@@ -67,7 +69,7 @@ namespace Parallel.Core.IO.Backup
             {
                 SystemFile file = files[i];
                 Log.Information($"Restoring file: {file.LocalPath}...");
-                file.RemotePath = PathBuilder.Remote(file.LocalPath, Vault.FileSystem);
+                file.RemotePath = PathBuilder.Remote(file.LocalPath, Vault);
             }
         }
     }

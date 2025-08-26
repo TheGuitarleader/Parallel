@@ -73,7 +73,7 @@ namespace Parallel.Cli.Commands
                 fsc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
                 fsc.EncryptionKey = HashGenerator.GenerateHash(32, true);
 
-                string profileName = CommandLine.ReadString("Profile Name");
+                string? profileName = CommandLine.ReadString("Profile Name");
                 VaultConfig vault = new VaultConfig(profileName, dbc, fsc);
                 vault.SaveToFile();
 

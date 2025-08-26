@@ -2,6 +2,7 @@
 
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
+using Parallel.Core.Settings;
 
 namespace Parallel.Cli.Utils
 {
