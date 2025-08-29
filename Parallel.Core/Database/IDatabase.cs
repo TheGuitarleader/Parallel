@@ -91,6 +91,10 @@ namespace Parallel.Core.Database
         /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddHistoryAsync(string path, HistoryType type);
 
+        IEnumerable<HistoryEvent>? GetHistory(string path, int limit);
+
+        IEnumerable<HistoryEvent>? GetHistory(string path, HistoryType type, int limit);
+
         #endregion
 
         Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted);

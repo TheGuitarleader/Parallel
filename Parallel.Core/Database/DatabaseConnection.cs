@@ -17,9 +17,9 @@ namespace Parallel.Core.Database
     /// </summary>
     public class DatabaseConnection
     {
-        public static IDatabase CreateNew(VaultConfig vault)
+        public static IDatabase? CreateNew(VaultConfig? vault)
         {
-            switch(vault.Database.Provider)
+            switch(vault?.Database.Provider)
             {
                 default: return null;
 

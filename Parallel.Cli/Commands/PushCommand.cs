@@ -88,13 +88,13 @@ namespace Parallel.Cli.Commands
 
                 CommandLine.WriteLine($"Backing up {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
                 await sync.PushFilesAsync(files, new ProgressReport());
-                CommandLine.WriteLine($"Successfully pushed {successFiles.ToString("N0")} files.", ConsoleColor.Green);
+                CommandLine.WriteLine($"Successfully pushed {successFiles.ToString("N0")} files to '{vault.FileSystem.Address}'.", ConsoleColor.Green);
             });
         }
 
         private async Task SyncFileAsync(string path)
         {
-            await Program.Settings.ForEachVaultAsync(async (vault) =>
+            await Program.Settings.ForEachVaultAsync(async vault =>
             {
                 ISyncManager sync = SyncManager.CreateNew(vault);
                 if (!sync.Initialize())
@@ -104,14 +104,12 @@ namespace Parallel.Cli.Commands
                 }
 
                 string[] backupFolders = vault.BackupDirectories.ToArray();
+                string[] ignoredFolders = vault.IgnoreDirectories.ToArray();
                 if (!backupFolders.Any(path.StartsWith))
                 {
                     CommandLine.WriteWarning($"The provided file is not set to be backed up!");
                     return;
                 }
-
-                string[] ignoredFolders = vault.IgnoreDirectories.ToArray();
-                FileScanner scanner = new FileScanner(sync);
 
                 // Checks if the file can be backed up.
                 if (FileScanner.IsIgnored(path, ignoredFolders))
@@ -122,7 +120,6 @@ namespace Parallel.Cli.Commands
 
                 SystemFile localFile = new SystemFile(path);
                 SystemFile? remoteFile = await sync.Database.GetFileAsync(localFile.LocalPath);
-
                 if (!FileScanner.HasChanged(localFile, remoteFile))
                 {
                     CommandLine.WriteLine($"The provided file is already up to date.", ConsoleColor.Green);
@@ -131,7 +128,7 @@ namespace Parallel.Cli.Commands
 
                 CommandLine.WriteLine($"Pushing: {localFile.LocalPath}", ConsoleColor.DarkGray);
                 await sync.PushFilesAsync([localFile], new ProgressReport());
-                CommandLine.WriteLine($"Successfully pushed: {localFile.LocalPath}", ConsoleColor.Green);
+                CommandLine.WriteLine($"Successfully pushed '{localFile.LocalPath}' to '{vault.FileSystem.Address}'.", ConsoleColor.Green);
             });
         }
     }

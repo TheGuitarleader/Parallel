@@ -87,6 +87,16 @@ namespace Parallel.Core.Database
             return await connection.ExecuteAsync(sql, new { ProfileId, Timestamp = UnixTime.Now.TotalMilliseconds, Name = Path.GetFileName(path), Path = path, Type = type }) > 0;
         }
 
+        public IEnumerable<HistoryEvent>? GetHistory(string path, int limit)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<HistoryEvent>? GetHistory(string path, HistoryType type, int limit)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
     }
 }
