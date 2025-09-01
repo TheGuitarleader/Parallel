@@ -80,17 +80,31 @@ namespace Parallel.Core.Settings
             }
         }
 
-        public async Task ForEachVaultAsync(Func<VaultConfig, Task> actionAsync)
+        /// <summary>
+        /// Asynchronously runs an <see cref="Action{T}"/> for each <see cref="VaultConfig"/> with a default of 3 at a time.
+        /// </summary>
+        /// <param name="actionAsync"></param>
+        /// <param name="maxDegreeOfParallelism"></param>
+        public static async Task ForEachVaultAsync(Func<VaultConfig, Task> actionAsync, int maxDegreeOfParallelism = 3)
         {
-            List<Task> tasks = new();
-            foreach (string path in Directory.GetFiles(VaultsDir, "*.json", SearchOption.TopDirectoryOnly))
+            string[] vaultPaths = Directory.GetFiles(VaultsDir, "*.json", SearchOption.TopDirectoryOnly);
+            SemaphoreSlim semaphore = new SemaphoreSlim(maxDegreeOfParallelism);
+            IEnumerable<Task> tasks = vaultPaths.Select(path => Task.Run(async () =>
             {
-                VaultConfig? vault = VaultConfig.Load(path);
-                if (vault != null)
+                await semaphore.WaitAsync();
+                try
                 {
-                    tasks.Add(actionAsync(vault));
+                    VaultConfig? vault = VaultConfig.Load(path);
+                    if (vault != null)
+                    {
+                        await actionAsync(vault);
+                    }
                 }
-            }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }));
 
             await Task.WhenAll(tasks);
         }

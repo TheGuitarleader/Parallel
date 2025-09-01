@@ -125,7 +125,7 @@ namespace Parallel.Cli.Commands
         {
             if (histories?.Length == 0)
             {
-                CommandLine.WriteWarning("No backup history found!");
+                CommandLine.WriteLine("No backup history found!", ConsoleColor.Yellow);
                 return;
             }
 

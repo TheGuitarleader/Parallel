@@ -2,12 +2,11 @@
 
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
-using Parallel.Core.Events;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 
-namespace Parallel.Core.IO.Backup
+namespace Parallel.Core.IO.Syncing
 {
     /// <summary>
     /// Defines the methods needed for backing up a file system.

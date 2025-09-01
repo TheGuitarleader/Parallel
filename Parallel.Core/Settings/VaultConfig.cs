@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.IO.FileSystem;
+using Parallel.Core.IO.Syncing;
 using Parallel.Core.Security;
 using Parallel.Core.Utils;
 

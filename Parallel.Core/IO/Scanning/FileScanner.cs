@@ -6,6 +6,7 @@ using System.Text;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.IO.Backup;
+using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
@@ -105,6 +106,12 @@ namespace Parallel.Core.IO.Scanning
             return scannedFiles.ToArray();
         }
 
+        /// <summary>
+        /// Gets if a file has changed.
+        /// </summary>
+        /// <param name="localFile">The base file to compare.</param>
+        /// <param name="remoteFile">The remote file to compare to.</param>
+        /// <returns>True is success, otherwise false.</returns>
         public static bool HasChanged(SystemFile localFile, SystemFile? remoteFile)
         {
             return remoteFile == null || (localFile.LastWrite.TotalMilliseconds > remoteFile.LastWrite.TotalMilliseconds && !localFile.CheckSum.SequenceEqual(remoteFile.CheckSum));
@@ -207,7 +214,7 @@ namespace Parallel.Core.IO.Scanning
 
         public static IEnumerable<string> GetFiles(string root, string searchPattern)
         {
-            return GetFiles(root, searchPattern, Array.Empty<string>());
+            return GetFiles(root, searchPattern, []);
         }
 
         public static IEnumerable<string> GetFiles(string root, string searchPattern, string[] exempt)
@@ -217,7 +224,7 @@ namespace Parallel.Core.IO.Scanning
             while (pending.Count != 0)
             {
                 string path = pending.Pop();
-                IEnumerable<string> next = null;
+                IEnumerable<string>? next = null;
                 try
                 {
                     if (!IsIgnored(path, exempt))
