@@ -4,27 +4,27 @@ using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 
-namespace Parallel.Core.IO.Backup
+namespace Parallel.Core.IO.Syncing
 {
     /// <summary>
     /// Represents the way to clone files to an associated file system using file deltas.
     /// </summary>
-    public class DeltaBackupManager : BaseFileManager
+    public class DeltaSyncManager : BaseSyncManager
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="DeltaBackupManager"/> class.
+        /// Initializes a new instance of the <see cref="DeltaSyncManager"/> class.
         /// </summary>
-        /// <param name="profile"></param>
-        public DeltaBackupManager(ProfileConfig profile) : base(profile) { }
+        /// <param name="vault"></param>
+        public DeltaSyncManager(VaultConfig vault) : base(vault) { }
 
         /// <inheritdoc />
-        public override Task BackupFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }
 
         /// <inheritdoc />
-        public override Task RestoreFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }

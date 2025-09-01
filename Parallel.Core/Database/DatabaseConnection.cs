@@ -17,15 +17,15 @@ namespace Parallel.Core.Database
     /// </summary>
     public class DatabaseConnection
     {
-        public static IDatabase CreateNew(ProfileConfig profile)
+        public static IDatabase? CreateNew(VaultConfig? vault)
         {
-            switch(profile.Database.Provider)
+            switch(vault?.Database.Provider)
             {
                 default: return null;
 
                 case DatabaseProvider.Local:
-                    IDatabase db = new SqliteContext(profile.Database, profile.Id);
-                    if (!File.Exists(profile.Database.Address)) db.InitializeAsync();
+                    IDatabase db = new SqliteContext(vault.Database, vault.Id);
+                    if (!File.Exists(vault.Database.Address)) db.InitializeAsync();
                     return db;
             }
         }

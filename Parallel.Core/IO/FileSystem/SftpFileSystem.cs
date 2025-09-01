@@ -18,15 +18,16 @@ namespace Parallel.Core.IO.FileSystem
     public class SftpFileSystem : IFileSystem
     {
         private readonly ConnectionInfo _connectionInfo;
+        private readonly VaultConfig _vault;
 
         /// <summary>
         /// Represents an <see cref="IFileSystem"/> for interacting with an SSH server.
         /// </summary>
-        /// <param name="credentials">The credentials to log in with.</param>
-        public SftpFileSystem(FileSystemCredentials credentials)
+        /// <param name="vault">The credentials to log in with.</param>
+        public SftpFileSystem(VaultConfig vault)
         {
-            Console.WriteLine(JObject.FromObject(credentials));
-            _connectionInfo = new ConnectionInfo(credentials.Address, credentials.Username, new PasswordAuthenticationMethod(credentials.Username, Encryption.Decode(credentials.Password)));
+            _connectionInfo = new ConnectionInfo(vault.FileSystem.Address, vault.FileSystem.Username, new PasswordAuthenticationMethod(vault.FileSystem.Username, Encryption.Decode(vault.FileSystem.Password)));
+            _vault = vault;
         }
 
         /// <inheritdoc/>

@@ -2,22 +2,21 @@
 
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
-using Parallel.Core.Events;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 
-namespace Parallel.Core.IO.Backup
+namespace Parallel.Core.IO.Syncing
 {
     /// <summary>
     /// Defines the methods needed for backing up a file system.
     /// </summary>
-    public interface IBackupManager
+    public interface ISyncManager
     {
         /// <summary>
-        /// The back-up connection profile.
+        /// The back-up connection vault.
         /// </summary>
-        public ProfileConfig Profile { get; }
+        public VaultConfig Vault { get; }
 
         /// <summary>
         /// The associated database connection.
@@ -30,34 +29,23 @@ namespace Parallel.Core.IO.Backup
         IFileSystem FileSystem { get; set; }
 
         /// <summary>
-        /// The current machine name.
-        /// </summary>
-        string MachineName { get; }
-
-        /// <summary>
-        /// The root directory of the back-up.
-        /// </summary>
-        string RootFolder { get; set; }
-
-
-        /// <summary>
         /// Initializes the backup manager by logging into the <see cref="IDatabase"/> and <see cref="IFileSystem"/>
         /// </summary>
         /// <returns></returns>
         bool Initialize();
 
         /// <summary>
-        /// Backs up a path. Can be either a file or directory.
+        /// Pushes an array of files to a vault.
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
-        Task BackupFilesAsync(SystemFile[] files, IProgressReporter progress);
+        Task PushFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <summary>
-        /// Restores a path. Can be either a file or directory.
+        /// Pulls an array of files from a vault.
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
-        Task RestoreFilesAsync(SystemFile[] files, IProgressReporter progress);
+        Task PullFilesAsync(SystemFile[] files, IProgressReporter progress);
     }
 }

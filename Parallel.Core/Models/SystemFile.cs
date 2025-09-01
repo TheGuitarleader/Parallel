@@ -3,6 +3,7 @@
 using System.Data;
 using Parallel.Core.Data;
 using Parallel.Core.Diagnostics;
+using Parallel.Core.Security;
 using Parallel.Core.Utils;
 
 namespace Parallel.Core.Models
@@ -80,12 +81,17 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The salt used to encrypt the file.
         /// </summary>
-        public byte[] Salt { get; set; } = Array.Empty<byte>();
+        public string Salt { get; set; }
 
         /// <summary>
         /// The initialization vector used to encrypt the file.
         /// </summary>
-        public byte[] IV { get; set; } = Array.Empty<byte>();
+        public string IV { get; set; }
+
+        /// <summary>
+        /// The checksum used to check if the file has changed.
+        /// </summary>
+        public string? CheckSum { get; set; }
 
 
         /// <summary>
@@ -99,27 +105,39 @@ namespace Parallel.Core.Models
             LocalPath = fileInfo.FullName;
             LocalSize = fileInfo.Length;
             RemoteSize = fileInfo.Length;
-            Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
             LastWrite = new UnixTime(fileInfo.LastWriteTime);
             LastUpdate = UnixTime.Now;
+            Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
+            Hidden = fileInfo.Attributes.HasFlag(FileAttributes.Hidden);
+            ReadOnly = fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly);
             Deleted = !fileInfo.Exists;
-
-            if (fileInfo.Attributes.HasFlag(FileAttributes.Hidden))
-            {
-                Hidden = true;
-            }
-
-            if (fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly))
-            {
-                ReadOnly = true;
-            }
+            Encrypted = false;
+            Salt = HashGenerator.GenerateHash(16);
+            IV = HashGenerator.GenerateHash(16);
+            CheckSum = HashGenerator.CheckSum(path);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemFile"/> class.
         /// </summary>
-        /// <param name="row"></param>
-        public SystemFile(string profile, string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, long encrypted, byte[] salt, byte[] iv)
+        /// <param name="vault"></param>
+        /// <param name="id"></param>
+        /// <param name="name"></param>
+        /// <param name="localpath"></param>
+        /// <param name="remotepath"></param>
+        /// <param name="lastwrite"></param>
+        /// <param name="lastupdate"></param>
+        /// <param name="localsize"></param>
+        /// <param name="remotesize"></param>
+        /// <param name="type"></param>
+        /// <param name="hidden"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="deleted"></param>
+        /// <param name="encrypted"></param>
+        /// <param name="salt"></param>
+        /// <param name="iv"></param>
+        /// <param name="checksum"></param>
+        public SystemFile(string vault, string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, long encrypted, string salt, string iv, string checksum)
         {
             Id = id;
             Name = name;
@@ -129,13 +147,13 @@ namespace Parallel.Core.Models
             LastUpdate = UnixTime.FromMilliseconds(lastupdate);
             LocalSize = localsize;
             RemoteSize = remotesize;
-            //Type = type;
             Hidden = Converter.ToBool(hidden);
             ReadOnly = Converter.ToBool(readOnly);
             Deleted = Converter.ToBool(deleted);
             Encrypted = Converter.ToBool(encrypted);
             Salt = salt;
             IV = iv;
+            CheckSum = checksum;
         }
 
         public bool Equals(SystemFile value)
@@ -155,6 +173,7 @@ namespace Parallel.Core.Models
                 value?.Encrypted != null ? this.Encrypted.Equals(value.Encrypted) : (bool?)null,
                 this?.Salt != null && value?.Salt != null ? this.Salt.SequenceEqual(value.Salt) : (bool?)null,
                 this?.IV != null && value?.IV != null ? this.IV.SequenceEqual(value.IV) : (bool?)null,
+                this?.CheckSum != null && value?.CheckSum != null ? this.CheckSum.SequenceEqual(value.CheckSum) : (bool?)null,
             ];
 
             return results.All(b => b != null && (bool)b);

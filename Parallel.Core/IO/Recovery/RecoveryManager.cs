@@ -17,7 +17,7 @@ namespace Parallel.Core.IO.Recovery
 
         public IDatabase Database { get; set; }
         public IFileSystem FileSystem { get; set; }
-        public ProfileConfig Profile { get; set; }
+        public VaultConfig Vault { get; set; }
         public string MachineName { get; } = Environment.MachineName;
         public string RootFolder { get; set; }
 
@@ -25,21 +25,21 @@ namespace Parallel.Core.IO.Recovery
         /// Initializes a new instance of the <see cref="RecoveryManager"/> class.
         /// </summary>
         /// <param name="credentials"></param>
-        public RecoveryManager(ProfileConfig profile)
+        public RecoveryManager(VaultConfig vault)
         {
-            Profile = profile;
-            Database = DatabaseConnection.CreateNew(profile);
-            FileSystem = FileSystemManager.CreateNew(profile.FileSystem);
+            Vault = vault;
+            Database = DatabaseConnection.CreateNew(vault);
+            FileSystem = FileSystemManager.CreateNew(vault);
         }
 
         public bool Initialize()
         {
             try
             {
-                Database = DatabaseConnection.CreateNew(Profile);
+                Database = DatabaseConnection.CreateNew(Vault);
                 bool fsInit = (FileSystem != null) && FileSystem.PingAsync().Result >= 0;
-                Profile.IgnoreDirectories.Add(Profile.FileSystem.RootDirectory);
-                if (Profile != null) Profile.SaveToFile();
+                Vault.IgnoreDirectories.Add(Vault.FileSystem.RootDirectory);
+                if (Vault != null) Vault.SaveToFile();
                 return fsInit;
             }
             catch (Exception ex)

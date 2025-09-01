@@ -7,22 +7,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Parallel.Core.IO.Syncing;
 
 namespace Parallel.Core.IO.Backup
 {
     /// <summary>
-    /// Represents the way manage <see cref="IBackupManager"/>s.
+    /// Represents the way manage <see cref="ISyncManager"/>s.
     /// </summary>
-    public static class BackupManager
+    public static class SyncManager
     {
         /// <summary>
-        /// Creates a new instance of an <see cref="IBackupManager"/>.
+        /// Creates a new instance of an <see cref="ISyncManager"/>.
         /// </summary>
-        /// <param name="profile"></param>
+        /// <param name="vault"></param>
         /// <returns></returns>
-        public static IBackupManager CreateNew(ProfileConfig profile)
+        public static ISyncManager CreateNew(VaultConfig vault)
         {
-            return new FileBackupManager(profile);
+            return new FileSyncManager(vault);
         }
     }
 }

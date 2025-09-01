@@ -5,6 +5,7 @@ using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Events;
 using Parallel.Core.IO.FileSystem;
+using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 
@@ -13,24 +14,26 @@ namespace Parallel.Core.IO.Backup
     /// <summary>
     /// Represents the way to archive files to an associated file system.
     /// </summary>
-    public class FileBackupManager : BaseFileManager
+    public class FileSyncManager : BaseSyncManager
     {
         private List<Task> _tasks = new List<Task>();
         private int _totalFiles;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FileBackupManager"/> class.
+        /// Initializes a new instance of the <see cref="FileSyncManager"/> class.
         /// </summary>
-        /// <param name="profile"></param>
-        public FileBackupManager(ProfileConfig profile) : base(profile) { }
+        /// <param name="vault"></param>
+        public FileSyncManager(VaultConfig vault) : base(vault) { }
 
         /// <inheritdoc/>
-        public override async Task BackupFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             if (!files.Any()) return;
             SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();
             Log.Information($"Backing up {backupFiles.Length} files...");
             await FileSystem.UploadFilesAsync(backupFiles, progress);
+
+            Console.WriteLine($"Successfully pushed {backupFiles.Length} files.", ConsoleColor.Green);
             for (int i = 0; i < files.Length; i++)
             {
                 SystemFile file = files.ElementAt(i);
@@ -47,7 +50,7 @@ namespace Parallel.Core.IO.Backup
                     if (remote is not null)
                     {
                         file.RemoteSize = remote.RemoteSize;
-                        await Database.AddHistoryAsync(file.LocalPath, HistoryType.Synced);
+                        await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
                         await Database.AddFileAsync(file);
                     }
                 }
@@ -55,7 +58,7 @@ namespace Parallel.Core.IO.Backup
         }
 
         /// <inheritdoc/>
-        public override async Task RestoreFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             SystemFile[] restoreFiles = files.Where(f => f.Deleted).ToArray();
 
@@ -66,7 +69,7 @@ namespace Parallel.Core.IO.Backup
             {
                 SystemFile file = files[i];
                 Log.Information($"Restoring file: {file.LocalPath}...");
-                file.RemotePath = PathBuilder.Remote(file.LocalPath, Profile.FileSystem);
+                file.RemotePath = PathBuilder.Remote(file.LocalPath, Vault);
             }
         }
     }

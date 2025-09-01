@@ -30,9 +30,30 @@ Your computer already gives you enough to fight with — your files don't have t
 
 
 
-## 📦 Installation
-
-> Coming soon — Parallel is currently in active development. Stay tuned for install instructions, binaries, and package manager support.
+## 📦 Quick Start Guide
+#### 1. Install Parallel
+Download the latest [release](https://github.com/TheGuitarleader/Parallel/releases/latest) or build from source:
+```
+git clone https://github.com/TheGuitarleader/Parallel
+cd Parallel
+dotnet build
+```
+#### 2. Set Up Your Vaults
+Vaults are storage targets where Parallel sends and recieves files. This can be an external drive, NAS share, SSH server, or S3-compatible cloud.
+```
+parallel vaults create
+```
+*Note: All vaults are saved as JSON in `%AppData%\Parallel\Vaults` for easy importing and exporting.*
+#### 3. Push Files to Vaults
+Parallel can push all changed files on the system with:
+```
+parallel push
+```
+Or you can specify a path which can be a file or folder.
+```
+parallel push --path "C:\Windows\System32"
+parallel push -p "C:\Windows\System32\cmd.exe"
+```
 
 ## 🧪 Status
 

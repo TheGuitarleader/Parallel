@@ -71,15 +71,15 @@ namespace Parallel.Core.IO
             return main.Replace(@"\", "/");
         }
 
-        public static string RootDirectory(FileSystemCredentials credentials)
+        public static string RootDirectory(VaultConfig vault)
         {
-            string root = Path.Combine(credentials.RootDirectory, "Parallel", Environment.MachineName);
+            string root = Path.Combine(vault.FileSystem.RootDirectory, "Parallel", vault.Id);
             Log.Debug($"Root directory: {root}");
-            return credentials.Service switch
+            return vault.FileSystem.Service switch
             {
                 FileService.Local => root,
                 FileService.Remote => root.Replace('\\', '/'),
-                _ => null
+                _ => string.Empty
             };
         }
 
@@ -89,14 +89,14 @@ namespace Parallel.Core.IO
         /// <param name="path"></param>
         /// <param name="credentials"></param>
         /// <returns></returns>
-        public static string Remote(string path, FileSystemCredentials credentials)
+        public static string Remote(string path, VaultConfig vault)
         {
-            string root = Path.Combine(credentials.RootDirectory, "Parallel", Environment.MachineName, path.Replace(":", string.Empty)) + ".gz";
-            return credentials.Service switch
+            string root = Path.Combine(vault.FileSystem.RootDirectory, "Parallel", vault.Id, "Files", path.Replace(":", string.Empty)) + ".gz";
+            return vault.FileSystem.Service switch
             {
                 FileService.Local => root,
                 FileService.Remote => root.Replace('\\', '/'),
-                _ => null
+                _ => string.Empty
             };
         }
 

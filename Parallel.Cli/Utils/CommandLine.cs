@@ -1,18 +1,21 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.Text;
+using Parallel.Core.Settings;
 using Parallel.Core.Utils;
 
 namespace Parallel.Cli.Utils
 {
     public class CommandLine
     {
-        public static string? ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
+        private static readonly object _consoleLock = new();
+
+        public static string ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
         {
             Console.ForegroundColor = color;
             Console.Write($"> {value}: ");
             Console.ResetColor();
-            return Console.ReadLine();
+            return Console.ReadLine() ?? string.Empty;
         }
 
         public static bool ReadBool(object value, bool defaultValue, ConsoleColor color = ConsoleColor.Gray)
@@ -71,11 +74,56 @@ namespace Parallel.Cli.Utils
             Console.ResetColor();
         }
 
+        public static void WriteLine(VaultConfig vault, object value, ConsoleColor color = ConsoleColor.Gray)
+        {
+            string baseLog = $"[{vault.Id}] {value}";
+            switch(color)
+            {
+                default:
+                    Log.Information(baseLog);
+                    break;
+
+                case ConsoleColor.Yellow:
+                    Log.Warning(baseLog);
+                    break;
+
+                case ConsoleColor.Red:
+                    Log.Error(baseLog);
+                    break;
+            }
+
+            lock (_consoleLock)
+            {
+                Console.ForegroundColor = color;
+                Console.WriteLine($"> {baseLog}");
+                Console.ResetColor();
+            }
+        }
+
         public static void WriteLine(object value, ConsoleColor color = ConsoleColor.Gray)
         {
-            Console.ForegroundColor = color;
-            Console.WriteLine($"> {value}");
-            Console.ResetColor();
+            string baseLog = $"{value}";
+            switch(color)
+            {
+                default:
+                    Log.Information(baseLog);
+                    break;
+
+                case ConsoleColor.Yellow:
+                    Log.Warning(baseLog);
+                    break;
+
+                case ConsoleColor.Red:
+                    Log.Error(baseLog);
+                    break;
+            }
+
+            lock (_consoleLock)
+            {
+                Console.ForegroundColor = color;
+                Console.WriteLine($"> {baseLog}");
+                Console.ResetColor();
+            }
         }
 
         public static void ProgressBar(double part, double total, TimeSpan elapsed, ConsoleColor color = ConsoleColor.Gray)

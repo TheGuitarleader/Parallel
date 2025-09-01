@@ -24,12 +24,12 @@ namespace Parallel.Core.Settings
         /// <summary>
         /// The username of the database.
         /// </summary>
-        public string Username { get; set; } = string.Empty;
+        public string? Username { get; set; }
 
         /// <summary>
         /// The password of the database.
         /// </summary>
-        public string Password { get; set; } = string.Empty;
+        public string? Password { get; set; }
 
         /// <summary>
         /// The database name.

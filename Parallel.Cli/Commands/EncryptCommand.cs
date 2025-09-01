@@ -7,6 +7,7 @@ using Parallel.Cli.Utils;
 using Parallel.Core.Database;
 using Parallel.Core.IO;
 using Parallel.Core.Models;
+using Parallel.Core.Security;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
 
@@ -15,7 +16,7 @@ namespace Parallel.Cli.Commands
     public class EncryptCommand : Command
     {
         private readonly Argument<string> _sourceArg = new("path", "The source path to encrypt.");
-        private readonly Option<string> _configOpt = new(["--config", "-c"], "The profile configuration to use.");
+        private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
         private IDatabase? _database;
         private Stopwatch _sw = new Stopwatch();
@@ -28,15 +29,15 @@ namespace Parallel.Cli.Commands
             this.SetHandler(async (path, config) =>
             {
                 _sw = Stopwatch.StartNew();
-                ProfileConfig? profile = ProfileConfig.Load(Program.Settings, config);
-                if (profile == null)
+                VaultConfig? vault = VaultConfig.Load(Program.Settings, config);
+                if (vault == null)
                 {
-                    CommandLine.WriteLine("No active profile was found!", ConsoleColor.Yellow);
+                    CommandLine.WriteLine("No active vault was found!", ConsoleColor.Yellow);
                     return;
                 }
 
-                _database = DatabaseConnection.CreateNew(profile);
-                string masterKey = profile.FileSystem.EncryptionKey ?? throw new ArgumentException("No encryption key provided!");
+                _database = DatabaseConnection.CreateNew(vault);
+                string masterKey = vault.FileSystem.EncryptionKey ?? throw new ArgumentException("No encryption key provided!");
                 if (PathBuilder.IsDirectory(path))
                 {
                     await EncryptDirectoryAsync(path, masterKey);
@@ -59,7 +60,7 @@ namespace Parallel.Cli.Commands
         private async Task EncryptDirectoryAsync(string path, string masterKey)
         {
             CommandLine.WriteLine($"Scanning for files in {path}...", ConsoleColor.DarkGray);
-            string[] files = Directory.EnumerateFiles(path, $"*", SearchOption.AllDirectories).Where(f => !f.EndsWith(".gz")).ToArray();
+            string[] files = Directory.EnumerateFiles(path, $"*", SearchOption.AllDirectories).ToArray();
             if (files.Length == 0)
             {
                 CommandLine.WriteLine("No files found to encrypt!", ConsoleColor.Yellow);
@@ -87,8 +88,8 @@ namespace Parallel.Cli.Commands
                 await using (FileStream openFile = new FileStream(systemFile.LocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 await using (FileStream createFile = new FileStream(tempFile, FileMode.OpenOrCreate))
                 {
-                    systemFile.Salt = HashGenerator.RandomBytes(16);
-                    systemFile.IV = HashGenerator.RandomBytes(16);
+                    systemFile.Salt = HashGenerator.GenerateHash(16);
+                    systemFile.IV = HashGenerator.GenerateHash(16);
                     systemFile.Encrypted = true;
 
                     Encryption.EncryptStream(openFile, createFile, masterKey, systemFile.LastWrite, systemFile.Salt, systemFile.IV);

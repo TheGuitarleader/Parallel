@@ -4,27 +4,31 @@ using System.CommandLine;
 using Parallel.Cli.Utils;
 using Parallel.Core.Database;
 using Parallel.Core.IO.FileSystem;
+using Parallel.Core.Security;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
 
 namespace Parallel.Cli.Commands
 {
-    public class ConfigCommand : Command
+    public class VaultsCommand : Command
     {
-        private Option<string> configOpt = new(["--config", "-c"], "The profile configuration to use.");
+        private Option<string> configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
-        private Command addCmd = new("add", "Adds a new profile configuration.");
-        private Command editCmd = new("edit", "Edits a profile configuration.");
-        private Command viewCmd = new("view", "Shows the profile configuration.");
-        private Command setCmd = new("set", "Sets a new profile configuration.");
-        private Command delCmd = new("delete", "Deletes a profile configuration.");
+        private Command addCmd = new("add", "Adds a new vault configuration.");
+        private Command editCmd = new("edit", "Edits a vault configuration.");
+        private Command viewCmd = new("view", "Shows the vault configuration.");
+        private Command setCmd = new("set", "Sets a new vault configuration.");
+        private Command delCmd = new("delete", "Deletes a vault configuration.");
 
-        public ConfigCommand() : base("config", "View or edit the profile configurations.")
+        public VaultsCommand() : base("vaults", "View or edit the vaults.")
         {
             this.SetHandler(() =>
             {
-                //ProfileConfig profile = ProfileConfig.Load();
-                CommandLine.WriteLine($"Current profile: '{Program.Settings.Profiles.FirstOrDefault()}'");
+                CommandLine.WriteLine("Active vaults:");
+                Program.Settings.ForEachVault(vault =>
+                {
+                    CommandLine.WriteLine(vault.Name);
+                });
             });
 
             this.AddCommand(addCmd);
@@ -69,11 +73,11 @@ namespace Parallel.Cli.Commands
                 fsc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
                 fsc.EncryptionKey = HashGenerator.GenerateHash(32, true);
 
-                string profileName = CommandLine.ReadString("Profile Name");
-                ProfileConfig profile = new ProfileConfig(profileName, dbc, fsc);
-                profile.SaveToFile();
+                string? profileName = CommandLine.ReadString("Profile Name");
+                VaultConfig vault = new VaultConfig(profileName, dbc, fsc);
+                vault.SaveToFile();
 
-                CommandLine.WriteLine($"Saved new connection profile: '{profile.Name}'");
+                CommandLine.WriteLine($"Saved new connection vault: '{vault.Name}'");
             });
 
             this.AddCommand(setCmd);

@@ -7,7 +7,7 @@ namespace Parallel.Core.Diagnostics
     /// <summary>
     /// Represents a basic progress report debugger.
     /// </summary>
-    public class ProgressDebug : IProgressReporter
+    public class ProgressLogger : IProgressReporter
     {
         private ProgressOperation currentOperation;
         private int progressPercentage;

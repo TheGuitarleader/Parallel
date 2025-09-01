@@ -2,8 +2,11 @@
 
 using System.Data;
 using System.Diagnostics;
+using System.Text;
+using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.IO.Backup;
+using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
@@ -16,19 +19,19 @@ namespace Parallel.Core.IO.Scanning
     /// </summary>
     public class FileScanner
     {
-        private readonly ProfileConfig _profile;
+        private readonly VaultConfig _vault;
         private readonly IDatabase _db;
 
-        public FileScanner(ProfileConfig profile, IDatabase database)
+        public FileScanner(VaultConfig vault, IDatabase database)
         {
-            _profile = profile;
+            _vault = vault;
             _db = database;
         }
 
-        public FileScanner(IBackupManager backup)
+        public FileScanner(ISyncManager sync)
         {
-            _profile = backup.Profile;
-            _db = backup.Database;
+            _vault = sync.Vault;
+            _db = sync.Database;
         }
 
         /*/// <summary>
@@ -58,76 +61,62 @@ namespace Parallel.Core.IO.Scanning
         {
             if (!Directory.Exists(path)) return Array.Empty<SystemFile>();
 
-            List<SystemFile> scannedFiles = new();
-            List<string> localFiles = FileScanner.GetFiles(path, ".", ignoreFolders).ToList();
-            List<SystemFile> remoteFiles = (await _db.GetFilesAsync(path, false)).ToList();
-            Stopwatch sw = Stopwatch.StartNew();
-
-            foreach (SystemFile rsf in remoteFiles.ToArray())
+            List<SystemFile> scannedFiles = new List<SystemFile>();
+            HashSet<string> localFiles = FileScanner.GetFiles(path, ".", ignoreFolders).ToHashSet();
+            IEnumerable<SystemFile> remoteFiles = await _db.GetFilesAsync(path, false);
+            foreach (SystemFile remoteFile in remoteFiles)
             {
-                // Checks if the local file has a valid path and is part of a backup folder.
-                if (rsf.LocalPath != null && rsf.LocalPath.Contains(path))
+                if (File.Exists(remoteFile.LocalPath) && remoteFile.RemotePath != null)
                 {
-                    // Checks if a LocalFile exists on the current file system.
-                    if (File.Exists(rsf.LocalPath) && rsf.RemotePath != null)
+                    SystemFile localFile = new SystemFile(remoteFile.LocalPath);
+                    if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
-                        SystemFile lfi = new(rsf.LocalPath);
-                        if (IsIgnored(lfi.LocalPath, ignoreFolders))
-                        {
-                            Log.Debug($"Is ignored -> {lfi.LocalPath}");
-
-                            lfi.Deleted = true;
-                            scannedFiles.Add(lfi);
-                        }
-
-                        if (rsf.LastWrite.TotalMilliseconds < lfi.LastWrite.TotalMilliseconds)
-                        {
-                            Log.Debug($"Changed -> {lfi.LocalPath}");
-
-                            // Changed file
-                            rsf.Deleted = false;
-                            scannedFiles.Add(lfi);
-                        }
-
-                        localFiles.Remove(lfi.LocalPath);
+                        Log.Debug($"Ignored -> {localFile.LocalPath}");
+                        localFile.Deleted = true;
+                        scannedFiles.Add(localFile);
                     }
-                    else
+                    else if (HasChanged(localFile, remoteFile))
                     {
-                        // Adds deleted files
-                        Log.Debug($"Deleted -> {rsf.LocalPath}");
-
-                        rsf.Deleted = true;
-                        scannedFiles.Add(rsf);
+                        Log.Debug($"Changed -> {localFile.LocalPath}");
+                        scannedFiles.Add(localFile);
                     }
+
+                    localFiles.Remove(localFile.LocalPath);
                 }
                 else
                 {
-                    // Deletes ignored files
-                    Log.Debug($"No contains Ignored -> {rsf.LocalPath}");
-
-                    rsf.Deleted = true;
-                    scannedFiles.Add(rsf);
+                    Log.Debug($"Deleted -> {remoteFile.LocalPath}");
+                    remoteFile.Deleted = true;
+                    scannedFiles.Add(remoteFile);
                 }
             }
 
             Log.Debug($"{localFiles.Count} files are untracked! Adding...");
-            if (localFiles.Count > 0)
+            foreach (var file in localFiles)
             {
-                foreach (string file in localFiles.ToArray())
+                if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
                 {
-                    if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
-                    {
-                        Log.Debug($"Created -> {file}");
-                        scannedFiles.Add(new SystemFile(file));
-                        localFiles.Remove(file);
-                    }
+                    Log.Debug($"Created -> {file}");
+                    scannedFiles.Add(new SystemFile(file));
                 }
             }
 
             Log.Debug($"{localFiles.Count} files remaining.");
-            Log.Information($"Found {localFiles.Count.ToString("N0")} files in '{path}'. ({sw.ElapsedMilliseconds}ms)");
+            Log.Information($"Found {scannedFiles.Count:N0} changes in '{path}'");
             return scannedFiles.ToArray();
         }
+
+        /// <summary>
+        /// Gets if a file has changed.
+        /// </summary>
+        /// <param name="localFile">The base file to compare.</param>
+        /// <param name="remoteFile">The remote file to compare to.</param>
+        /// <returns>True is success, otherwise false.</returns>
+        public static bool HasChanged(SystemFile localFile, SystemFile? remoteFile)
+        {
+            return remoteFile == null || (localFile.LastWrite.TotalMilliseconds > remoteFile.LastWrite.TotalMilliseconds && !localFile.CheckSum.SequenceEqual(remoteFile.CheckSum));
+        }
+
 
         /// <summary>
         /// Gets the total size, in bytes, of a directory.
@@ -225,7 +214,7 @@ namespace Parallel.Core.IO.Scanning
 
         public static IEnumerable<string> GetFiles(string root, string searchPattern)
         {
-            return GetFiles(root, searchPattern, Array.Empty<string>());
+            return GetFiles(root, searchPattern, []);
         }
 
         public static IEnumerable<string> GetFiles(string root, string searchPattern, string[] exempt)
@@ -235,7 +224,7 @@ namespace Parallel.Core.IO.Scanning
             while (pending.Count != 0)
             {
                 string path = pending.Pop();
-                IEnumerable<string> next = null;
+                IEnumerable<string>? next = null;
                 try
                 {
                     if (!IsIgnored(path, exempt))
