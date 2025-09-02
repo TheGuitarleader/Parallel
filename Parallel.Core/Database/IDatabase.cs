@@ -49,11 +49,6 @@ namespace Parallel.Core.Database
     /// </summary>
     public interface IDatabase
     {
-        /// <summary>
-        /// The identifier to the vault for this database.
-        /// </summary>
-        string ProfileId { get; }
-
         #region Base
 
         /// <summary>
