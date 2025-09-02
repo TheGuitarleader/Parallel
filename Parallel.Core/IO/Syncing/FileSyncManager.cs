@@ -16,14 +16,14 @@ namespace Parallel.Core.IO.Backup
     /// </summary>
     public class FileSyncManager : BaseSyncManager
     {
-        private List<Task> _tasks = new List<Task>();
-        private int _totalFiles;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSyncManager"/> class.
         /// </summary>
-        /// <param name="vault"></param>
-        public FileSyncManager(VaultConfig vault) : base(vault) { }
+        /// <param name="localVault"></param>
+        public FileSyncManager(LocalVaultConfig localVault) : base(localVault)
+        {
+
+        }
 
         /// <inheritdoc/>
         public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
@@ -32,8 +32,12 @@ namespace Parallel.Core.IO.Backup
             SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();
             Log.Information($"Backing up {backupFiles.Length} files...");
             await FileSystem.UploadFilesAsync(backupFiles, progress);
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount / 2 }, async (file, ct) =>
+            {
 
-            Console.WriteLine($"Successfully pushed {backupFiles.Length} files.", ConsoleColor.Green);
+            });
+
+
             for (int i = 0; i < files.Length; i++)
             {
                 SystemFile file = files.ElementAt(i);
@@ -64,13 +68,6 @@ namespace Parallel.Core.IO.Backup
 
             if (!restoreFiles.Any()) return;
             await FileSystem.DownloadFilesAsync(restoreFiles, progress);
-
-            for (int i = 0; i < files.Length; i++)
-            {
-                SystemFile file = files[i];
-                Log.Information($"Restoring file: {file.LocalPath}...");
-                file.RemotePath = PathBuilder.Remote(file.LocalPath, Vault);
-            }
         }
     }
 }

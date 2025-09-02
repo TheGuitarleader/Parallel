@@ -42,7 +42,7 @@ namespace Parallel.Cli.Commands
             this.SetHandler((path, config, limit) =>
             {
                 CommandLine.WriteLine($"Retrieving backup information...", ConsoleColor.DarkGray);
-                IDatabase? db = DatabaseConnection.CreateNew(VaultConfig.Load(Program.Settings, config));
+                IDatabase? db = DatabaseConnection.CreateNew(RemoteVaultConfig.Load(Program.Settings, config));
 
                 if (limit == 0) limit = Limit;
                 DisplayHistories(db?.GetHistory(path, limit).ToArray());
@@ -54,7 +54,7 @@ namespace Parallel.Cli.Commands
             _pushCmd.SetHandler((path, config, limit) =>
             {
                 CommandLine.WriteLine($"Retrieving backup information...", ConsoleColor.DarkGray);
-                IDatabase? db = DatabaseConnection.CreateNew(VaultConfig.Load(Program.Settings, config));
+                IDatabase? db = DatabaseConnection.CreateNew(RemoteVaultConfig.Load(Program.Settings, config));
 
                 if (limit == 0) limit = Limit;
                 DisplayHistories(db?.GetHistory(path, HistoryType.Pushed, limit).ToArray());
@@ -66,7 +66,7 @@ namespace Parallel.Cli.Commands
             _deleteCmd.SetHandler((path, config, limit) =>
             {
                 CommandLine.WriteLine($"Retrieving archive information...", ConsoleColor.DarkGray);
-                IDatabase? db = DatabaseConnection.CreateNew(VaultConfig.Load(Program.Settings, config));
+                IDatabase? db = DatabaseConnection.CreateNew(RemoteVaultConfig.Load(Program.Settings, config));
 
                 if (limit == 0) limit = Limit;
                 DisplayHistories(db?.GetHistory(path, HistoryType.Archived, limit).ToArray());
@@ -78,7 +78,7 @@ namespace Parallel.Cli.Commands
             _cleanCmd.SetHandler((path, config, limit) =>
             {
                 CommandLine.WriteLine($"Retrieving clean information...", ConsoleColor.DarkGray);
-                IDatabase? db = DatabaseConnection.CreateNew(VaultConfig.Load(Program.Settings, config));
+                IDatabase? db = DatabaseConnection.CreateNew(RemoteVaultConfig.Load(Program.Settings, config));
 
                 if (limit == 0) limit = Limit;
                 DisplayHistories(db?.GetHistory(path, HistoryType.Cleaned, limit).ToArray());
@@ -90,7 +90,7 @@ namespace Parallel.Cli.Commands
             _cloneCmd.SetHandler((path, config, limit) =>
             {
                 CommandLine.WriteLine($"Retrieving clone information...", ConsoleColor.DarkGray);
-                IDatabase db = DatabaseConnection.CreateNew(VaultConfig.Load(Program.Settings, config));
+                IDatabase db = DatabaseConnection.CreateNew(RemoteVaultConfig.Load(Program.Settings, config));
 
                 if (limit == 0) limit = Limit;
                 DisplayHistories(db?.GetHistory(path, HistoryType.Cloned, limit).ToArray());
@@ -102,7 +102,7 @@ namespace Parallel.Cli.Commands
             _pruneCmd.SetHandler((path, config, limit) =>
             {
                 CommandLine.WriteLine($"Retrieving prune information...", ConsoleColor.DarkGray);
-                IDatabase db = DatabaseConnection.CreateNew(VaultConfig.Load(Program.Settings, config));
+                IDatabase db = DatabaseConnection.CreateNew(RemoteVaultConfig.Load(Program.Settings, config));
 
                 if (limit == 0) limit = Limit;
                 DisplayHistories(db?.GetHistory(path, HistoryType.Pruned, limit).ToArray());
@@ -114,7 +114,7 @@ namespace Parallel.Cli.Commands
             _pullCmd.SetHandler((path, config, limit) =>
             {
                 CommandLine.WriteLine($"Retrieving restore information...", ConsoleColor.DarkGray);
-                IDatabase db = DatabaseConnection.CreateNew(VaultConfig.Load(Program.Settings, config));
+                IDatabase db = DatabaseConnection.CreateNew(RemoteVaultConfig.Load(Program.Settings, config));
 
                 if (limit == 0) limit = Limit;
                 DisplayHistories(db?.GetHistory(path, HistoryType.Pulled, limit).ToArray());

@@ -12,30 +12,10 @@ using Parallel.Core.Utils;
 namespace Parallel.Core.Settings
 {
     /// <summary>
-    /// Represents a back-up connection.
+    /// Represents the configuration for the vault.
     /// </summary>
-    public class VaultConfig
+    public class RemoteVaultConfig : LocalVaultConfig
     {
-        /// <summary>
-        /// A unique hash used to identify the vault.
-        /// </summary>
-        public string Id { get; } = HashGenerator.GenerateHash(12, true);
-
-        /// <summary>
-        /// The name of the vault.
-        /// </summary>
-        public string Name { get; set; } = "Default";
-
-        /// <summary>
-        /// The credentials needed to log in to the associated <see cref="IDatabase"/>.
-        /// </summary>
-        public DatabaseCredentials Database { get; }
-
-        /// <summary>
-        /// The credentials needed to log in to the associated <see cref="IFileSystem"/>.
-        /// </summary>
-        public FileSystemCredentials FileSystem { get; }
-
         /// <summary>
         /// The amount of time, in minutes, between backup cycles.
         /// <para>Default: 60 minutes</para>
@@ -78,84 +58,11 @@ namespace Parallel.Core.Settings
         /// <para>Recommended when using a cloud-based <see cref="FileService"/> to save on storage costs.</para>
         /// <para>Default: Empty</para>
         /// </summary>
-        public HashSet<string> PruneDirectories { get; } = new HashSet<string>();
+        public HashSet<string> PruneDirectories { get; } = [];
 
+        public RemoteVaultConfig(LocalVaultConfig localVault) : base(localVault.Id, localVault.Name, localVault.FileSystem) { }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="VaultConfig"/> class.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="name"></param>
-        /// <param name="database"></param>
-        /// <param name="fileSystem"></param>
-        [JsonConstructor]
-        public VaultConfig(string id, string name, DatabaseCredentials database, FileSystemCredentials fileSystem)
-        {
-            Id = id;
-            Name = name;
-            Database = database;
-            FileSystem = fileSystem;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="VaultConfig"/> class.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="database"></param>
-        /// <param name="fileSystem"></param>
-        public VaultConfig(string name, DatabaseCredentials database, FileSystemCredentials fileSystem)
-        {
-            Id = HashGenerator.GenerateHash(12, true);
-            Name = name;
-            Database = database;
-            FileSystem = fileSystem;
-        }
-
-        /// <summary>
-        /// Loads settings from a file.
-        /// </summary>
-        public static VaultConfig? Load(string path)
-        {
-            if (!File.Exists(path)) return null;
-            string json = File.ReadAllText(path);
-            return JsonConvert.DeserializeObject<VaultConfig>(json);
-        }
-
-        /// <summary>
-        /// Loads credentials from the app configuration.
-        /// </summary>
-        /// <returns>A <see cref="VaultConfig"/> instance.</returns>
-        public static VaultConfig? Load(ParallelSettings settings, string name)
-        {
-            VaultConfig? vault = Load(settings.Vaults.First());
-            return string.IsNullOrEmpty(name) ? vault : Load(Path.Combine(ParallelSettings.VaultsDir, name + ".json"));
-        }
-
-        /// <summary>
-        /// Saves credentials to a file.
-        /// </summary>
-        /// <param name="vault">The current vault to save.</param>
-        public static void Save(VaultConfig vault)
-        {
-            if (!Directory.Exists(ParallelSettings.VaultsDir)) Directory.CreateDirectory(ParallelSettings.VaultsDir);
-            string path = Path.Combine(ParallelSettings.VaultsDir, vault.Name + ".json");
-            Log.Debug($"Saving vault file: {path}");
-            if (!File.Exists(path))
-            {
-                Log.Debug("Creating file -> " + path);
-                File.Create(path).Close();
-            }
-
-            File.WriteAllText(path, JsonConvert.SerializeObject(vault, Formatting.Indented));
-        }
-
-        /// <summary>
-        /// Saves the current instance to a file.
-        /// </summary>
-        public void SaveToFile()
-        {
-            Save(this);
-        }
+        public RemoteVaultConfig(string profileName, FileSystemCredentials fsc) : base(profileName, fsc) { }
 
         #region Privates
 

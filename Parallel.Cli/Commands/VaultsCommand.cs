@@ -25,31 +25,17 @@ namespace Parallel.Cli.Commands
             this.SetHandler(() =>
             {
                 CommandLine.WriteLine("Active vaults:");
-                Program.Settings.ForEachVault(vault =>
+                for (int i = 0; i < Program.Settings.Vaults.Count; i++)
                 {
-                    CommandLine.WriteLine(vault.Name);
-                });
+                    LocalVaultConfig vault = Program.Settings.Vaults.ElementAt(i);
+                    CommandLine.WriteLine($"{i + 1}: {vault.Name} ({vault.Id})");
+                }
             });
 
             this.AddCommand(addCmd);
             addCmd.SetHandler(() =>
             {
-                CommandLine.WriteLine("Creating new database credentials...", ConsoleColor.DarkGray);
-                DatabaseCredentials dbc = new DatabaseCredentials();
-                dbc.Provider = Enum.Parse<DatabaseProvider>(CommandLine.ReadString($"Provider ({string.Join(", ", Enum.GetNames(typeof(DatabaseProvider)))})"), true);
-                if (dbc.Provider == DatabaseProvider.Local)
-                {
-                    dbc = DatabaseCredentials.Local;
-                }
-                else
-                {
-                    dbc.Address = CommandLine.ReadString("Address");
-                    dbc.Username = CommandLine.ReadString("Username");
-                    dbc.Password = CommandLine.ReadPassword("Password");
-                    dbc.Name = CommandLine.ReadString("Name");
-                }
-
-                CommandLine.WriteLine("Creating new file system credentials...", ConsoleColor.DarkGray);
+                CommandLine.WriteLine("Creating new storage vault...", ConsoleColor.DarkGray);
                 FileSystemCredentials fsc = new FileSystemCredentials();
                 fsc.Service = Enum.Parse<FileService>(CommandLine.ReadString($"Service ({string.Join(", ", Enum.GetNames(typeof(FileService)))})"), true);
                 if (fsc.Service == FileService.Local)
@@ -74,10 +60,11 @@ namespace Parallel.Cli.Commands
                 fsc.EncryptionKey = HashGenerator.GenerateHash(32, true);
 
                 string? profileName = CommandLine.ReadString("Profile Name");
-                VaultConfig vault = new VaultConfig(profileName, dbc, fsc);
-                vault.SaveToFile();
+                LocalVaultConfig localVault = new LocalVaultConfig(profileName, fsc);
+                Program.Settings.Vaults.Add(localVault);
+                Program.Settings.Save();
 
-                CommandLine.WriteLine($"Saved new connection vault: '{vault.Name}'");
+                CommandLine.WriteLine($"Saved new storage vault: '{localVault.Name}' ({localVault.Id})");
             });
 
             this.AddCommand(setCmd);

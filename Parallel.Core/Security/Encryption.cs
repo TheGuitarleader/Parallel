@@ -2,10 +2,9 @@
 
 using System.Security.Cryptography;
 using System.Text;
-using Parallel.Core.Models;
-using Parallel.Core.Security;
+using Parallel.Core.Utils;
 
-namespace Parallel.Core.Utils
+namespace Parallel.Core.Security
 {
     /// <summary>
     /// Provides functionality for encryption. This class cannot be inherited.

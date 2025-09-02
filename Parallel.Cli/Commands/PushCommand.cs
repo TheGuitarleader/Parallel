@@ -47,10 +47,10 @@ namespace Parallel.Cli.Commands
 
         private async Task SyncPathAsync(string path)
         {
-            await ParallelSettings.ForEachVaultAsync(async vault =>
+            await ParallelConfig.ForEachVaultAsync(async vault =>
             {
                 ISyncManager sync = SyncManager.CreateNew(vault);
-                if (!sync.Initialize())
+                if (!await sync.InitializeAsync())
                 {
                     CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);
                     return;
@@ -87,7 +87,9 @@ namespace Parallel.Cli.Commands
 
                 CommandLine.WriteLine(vault, $"Backing up {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
                 await sync.PushFilesAsync(files, new ProgressReport(vault));
+
                 CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files to '{vault.FileSystem.Address}'.", ConsoleColor.Green);
+                await sync.DisconnectAsync();
             });
         }
     }

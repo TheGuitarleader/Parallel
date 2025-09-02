@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using System.Data;
 using System.Diagnostics;
 using Dapper;
+using Parallel.Core.IO;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
@@ -21,10 +22,9 @@ namespace Parallel.Core.Database
         /// </summary>
         /// <param name="credentials"></param>
         /// <param name="profileId"></param>
-        public SqliteContext(DatabaseCredentials credentials, string profileId)
+        public SqliteContext(LocalVaultConfig localVault)
         {
-            FilePath = credentials.Address;
-            ProfileId = profileId;
+            FilePath = PathBuilder.GetDatabaseFile(localVault);
         }
 
         #region Base
@@ -38,13 +38,13 @@ namespace Parallel.Core.Database
         /// <inheritdoc />
         public async Task InitializeAsync()
         {
-            Log.Information("Creating local database...");
+            Log.Information("Creating index database...");
             File.Create(FilePath).Close();
             File.SetAttributes(FilePath, File.GetAttributes(FilePath) | FileAttributes.Hidden);
 
             using IDbConnection connection = CreateConnection();
-            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`vault` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `encrypted` INTEGER NOT NULL DEFAULT 0, `salt` TEXT, `iv` TEXT, `checksum` TEXT, PRIMARY KEY(`vault`, `id`));");
-            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`vault` TEXT NOT NULL, `timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`vault`, `timestamp`));");
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, PRIMARY KEY(`id`));");
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
         }
 
         #endregion

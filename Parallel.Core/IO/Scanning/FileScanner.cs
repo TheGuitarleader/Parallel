@@ -19,18 +19,15 @@ namespace Parallel.Core.IO.Scanning
     /// </summary>
     public class FileScanner
     {
-        private readonly VaultConfig _vault;
         private readonly IDatabase _db;
 
-        public FileScanner(VaultConfig vault, IDatabase database)
+        public FileScanner(IDatabase database)
         {
-            _vault = vault;
             _db = database;
         }
 
         public FileScanner(ISyncManager sync)
         {
-            _vault = sync.Vault;
             _db = sync.Database;
         }
 
