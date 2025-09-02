@@ -60,9 +60,22 @@ namespace Parallel.Core.Settings
         /// </summary>
         public HashSet<string> PruneDirectories { get; } = [];
 
+
         public RemoteVaultConfig(LocalVaultConfig localVault) : base(localVault.Id, localVault.Name, localVault.FileSystem) { }
 
         public RemoteVaultConfig(string profileName, FileSystemCredentials fsc) : base(profileName, fsc) { }
+
+        [JsonConstructor]
+        public RemoteVaultConfig(string id, string name, FileSystemCredentials fileSystem, int backupInterval, int retentionPeriod, int prunePeriod, IEnumerable<string> backupDirectories, IEnumerable<string> ignoreDirectories, IEnumerable<string> cleanDirectories, IEnumerable<string> pruneDirectories) : base(id, name, fileSystem)
+        {
+            BackupInterval = backupInterval;
+            RetentionPeriod = retentionPeriod;
+            PrunePeriod = prunePeriod;
+            BackupDirectories = new HashSet<string>(backupDirectories);
+            IgnoreDirectories = new HashSet<string>(ignoreDirectories);
+            CleanDirectories = new HashSet<string>(cleanDirectories);
+            PruneDirectories = new HashSet<string>(pruneDirectories);
+        }
 
         #region Privates
 
@@ -116,5 +129,18 @@ namespace Parallel.Core.Settings
         }
 
         #endregion
+
+        /// <summary>
+        /// Loads settings from a file.
+        /// </summary>
+        public new static RemoteVaultConfig? Load(string path)
+        {
+            return !File.Exists(path) ? null : JsonConvert.DeserializeObject<RemoteVaultConfig>(File.ReadAllText(path));
+        }
+
+        public void Save(string path)
+        {
+            File.WriteAllText(path, JsonConvert.SerializeObject(this, Formatting.Indented));
+        }
     }
 }

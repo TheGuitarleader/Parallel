@@ -11,7 +11,7 @@ namespace Parallel.Core.IO.Syncing
     /// <summary>
     /// Defines the methods needed for backing up a file system.
     /// </summary>
-    public interface ISyncManager : IDisposable
+    public interface ISyncManager
     {
         /// <summary>
         /// Gets the local vault configuration.
@@ -34,9 +34,14 @@ namespace Parallel.Core.IO.Syncing
         IFileSystem FileSystem { get; set; }
 
         /// <summary>
-        /// Initializes the associated <see cref="IFileSystem"/> and downloads the needed files.
+        /// Establishes a connection to the associated <see cref="IFileSystem"/> and downloads the needed files.
         /// </summary>
-        Task<bool> InitializeAsync();
+        Task<bool> ConnectAsync();
+
+        /// <summary>
+        /// Closes the current connection and releases its resources.
+        /// </summary>
+        Task DisconnectAsync();
 
         /// <summary>
         /// Pushes an array of files to a vault.

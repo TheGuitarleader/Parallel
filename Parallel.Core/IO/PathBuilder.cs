@@ -22,6 +22,7 @@ namespace Parallel.Core.IO
             get
             {
                 string tempFolder = Path.Combine(Path.GetTempPath(), "Parallel");
+                Log.Debug($"Temp directory: {tempFolder}");
                 if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
                 return tempFolder;
             }
@@ -127,7 +128,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetConfigurationFile(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "config.json");
+            return Combine(GetRootDirectory(localVault), "config.json.gz");
         }
 
         /// <summary>
@@ -137,7 +138,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetDatabaseFile(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "index.db");
+            return Combine(GetRootDirectory(localVault), "index.db.gz");
         }
 
         /// <summary>

@@ -47,10 +47,10 @@ namespace Parallel.Cli.Commands
 
         private async Task SyncPathAsync(string path)
         {
-            await ParallelConfig.ForEachVaultAsync(async vault =>
+            await Program.Settings.ForEachVaultAsync(async vault =>
             {
-                ISyncManager sync = SyncManager.CreateNew(vault);
-                if (!await sync.InitializeAsync())
+                FileSyncManager syncManager = new FileSyncManager(vault);
+                if (!await syncManager.ConnectAsync())
                 {
                     CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);
                     return;
@@ -58,8 +58,8 @@ namespace Parallel.Cli.Commands
 
                 // Normalize paths for safe comparison
                 string fullPath = Path.GetFullPath(path);
-                string[] backupFolders = vault.BackupDirectories.ToArray();
-                string[] ignoredFolders = vault.IgnoreDirectories.ToArray();
+                string[] backupFolders = syncManager.RemoteVault.BackupDirectories.ToArray();
+                string[] ignoredFolders = syncManager.RemoteVault.IgnoreDirectories.ToArray();
 
                 bool isFile = PathBuilder.IsFile(fullPath);
                 if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)))
@@ -75,8 +75,7 @@ namespace Parallel.Cli.Commands
                 }
 
                 CommandLine.WriteLine(vault, $"Scanning for file changes in {path}...", ConsoleColor.DarkGray);
-
-                FileScanner scanner = new FileScanner(sync);
+                FileScanner scanner = new FileScanner(syncManager);
                 SystemFile[] files = await scanner.GetFileChangesAsync(path, ignoredFolders);
                 int successFiles = files.Length;
                 if (successFiles == 0)
@@ -86,10 +85,10 @@ namespace Parallel.Cli.Commands
                 }
 
                 CommandLine.WriteLine(vault, $"Backing up {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
-                await sync.PushFilesAsync(files, new ProgressReport(vault));
+                await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles));
+                await syncManager.DisconnectAsync();
 
                 CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files to '{vault.FileSystem.Address}'.", ConsoleColor.Green);
-                await sync.DisconnectAsync();
             });
         }
     }

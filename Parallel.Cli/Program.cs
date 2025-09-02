@@ -14,7 +14,10 @@ namespace Parallel.Cli
         public static async Task Main(string[] args)
         {
             Settings = ParallelConfig.Load();
-            string logFile = Path.Combine(PathBuilder.ProgramData, "Logs", $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log");
+            //string logFile = Path.Combine(PathBuilder.ProgramData, "Logs", $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log");
+
+            string logFile = Path.Combine(PathBuilder.ProgramData, "Logs", "latest.txt");
+            if (File.Exists(logFile)) File.Delete(logFile);
             Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.File(logFile).CreateLogger();
 
             AssemblyName assembly = Assembly.GetExecutingAssembly().GetName();

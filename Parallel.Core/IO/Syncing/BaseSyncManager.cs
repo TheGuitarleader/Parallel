@@ -40,36 +40,10 @@ namespace Parallel.Core.IO.Syncing
         }
 
         /// <inheritdoc />
-        public void Dispose()
-        {
-            FileSystem.Dispose();
-        }
-
-        /// <inheritdoc />
         public async Task<bool> InitializeAsync()
         {
             try
             {
-                string root = PathBuilder.GetRootDirectory(LocalVault);
-                if (!await FileSystem.ExistsAsync(root))
-                {
-                    // Creates the root directory and default configuration.
-                    await FileSystem.CreateDirectoryAsync(root);
-                    RemoteVault = new RemoteVaultConfig(LocalVault);
-                }
-                else
-                {
-                    SystemFile[] files =
-                    [
-                        new SystemFile(TempConfigFile) { RemotePath = PathBuilder.GetConfigurationFile(LocalVault) },
-                        new SystemFile(TempDbFile) { RemotePath = PathBuilder.GetDatabaseFile(LocalVault) },
-                    ];
-
-                    await FileSystem.DownloadFilesAsync(files, new ProgressLogger());
-                }
-
-                Database = new SqliteContext(LocalVault);
-                RemoteVault.IgnoreDirectories.Add(PathBuilder.GetRootDirectory(LocalVault));
                 return true;
             }
             catch (Exception ex)
@@ -79,11 +53,48 @@ namespace Parallel.Core.IO.Syncing
             }
         }
 
+        public async Task<bool> ConnectAsync()
+        {
+            string root = PathBuilder.GetRootDirectory(LocalVault);
+            if (!await FileSystem.ExistsAsync(root))
+            {
+                await FileSystem.CreateDirectoryAsync(root);
+                Log.Debug($"Created root directory: {root}");
+            }
+
+            if (!await FileSystem.ExistsAsync(PathBuilder.GetConfigurationFile(LocalVault)))
+            {
+                RemoteVault = new RemoteVaultConfig(LocalVault);
+                RemoteVault.IgnoreDirectories.Add(PathBuilder.GetRootDirectory(LocalVault));
+                RemoteVault.Save(TempConfigFile);
+
+                Log.Debug($"Created config file: {TempConfigFile}");
+            }
+            else
+            {
+                await FileSystem.DownloadFilesAsync([new SystemFile { LocalPath = TempConfigFile, RemotePath = PathBuilder.GetConfigurationFile(LocalVault) }], new ProgressLogger());
+                RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
+                if(config == null) return false;
+                RemoteVault = config;
+            }
+
+            if (!await FileSystem.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
+            {
+                Database = new SqliteContext(TempDbFile);
+                await Database.InitializeAsync();
+            }
+            else
+            {
+                await FileSystem.DownloadFilesAsync([new SystemFile { LocalPath = TempDbFile, RemotePath = PathBuilder.GetDatabaseFile(LocalVault) }], new ProgressLogger());
+                Database = new SqliteContext(TempDbFile);
+            }
+
+            return true;
+        }
+
         /// <inheritdoc />
         public Task DisconnectAsync()
         {
-            string configFile = PathBuilder.GetConfigurationFile(LocalVault);
-
             FileSystem.Dispose();
             return Task.CompletedTask;
         }

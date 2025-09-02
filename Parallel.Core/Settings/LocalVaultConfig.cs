@@ -40,7 +40,7 @@ namespace Parallel.Core.Settings
 
         public LocalVaultConfig(string name, FileSystemCredentials fileSystem)
         {
-            Id = HashGenerator.GenerateHash(12, true);
+            Id = HashGenerator.GenerateHash(8, true);
             Name = name;
             FileSystem = fileSystem;
         }

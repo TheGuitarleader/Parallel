@@ -156,6 +156,8 @@ namespace Parallel.Core.Models
             CheckSum = checksum;
         }
 
+        public SystemFile() { }
+
         /// <summary>
         /// Determines if this instance and another <see cref="SystemFile"/> have the same values.
         /// </summary>

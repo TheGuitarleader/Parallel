@@ -16,6 +16,9 @@ namespace Parallel.Core.IO.Backup
     /// </summary>
     public class FileSyncManager : BaseSyncManager
     {
+        protected string[] BackupDirectories => RemoteVault.BackupDirectories.ToArray();
+        protected string[] IgnoreDirectories => RemoteVault.IgnoreDirectories.ToArray();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSyncManager"/> class.
         /// </summary>

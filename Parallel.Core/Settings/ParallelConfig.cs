@@ -21,6 +21,11 @@ namespace Parallel.Core.Settings
         /// </summary>
         public static string VaultsDir { get; } = Path.Combine(PathBuilder.ProgramData, "Vaults");
 
+        public static ParallelOptions Options { get; } = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = Load().MaxConcurrentProcesses
+        };
+
         // /// <summary>
         // /// The address that will accept incoming commands.
         // /// <para>Default: 127.0.0.1</para>
@@ -43,7 +48,7 @@ namespace Parallel.Core.Settings
         /// Gets or sets the maximum number of concurrent processes that can run.
         /// <para>Default: Half the processor count.</para>
         /// </summary>
-        public int MaxConcurrentProcesses { get; set; } = Environment.ProcessorCount / 2;
+        public int MaxConcurrentProcesses { get; set; } = Math.Clamp(Environment.ProcessorCount / 2, 1, Environment.ProcessorCount);
 
         /// <summary>
         /// The profiles to use.
