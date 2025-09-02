@@ -19,16 +19,13 @@ namespace Parallel.Core.IO.Scanning
     /// </summary>
     public class FileScanner
     {
+        private readonly RemoteVaultConfig _config;
         private readonly IDatabase _db;
 
-        public FileScanner(IDatabase database)
+        public FileScanner(ISyncManager syncManager)
         {
-            _db = database;
-        }
-
-        public FileScanner(ISyncManager sync)
-        {
-            _db = sync.Database;
+            _config = syncManager.RemoteVault;
+            _db = syncManager.Database;
         }
 
         /*/// <summary>
@@ -69,12 +66,14 @@ namespace Parallel.Core.IO.Scanning
                     if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
                         Log.Debug($"Ignored -> {localFile.LocalPath}");
+                        localFile.RemotePath = remoteFile.RemotePath;
                         localFile.Deleted = true;
                         scannedFiles.Add(localFile);
                     }
                     else if (HasChanged(localFile, remoteFile))
                     {
                         Log.Debug($"Changed -> {localFile.LocalPath}");
+                        localFile.RemotePath = remoteFile.RemotePath;
                         scannedFiles.Add(localFile);
                     }
 
@@ -94,7 +93,7 @@ namespace Parallel.Core.IO.Scanning
                 if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
                 {
                     Log.Debug($"Created -> {file}");
-                    scannedFiles.Add(new SystemFile(file));
+                    scannedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
                 }
             }
 

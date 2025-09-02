@@ -74,21 +74,6 @@ namespace Parallel.Core.Models
         public bool Deleted { get; set; } = false;
 
         /// <summary>
-        /// If the file is encrypted in the backup.
-        /// </summary>
-        public bool Encrypted { get; set; } = false;
-
-        /// <summary>
-        /// The salt used to encrypt the file.
-        /// </summary>
-        public string Salt { get; set; }
-
-        /// <summary>
-        /// The initialization vector used to encrypt the file.
-        /// </summary>
-        public string IV { get; set; }
-
-        /// <summary>
         /// The checksum used to check if the file has changed.
         /// </summary>
         public string? CheckSum { get; set; }
@@ -111,16 +96,18 @@ namespace Parallel.Core.Models
             Hidden = fileInfo.Attributes.HasFlag(FileAttributes.Hidden);
             ReadOnly = fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly);
             Deleted = !fileInfo.Exists;
-            Encrypted = false;
-            Salt = HashGenerator.GenerateHash(16);
-            IV = HashGenerator.GenerateHash(16);
             CheckSum = HashGenerator.CheckSum(path);
+        }
+
+        public SystemFile(string localPath, string remotePath)
+        {
+            LocalPath = localPath;
+            RemotePath = remotePath;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemFile"/> class.
         /// </summary>
-        /// <param name="vault"></param>
         /// <param name="id"></param>
         /// <param name="name"></param>
         /// <param name="localpath"></param>
@@ -137,7 +124,7 @@ namespace Parallel.Core.Models
         /// <param name="salt"></param>
         /// <param name="iv"></param>
         /// <param name="checksum"></param>
-        public SystemFile(string vault, string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, long encrypted, string salt, string iv, string checksum)
+        public SystemFile(string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
         {
             Id = id;
             Name = name;
@@ -150,13 +137,8 @@ namespace Parallel.Core.Models
             Hidden = Converter.ToBool(hidden);
             ReadOnly = Converter.ToBool(readOnly);
             Deleted = Converter.ToBool(deleted);
-            Encrypted = Converter.ToBool(encrypted);
-            Salt = salt;
-            IV = iv;
             CheckSum = checksum;
         }
-
-        public SystemFile() { }
 
         /// <summary>
         /// Determines if this instance and another <see cref="SystemFile"/> have the same values.
@@ -177,9 +159,6 @@ namespace Parallel.Core.Models
                 value?.Hidden != null ? this.Hidden.Equals(value.Hidden) : (bool?)null,
                 value?.ReadOnly != null ? this.ReadOnly.Equals(value.ReadOnly) : (bool?)null,
                 value?.Deleted != null ? this.Deleted.Equals(value.Deleted) : (bool?)null,
-                value?.Encrypted != null ? this.Encrypted.Equals(value.Encrypted) : (bool?)null,
-                this?.Salt != null && value?.Salt != null ? this.Salt.SequenceEqual(value.Salt) : (bool?)null,
-                this?.IV != null && value?.IV != null ? this.IV.SequenceEqual(value.IV) : (bool?)null,
                 this?.CheckSum != null && value?.CheckSum != null ? this.CheckSum.SequenceEqual(value.CheckSum) : (bool?)null,
             ];
 

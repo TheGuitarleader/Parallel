@@ -72,31 +72,37 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await FileSystem.DownloadFilesAsync([new SystemFile { LocalPath = TempConfigFile, RemotePath = PathBuilder.GetConfigurationFile(LocalVault) }], new ProgressLogger());
+                await FileSystem.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new ProgressLogger());
                 RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
                 if(config == null) return false;
                 RemoteVault = config;
+
+                Log.Debug($"Downloaded config file: {TempConfigFile}");
             }
 
             if (!await FileSystem.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
             {
                 Database = new SqliteContext(TempDbFile);
                 await Database.InitializeAsync();
+
+                Log.Debug($"Create db file: {TempDbFile}");
             }
             else
             {
-                await FileSystem.DownloadFilesAsync([new SystemFile { LocalPath = TempDbFile, RemotePath = PathBuilder.GetDatabaseFile(LocalVault) }], new ProgressLogger());
+                await FileSystem.DownloadFilesAsync([new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new ProgressLogger());
                 Database = new SqliteContext(TempDbFile);
+
+                Log.Debug($"Downloaded db file: {TempDbFile}");
             }
 
             return true;
         }
 
         /// <inheritdoc />
-        public Task DisconnectAsync()
+        public async Task DisconnectAsync()
         {
+            await FileSystem.UploadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new ProgressLogger());
             FileSystem.Dispose();
-            return Task.CompletedTask;
         }
 
         /// <inheritdoc />

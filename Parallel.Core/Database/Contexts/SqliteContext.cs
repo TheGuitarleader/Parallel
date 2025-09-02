@@ -26,6 +26,11 @@ namespace Parallel.Core.Database
             FilePath = filePath;
         }
 
+        public void Dispose()
+        {
+            // TODO release managed resources here
+        }
+
         #region Base
 
         /// <inheritdoc />
@@ -38,10 +43,11 @@ namespace Parallel.Core.Database
         public async Task InitializeAsync()
         {
             Log.Information("Creating index database...");
-            File.Create(FilePath).Close();
+            //File.Create(FilePath).Close();
             //File.SetAttributes(FilePath, File.GetAttributes(FilePath) | FileAttributes.Hidden);
 
             using IDbConnection connection = CreateConnection();
+            await connection.ExecuteAsync("PRAGMA journal_mode=WAL;");
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, PRIMARY KEY(`id`));");
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
         }
@@ -53,25 +59,31 @@ namespace Parallel.Core.Database
         /// <inheritdoc />
         public async Task<bool> AddFileAsync(SystemFile file)
         {
-            using IDbConnection connection = CreateConnection();
-            string sql = @"INSERT OR REPLACE INTO files (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, encrypted, salt, iv, checksum) VALUES (@ProfileId, @Id, @Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @Encrypted, @Salt, @IV, @CheckSum);";
-            return await connection.ExecuteAsync(sql, new { file.Id, file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.Encrypted, file.Salt, file.IV, file.CheckSum }) > 0;
+            using (IDbConnection connection = CreateConnection())
+            {
+                string sql = @"INSERT OR REPLACE INTO files (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Id, @Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
+                return await connection.ExecuteAsync(sql, new { file.Id, file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
+            }
         }
 
         /// <inheritdoc />
         public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted)
         {
-            using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT * FROM files WHERE deleted = {deleted} ORDER BY lastupdate DESC";
-            return await connection.QueryAsync<SystemFile>(sql);
+            using (IDbConnection connection = CreateConnection())
+            {
+                string sql = $"SELECT * FROM files WHERE deleted = {deleted} ORDER BY lastupdate DESC";
+                return await connection.QueryAsync<SystemFile>(sql);
+            }
         }
 
         /// <inheritdoc />
         public async Task<SystemFile?> GetFileAsync(string path)
         {
-            using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT * FROM files WHERE localpath LIKE \"%{path}%\" OR remotepath LIKE \"%{path}%\" ORDER BY lastupdate DESC";
-            return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql);
+            using (IDbConnection connection = CreateConnection())
+            {
+                string sql = $"SELECT (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%{path}%\" OR remotepath LIKE \"%{path}%\" ORDER BY lastupdate DESC";
+                return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql);
+            }
         }
 
         #endregion
@@ -81,9 +93,11 @@ namespace Parallel.Core.Database
         /// <inheritdoc />
         public async Task<bool> AddHistoryAsync(string path, HistoryType type)
         {
-            using IDbConnection connection = CreateConnection();
-            string sql = @"INSERT OR REPLACE INTO history (timestamp, name, path, type) VALUES(@ProfileId, @Timestamp, @Name, @Path, @Type);";
-            return await connection.ExecuteAsync(sql, new { Timestamp = UnixTime.Now.TotalMilliseconds, Name = Path.GetFileName(path), Path = path, Type = type }) > 0;
+            using (IDbConnection connection = CreateConnection())
+            {
+                string sql = @"INSERT OR REPLACE INTO history (timestamp, name, path, type) VALUES(@Timestamp, @Name, @Path, @Type);";
+                return await connection.ExecuteAsync(sql, new { Timestamp = UnixTime.Now.TotalMilliseconds, Name = Path.GetFileName(path), Path = path, Type = type }) > 0;
+            }
         }
 
         /// <inheritdoc />

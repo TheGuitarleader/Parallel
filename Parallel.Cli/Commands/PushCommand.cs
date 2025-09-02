@@ -81,6 +81,7 @@ namespace Parallel.Cli.Commands
                 if (successFiles == 0)
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is already up to date.", ConsoleColor.Green);
+                    await syncManager.DisconnectAsync();
                     return;
                 }
 

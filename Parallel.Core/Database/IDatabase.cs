@@ -47,7 +47,7 @@ namespace Parallel.Core.Database
     /// <summary>
     /// An interface for interacting with client data storage.
     /// </summary>
-    public interface IDatabase
+    public interface IDatabase : IDisposable
     {
         #region Base
 

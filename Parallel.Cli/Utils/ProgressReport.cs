@@ -26,6 +26,7 @@ namespace Parallel.Cli.Utils
         public void Failed(Exception exception, SystemFile file)
         {
             CommandLine.WriteLine(_localVault, $"Failed to upload file: '{file.LocalPath}'", ConsoleColor.Red);
+            Log.Error(exception.GetBaseException().ToString());
         }
     }
 }

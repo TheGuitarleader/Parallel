@@ -92,16 +92,23 @@ namespace Parallel.Core.IO.FileSystem
         {
             await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
-                if (await ExistsAsync(file.RemotePath)) File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
-                string? parent = Path.GetDirectoryName(file.RemotePath);
-                if (parent != null && !Directory.Exists(parent)) Directory.CreateDirectory(parent);
+                try
+                {
+                    if (await ExistsAsync(file.RemotePath)) File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
+                    string? parent = Path.GetDirectoryName(file.RemotePath);
+                    if (parent != null && !Directory.Exists(parent)) Directory.CreateDirectory(parent);
 
-                await using FileStream openStream = File.OpenRead(file.LocalPath);
-                await using FileStream createStream = File.Create(file.RemotePath);
-                await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-                await openStream.CopyToAsync(gzipStream, ct);
+                    await using FileStream openStream = File.OpenRead(file.LocalPath);
+                    await using FileStream createStream = File.Create(file.RemotePath);
+                    await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+                    await openStream.CopyToAsync(gzipStream, ct);
 
-                File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
+                    File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
+                }
+                catch (Exception ex)
+                {
+                    progress.Failed(ex, file);
+                }
             });
         }
     }
