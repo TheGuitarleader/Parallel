@@ -36,18 +36,15 @@ namespace Parallel.Core.Database
         /// <inheritdoc />
         public IDbConnection CreateConnection()
         {
-            return new SqliteConnection("Data Source=" + FilePath);
+            return new SqliteConnection($"Data Source={FilePath};Pooling=false;");
         }
 
         /// <inheritdoc />
         public async Task InitializeAsync()
         {
             Log.Information("Creating index database...");
-            //File.Create(FilePath).Close();
-            //File.SetAttributes(FilePath, File.GetAttributes(FilePath) | FileAttributes.Hidden);
 
             using IDbConnection connection = CreateConnection();
-            await connection.ExecuteAsync("PRAGMA journal_mode=WAL;");
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, PRIMARY KEY(`id`));");
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
         }

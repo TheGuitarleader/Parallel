@@ -41,6 +41,13 @@ namespace Parallel.Core.IO.FileSystem
         Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <summary>
+        /// Downloads a file from the associated file system.
+        /// </summary>
+        /// <param name="sourcePath"></param>
+        /// <param name="destinationPath"></param>
+        Task DownloadFileAsync(string sourcePath, string destinationPath);
+
+        /// <summary>
         /// Checks if a path exists on the associated file system.
         /// </summary>
         /// <param name="path"></param>
@@ -60,5 +67,12 @@ namespace Parallel.Core.IO.FileSystem
         /// <param name="files"></param>
         /// <param name="progress"></param>
         Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress);
+
+        /// <summary>
+        /// Uploads a file to the associated file system.
+        /// </summary>
+        /// <param name="sourcePath"></param>
+        /// <param name="destinationPath"></param>
+        Task UploadFileAsync(string sourcePath, string destinationPath);
     }
 }

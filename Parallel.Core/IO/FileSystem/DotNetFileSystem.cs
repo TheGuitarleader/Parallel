@@ -70,6 +70,15 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc />
+        public async Task DownloadFileAsync(string sourcePath, string destinationPath)
+        {
+            await using FileStream openStream = File.OpenRead(destinationPath);
+            await using FileStream createStream = File.Create(sourcePath);
+            await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
+            await gzipStream.CopyToAsync(createStream);
+        }
+
+        /// <inheritdoc />
         public Task<bool> ExistsAsync(string path)
         {
             return Task.FromResult(Directory.Exists(path) || File.Exists(path));
@@ -98,6 +107,7 @@ namespace Parallel.Core.IO.FileSystem
                     string? parent = Path.GetDirectoryName(file.RemotePath);
                     if (parent != null && !Directory.Exists(parent)) Directory.CreateDirectory(parent);
 
+                    progress.Report(ProgressOperation.Uploading, file);
                     await using FileStream openStream = File.OpenRead(file.LocalPath);
                     await using FileStream createStream = File.Create(file.RemotePath);
                     await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
@@ -107,9 +117,31 @@ namespace Parallel.Core.IO.FileSystem
                 }
                 catch (Exception ex)
                 {
-                    progress.Failed(ex, file);
+                    Log.Error(ex.GetBaseException().ToString());
                 }
             });
+        }
+
+        /// <inheritdoc />
+        public async Task UploadFileAsync(string sourcePath, string destinationPath)
+        {
+            try
+            {
+                if (await ExistsAsync(destinationPath)) File.SetAttributes(destinationPath, ~FileAttributes.ReadOnly & File.GetAttributes(destinationPath));
+                string? parent = Path.GetDirectoryName(destinationPath);
+                if (parent != null && !Directory.Exists(parent)) Directory.CreateDirectory(parent);
+
+                await using FileStream openStream = File.OpenRead(sourcePath);
+                await using FileStream createStream = File.Create(destinationPath);
+                await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+                await openStream.CopyToAsync(gzipStream);
+
+                File.SetAttributes(destinationPath, File.GetAttributes(destinationPath) | FileAttributes.ReadOnly);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.GetBaseException().ToString());
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 
 using System.CommandLine;
 using Parallel.Cli.Utils;
+using Parallel.Core.Diagnostics;
 using Parallel.Core.IO;
 using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.Scanning;
@@ -89,7 +90,7 @@ namespace Parallel.Cli.Commands
                 await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles));
                 await syncManager.DisconnectAsync();
 
-                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files to '{vault.FileSystem.Address}'.", ConsoleColor.Green);
+                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files to '{vault.FileSystem.RootDirectory}'.", ConsoleColor.Green);
             });
         }
     }

@@ -75,11 +75,19 @@ namespace Parallel.Core.IO.FileSystem
             }
         }
 
+        /// <inheritdoc />
         public Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc />
+        public Task DownloadFileAsync(string sourcePath, string destinationPath)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
         public async Task<bool> ExistsAsync(string path)
         {
             return _client.IsConnected && await _client.ExistsAsync(path);
@@ -109,7 +117,7 @@ namespace Parallel.Core.IO.FileSystem
             {
                 SystemFile file = files[i];
                 Stopwatch sw = new Stopwatch();
-                progress.Report(ProgressOperation.Uploading, file, i, files.Length);
+                progress.Report(ProgressOperation.Uploading, file);
                 if (await _client.ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
 
                 string parentDir = string.Empty;
@@ -130,6 +138,28 @@ namespace Parallel.Core.IO.FileSystem
 
                 Log.Debug($"Uploaded '{file.RemotePath}' in {sw.ElapsedMilliseconds}ms");
             }
+        }
+
+        /// <inheritdoc />
+        public async Task UploadFileAsync(string sourcePath, string destinationPath)
+        {
+            if (await ExistsAsync(destinationPath)) _client.ChangePermissions(destinationPath, 644);
+
+            string parentDir = string.Empty;
+            foreach (string subPath in destinationPath.Split('/'))
+            {
+                parentDir += $"/{subPath}";
+                if (!await _client.ExistsAsync(parentDir))
+                {
+                    await _client.CreateDirectoryAsync(parentDir);
+                }
+            }
+
+            await using SftpFileStream createStream = _client.Create(destinationPath);
+            await using FileStream openStream = File.OpenRead(sourcePath);
+            await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+            await openStream.CopyToAsync(gzipStream);
+            _client.ChangePermissions(destinationPath, 444);
         }
     }
 }

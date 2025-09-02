@@ -29,17 +29,19 @@ namespace Parallel.Core.IO.Backup
             SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();
             Log.Information($"Backing up {backupFiles.Length} files...");
             await FileSystem.UploadFilesAsync(backupFiles, progress);
+
+            progress.Reset();
             await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
                 if (file.Deleted)
                 {
-                    progress.Report(ProgressOperation.Archiving, file, 0, files.Length);
+                    progress.Report(ProgressOperation.Archiving, file);
                     await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
                     await Database.AddFileAsync(file);
                 }
                 else
                 {
-                    progress.Report(ProgressOperation.Syncing, file, 0, files.Length);
+                    progress.Report(ProgressOperation.Syncing, file);
                     SystemFile remote = await FileSystem.GetFileAsync(file.RemotePath);
                     if (remote is not null)
                     {
