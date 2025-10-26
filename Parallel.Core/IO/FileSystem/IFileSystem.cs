@@ -59,7 +59,7 @@ namespace Parallel.Core.IO.FileSystem
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        Task<SystemFile> GetFileAsync(string path);
+        Task<SystemFile?> GetFileAsync(string path);
 
         /// <summary>
         /// Uploads an array of files to the associated file system.

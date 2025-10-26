@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Security;
 
 namespace Parallel.Core.Settings
@@ -12,12 +13,12 @@ namespace Parallel.Core.Settings
         /// <summary>
         /// A unique hash used to identify the vault.
         /// </summary>
-        public string Id { get; } = HashGenerator.GenerateHash(12, true);
+        public string Id { get; }
 
         /// <summary>
         /// The name of the vault.
         /// </summary>
-        public string Name { get; set; } = "Default";
+        public string Name { get; set; }
 
         /// <summary>
         /// The credentials needed to log in to the associated <see cref="IFileSystem"/>.

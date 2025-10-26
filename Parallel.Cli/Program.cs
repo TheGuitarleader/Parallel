@@ -18,7 +18,7 @@ namespace Parallel.Cli
 
             string logFile = Path.Combine(PathBuilder.ProgramData, "Logs", "latest.txt");
             if (File.Exists(logFile)) File.Delete(logFile);
-            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.File(logFile).CreateLogger();
+            Log.Logger = new LoggerConfiguration().MinimumLevel.Warning().WriteTo.File(logFile).CreateLogger();
 
             AssemblyName assembly = Assembly.GetExecutingAssembly().GetName();
             Log.Information($"{assembly.Name} [Version {assembly.Version}]");

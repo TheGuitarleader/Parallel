@@ -76,9 +76,15 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc />
-        public Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public async Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            throw new NotImplementedException();
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            {
+                await using SftpFileStream openStream = _client.OpenRead(file.RemotePath);
+                await using FileStream createStream = File.Create(file.LocalPath);
+                await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
+                await gzipStream.CopyToAsync(createStream, ct);
+            });
         }
 
         /// <inheritdoc />
@@ -94,49 +100,41 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc/>
-        public async Task<SystemFile> GetFileAsync(string path)
+        public async Task<SystemFile?> GetFileAsync(string path)
         {
-            SystemFile file = new SystemFile(path);
-            if (await ExistsAsync(path))
-            {
-                ISftpFile sf = _client.Get(path);
-                file = new SystemFile(sf.FullName)
-                {
-                    Name = sf.Name,
-                    RemoteSize = sf.Length,
-                };
-            }
+            if (!await ExistsAsync(path)) return null;
 
-            return file;
+            ISftpFile sf = _client.Get(path);
+            return new SystemFile(sf.Name, sf.FullName, sf.Length, sf.LastWriteTime);
         }
 
         /// <inheritdoc />
         public async Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            for (int i = 0; i < files.Length; i++)
+            foreach (SystemFile file in files)
             {
-                SystemFile file = files[i];
-                Stopwatch sw = new Stopwatch();
-                progress.Report(ProgressOperation.Uploading, file);
-                if (await _client.ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
-
-                string parentDir = string.Empty;
-                foreach (string subPath in file.RemotePath.Split('/'))
+                try
                 {
-                    parentDir += $"/{subPath}";
-                    if (!await _client.ExistsAsync(parentDir))
-                    {
-                        await _client.CreateDirectoryAsync(parentDir);
-                    }
+                    Stopwatch sw = new Stopwatch();
+                    progress.Report(ProgressOperation.Uploading, file);
+                    if (await _client.ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
+
+                    string[] subDirs = file.RemotePath.Split('/');
+                    string parentDir = string.Join("/", subDirs.Take(subDirs.Length - 1));
+                    if(!await _client.ExistsAsync(parentDir)) await CreateDirectoryAsync(parentDir);
+
+                    await using SftpFileStream createStream = _client.Create(file.RemotePath);
+                    await using FileStream openStream = File.OpenRead(file.LocalPath);
+                    await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+                    await openStream.CopyToAsync(gzipStream);
+                    _client.ChangePermissions(file.RemotePath, 444);
+
+                    Log.Debug($"Uploaded '{file.RemotePath}' in {sw.ElapsedMilliseconds}ms");
                 }
-
-                await using SftpFileStream createStream = _client.Create(file.RemotePath);
-                await using FileStream openStream = File.OpenRead(file.LocalPath);
-                await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-                await openStream.CopyToAsync(gzipStream);
-                _client.ChangePermissions(file.RemotePath, 444);
-
-                Log.Debug($"Uploaded '{file.RemotePath}' in {sw.ElapsedMilliseconds}ms");
+                catch (Exception ex)
+                {
+                    Log.Error(ex.GetBaseException().ToString());
+                }
             }
         }
 

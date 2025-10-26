@@ -85,21 +85,29 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc/>
-        public Task<SystemFile> GetFileAsync(string path)
+        public Task<SystemFile?> GetFileAsync(string path)
         {
+            if(!File.Exists(path)) return Task.FromResult<SystemFile?>(null);
+
             FileInfo fi = new(path);
-            return Task.FromResult(new SystemFile(path)
+            SystemFile file = new SystemFile(path)
             {
                 Name = fi.Name,
                 RemotePath = fi.FullName,
                 RemoteSize = fi.Length
-            });
+            };
+            return Task.FromResult<SystemFile?>(file);
         }
 
         /// <inheritdoc />
         public async Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            // await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            // {
+            //
+            // });
+
+            foreach (SystemFile file in files)
             {
                 try
                 {
@@ -111,7 +119,7 @@ namespace Parallel.Core.IO.FileSystem
                     await using FileStream openStream = File.OpenRead(file.LocalPath);
                     await using FileStream createStream = File.Create(file.RemotePath);
                     await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-                    await openStream.CopyToAsync(gzipStream, ct);
+                    await openStream.CopyToAsync(gzipStream);
 
                     File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
                 }
@@ -119,7 +127,7 @@ namespace Parallel.Core.IO.FileSystem
                 {
                     Log.Error(ex.GetBaseException().ToString());
                 }
-            });
+            }
         }
 
         /// <inheritdoc />

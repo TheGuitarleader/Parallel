@@ -140,6 +140,16 @@ namespace Parallel.Core.Models
             CheckSum = checksum;
         }
 
+        public SystemFile(string name, string remotePath, long length, DateTime lastWriteTime)
+        {
+            Name = name;
+            RemotePath = remotePath;
+            RemoteSize = length;
+            LastWrite = new UnixTime(lastWriteTime);
+        }
+
+        //public SystemFile() { }
+
         /// <summary>
         /// Determines if this instance and another <see cref="SystemFile"/> have the same values.
         /// </summary>

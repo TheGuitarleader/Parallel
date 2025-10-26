@@ -41,8 +41,8 @@ namespace Parallel.Core.IO.Backup
                 }
                 else
                 {
-                    progress.Report(ProgressOperation.Syncing, file);
-                    SystemFile remote = await FileSystem.GetFileAsync(file.RemotePath);
+                    //progress.Report(ProgressOperation.Syncing, file);
+                    SystemFile? remote = await FileSystem.GetFileAsync(file.RemotePath);
                     if (remote is not null)
                     {
                         file.RemoteSize = remote.RemoteSize;

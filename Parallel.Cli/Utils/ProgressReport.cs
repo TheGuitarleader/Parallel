@@ -22,7 +22,7 @@ namespace Parallel.Cli.Utils
         public void Report(ProgressOperation operation, SystemFile file)
         {
             int percent = _current++ * 100 / _total;
-            CommandLine.WriteLine($"[{percent}%] <{_localVault.Id}> {operation}: {file.LocalPath}");
+            CommandLine.WriteLine($"[{_localVault.Id}] ({percent}%) {operation}: {file.LocalPath}");
         }
 
         /// <inheritdoc />
