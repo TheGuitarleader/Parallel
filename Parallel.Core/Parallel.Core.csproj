@@ -13,6 +13,8 @@
         <AssemblyName>Parallel.Core</AssemblyName>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
         <RootNamespace>Parallel.Core</RootNamespace>
+        <Configurations>Debug;Release;Analyze</Configurations>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
