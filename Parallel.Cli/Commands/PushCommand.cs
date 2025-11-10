@@ -41,7 +41,7 @@ namespace Parallel.Cli.Commands
             }, _sourceArg, _configOpt, _verboseOpt);
         }
 
-        private async Task SyncSystemAsync()
+        private Task SyncSystemAsync()
         {
             throw new NotImplementedException();
         }

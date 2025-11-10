@@ -58,7 +58,7 @@ namespace Parallel.Core.IO.Scanning
             List<SystemFile> scannedFiles = new List<SystemFile>();
             HashSet<string> localFiles = FileScanner.GetFiles(path, ".", ignoreFolders).ToHashSet();
             IEnumerable<SystemFile> remoteFiles = await _db.GetFilesAsync(path, false);
-            foreach (SystemFile remoteFile in remoteFiles)
+            await System.Threading.Tasks.Parallel.ForEachAsync(remoteFiles, ParallelConfig.Options, async (remoteFile, ct) =>
             {
                 if (File.Exists(remoteFile.LocalPath) && remoteFile.RemotePath != null)
                 {
@@ -85,17 +85,27 @@ namespace Parallel.Core.IO.Scanning
                     remoteFile.Deleted = true;
                     scannedFiles.Add(remoteFile);
                 }
-            }
+            });
+
+            // foreach (SystemFile remoteFile in remoteFiles)
+            // {
+            //
+            // }
 
             Log.Debug($"{localFiles.Count} files are untracked! Adding...");
-            foreach (var file in localFiles)
+            // foreach (var file in localFiles)
+            // {
+            //
+            // }
+
+            await System.Threading.Tasks.Parallel.ForEachAsync(localFiles, ParallelConfig.Options, async (file, ct) =>
             {
                 if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
                 {
                     Log.Debug($"Created -> {file}");
                     scannedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
                 }
-            }
+            });
 
             Log.Debug($"{localFiles.Count} files remaining.");
             Log.Information($"Found {scannedFiles.Count:N0} changes in '{path}'");

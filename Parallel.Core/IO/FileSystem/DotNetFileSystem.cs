@@ -102,12 +102,7 @@ namespace Parallel.Core.IO.FileSystem
         /// <inheritdoc />
         public async Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            // await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
-            // {
-            //
-            // });
-
-            foreach (SystemFile file in files)
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
                 try
                 {
@@ -119,7 +114,7 @@ namespace Parallel.Core.IO.FileSystem
                     await using FileStream openStream = File.OpenRead(file.LocalPath);
                     await using FileStream createStream = File.Create(file.RemotePath);
                     await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-                    await openStream.CopyToAsync(gzipStream);
+                    await openStream.CopyToAsync(gzipStream, ct);
 
                     File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
                 }
@@ -127,7 +122,7 @@ namespace Parallel.Core.IO.FileSystem
                 {
                     Log.Error(ex.GetBaseException().ToString());
                 }
-            }
+            });
         }
 
         /// <inheritdoc />
