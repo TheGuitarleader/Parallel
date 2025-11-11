@@ -6,7 +6,7 @@ using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.Scanning;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
-
+using Parallel.Core.Utils;
 using TextWriter = Parallel.Cli.Utils.TextWriter;
 
 namespace Parallel.Cli.Commands
@@ -28,7 +28,7 @@ namespace Parallel.Cli.Commands
             Dictionary<string, string[]> result = duplicates.ToDictionary(k => k.Key, v => v.Value.Select(l => l.LocalPath).ToArray());
             long length = duplicates.Sum(kv => kv.Value.Sum(l => l.LocalSize));
 
-            CommandLine.WriteLine($"Scan found {duplicates.Where(kv => kv.Value.Length > 1).Count().ToString("N0")} duplicate files. ({Formatter.FromBytes(length)})");
+            CommandLine.WriteLine($"Scan found {duplicates.Count(kv => kv.Value.Length > 1):N0} duplicate files. ({Formatter.FromBytes(length)})");
             CommandLine.WriteLine($"A detailed version was created here: {TextWriter.CreateTxtFile(JsonConvert.SerializeObject(result, Formatting.Indented))}");
         }
     }

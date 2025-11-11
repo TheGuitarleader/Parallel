@@ -14,8 +14,8 @@ namespace Parallel.Core.IO.Syncing
         /// <summary>
         /// Initializes a new instance of the <see cref="DeltaSyncManager"/> class.
         /// </summary>
-        /// <param name="vault"></param>
-        public DeltaSyncManager(VaultConfig vault) : base(vault) { }
+        /// <param name="remoteVaultConfig"></param>
+        public DeltaSyncManager(RemoteVaultConfig remoteVaultConfig) : base(remoteVaultConfig) { }
 
         /// <inheritdoc />
         public override Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)

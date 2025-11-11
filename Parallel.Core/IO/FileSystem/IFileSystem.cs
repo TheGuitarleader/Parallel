@@ -13,7 +13,7 @@ namespace Parallel.Core.IO.FileSystem
     /// <summary>
     /// Defines the way for communicating with a file system.
     /// </summary>
-    public interface IFileSystem
+    public interface IFileSystem : IDisposable
     {
         /// <summary>
         /// Creates all directories and subdirectories in the specified path unless they already exist.
@@ -34,50 +34,45 @@ namespace Parallel.Core.IO.FileSystem
         Task DeleteFileAsync(string path);
 
         /// <summary>
-        /// Downloads a file from the associated file system.
+        /// Downloads an array of files from the associated file system.
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
         Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <summary>
-        /// Returns the parent directory name.
+        /// Downloads a file from the associated file system.
         /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        Task<string> GetDirectoryNameAsync(string path);
+        /// <param name="sourcePath"></param>
+        /// <param name="destinationPath"></param>
+        Task DownloadFileAsync(string sourcePath, string destinationPath);
 
         /// <summary>
-        /// Gets all the files in the backup.
-        /// </summary>
-        /// <returns>A dictionary of <see cref="KeyValuePair"/>s with the key being the backup path adn the value being the associated <see cref="SystemFile"/>.</returns>
-        Task<Dictionary<string, SystemFile>> GetFilesAsync();
-
-        /// <summary>
-        /// Gets all the files in the current directory.
+        /// Checks if a path exists on the associated file system.
         /// </summary>
         /// <param name="path"></param>
-        /// <returns>A read-only collection of <see cref="SystemFile"/>s.</returns>
-        Task<SystemFile[]> GetFilesAsync(string path);
+        /// <returns>True if path exists, otherwise false.</returns>
+        Task<bool> ExistsAsync(string path);
 
         /// <summary>
         /// Gets a file on the associated file system.
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        Task<SystemFile> GetFileAsync(string path);
+        Task<SystemFile?> GetFileAsync(string path);
 
         /// <summary>
-        /// Pings the remote file system.
-        /// </summary>
-        /// <returns>The time, in milliseconds, of the database latency. -1 if disconnected.</returns>
-        Task<long> PingAsync();
-
-        /// <summary>
-        /// Uploads a file to the associated file system.
+        /// Uploads an array of files to the associated file system.
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
         Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress);
+
+        /// <summary>
+        /// Uploads a file to the associated file system.
+        /// </summary>
+        /// <param name="sourcePath"></param>
+        /// <param name="destinationPath"></param>
+        Task UploadFileAsync(string sourcePath, string destinationPath);
     }
 }

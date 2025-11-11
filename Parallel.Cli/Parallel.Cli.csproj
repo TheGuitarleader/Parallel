@@ -3,6 +3,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net9.0</TargetFramework>
+        <Configurations>Debug;Release;Analyze</Configurations>
         <ApplicationIcon>parallel-red.ico</ApplicationIcon>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
@@ -15,24 +16,42 @@
         <Authors>$(Company)</Authors>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <Optimize>true</Optimize>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Analyze|AnyCPU'">
+        <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+        <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
+        <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    </PropertyGroup>
+
     <ItemGroup>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
-        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0"/>
-        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="Newtonsoft.Json"/>
-        <Using Include="Serilog"/>
+        <Using Include="Newtonsoft.Json" />
+        <Using Include="Serilog" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Parallel.Core\Parallel.Core.csproj"/>
+        <ProjectReference Include="..\Parallel.Core\Parallel.Core.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Utils\"/>
+        <Folder Include="Utils\" />
     </ItemGroup>
 
 </Project>

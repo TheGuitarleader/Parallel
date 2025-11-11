@@ -17,16 +17,19 @@ namespace Parallel.Core.IO.FileSystem
     /// </summary>
     public class DotNetFileSystem : IFileSystem
     {
-        private readonly VaultConfig _vault;
+        private readonly LocalVaultConfig _vaultConfig;
 
         /// <summary>
         /// Represents an <see cref="IFileSystem"/> for interacting with physical machine hardware.
         /// </summary>
-        /// <param name="vault">The vault to use.</param>
-        public DotNetFileSystem(VaultConfig vault)
+        /// <param name="vaultConfig">The vault to use.</param>
+        public DotNetFileSystem(LocalVaultConfig vaultConfig)
         {
-            _vault = vault;
+            _vaultConfig = vaultConfig;
         }
+
+        /// <inheritdoc />
+        public void Dispose() { }
 
         /// <inheritdoc/>
         public Task CreateDirectoryAsync(string path)
@@ -54,109 +57,94 @@ namespace Parallel.Core.IO.FileSystem
             return Task.CompletedTask;
         }
 
-        /// <inheritdoc/>
+        /// <inheritdoc />
         public async Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            if (!files.Any()) return;
-            for (int i = 0; i < files.Length; i++)
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
-                SystemFile file = files[i];
-                Stopwatch sw = new Stopwatch();
-
-                progress.Report(ProgressOperation.Downloading, file, i, files.Length);
-                await using FileStream createStream = File.Create(file.LocalPath);
                 await using FileStream openStream = File.OpenRead(file.RemotePath);
+                await using FileStream createStream = File.Create(file.LocalPath);
                 await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
-                await gzipStream.CopyToAsync(createStream);
-
-                Log.Debug($"Downloaded '{file.LocalPath}' in {sw.ElapsedMilliseconds}ms");
-            }
-        }
-
-        /// <inheritdoc />
-        public Task<string> GetDirectoryNameAsync(string path)
-        {
-            return Task.FromResult(Path.GetDirectoryName(path));
-        }
-
-        /// <inheritdoc/>
-        public Task<Dictionary<string, SystemFile>> GetFilesAsync()
-        {
-            Dictionary<string, SystemFile> files = new Dictionary<string, SystemFile>();
-            foreach (string file in Directory.GetFiles(PathBuilder.RootDirectory(_vault), "*.gz", SearchOption.AllDirectories))
-            {
-                FileInfo fi = new(file);
-                files.Add(fi.FullName, new SystemFile(file)
-                {
-                    Name = fi.Name,
-                    RemotePath = fi.FullName,
-                    LastWrite = new UnixTime(fi.LastWriteTime),
-                    RemoteSize = fi.Length
-                });
-            }
-
-            return Task.FromResult(files);
-        }
-
-        /// <inheritdoc/>
-        public Task<SystemFile[]> GetFilesAsync(string path)
-        {
-            List<SystemFile> list = new();
-            foreach (string file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
-            {
-                FileInfo fi = new(file);
-                list.Add(new SystemFile(file)
-                {
-                    Name = fi.Name,
-                    RemotePath = fi.FullName,
-                    RemoteSize = fi.Length
-                });
-            }
-
-            return Task.FromResult(list.ToArray());
-        }
-
-        /// <inheritdoc/>
-        public Task<SystemFile> GetFileAsync(string path)
-        {
-            FileInfo fi = new(path);
-            return Task.FromResult(new SystemFile(path)
-            {
-                Name = fi.Name,
-                RemotePath = fi.FullName,
-                RemoteSize = fi.Length
+                await gzipStream.CopyToAsync(createStream, ct);
             });
         }
 
         /// <inheritdoc />
-        public Task<long> PingAsync()
+        public async Task DownloadFileAsync(string sourcePath, string destinationPath)
         {
-            Stopwatch sw = Stopwatch.StartNew();
-            if (!Directory.Exists(PathBuilder.RootDirectory(_vault))) return Task.FromResult<long>(-1);
-            return Task.FromResult(sw.ElapsedMilliseconds);
+            await using FileStream openStream = File.OpenRead(destinationPath);
+            await using FileStream createStream = File.Create(sourcePath);
+            await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
+            await gzipStream.CopyToAsync(createStream);
+        }
+
+        /// <inheritdoc />
+        public Task<bool> ExistsAsync(string path)
+        {
+            return Task.FromResult(Directory.Exists(path) || File.Exists(path));
         }
 
         /// <inheritdoc/>
+        public Task<SystemFile?> GetFileAsync(string path)
+        {
+            if(!File.Exists(path)) return Task.FromResult<SystemFile?>(null);
+
+            FileInfo fi = new(path);
+            SystemFile file = new SystemFile(path)
+            {
+                Name = fi.Name,
+                RemotePath = fi.FullName,
+                RemoteSize = fi.Length
+            };
+            return Task.FromResult<SystemFile?>(file);
+        }
+
+        /// <inheritdoc />
         public async Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            if (!files.Any()) return;
-            await Task.WhenAll(files.Select(file => Task.Run(async () =>
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
-                Stopwatch sw = new Stopwatch();
-                file.RemotePath = PathBuilder.Remote(file.LocalPath, _vault);
+                try
+                {
+                    if (await ExistsAsync(file.RemotePath)) File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
+                    string? parent = Path.GetDirectoryName(file.RemotePath);
+                    if (parent != null && !Directory.Exists(parent)) Directory.CreateDirectory(parent);
 
-                if (File.Exists(file.RemotePath)) File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
-                string parent = Path.GetDirectoryName(file.RemotePath);
-                if (!Directory.Exists(parent)) Directory.CreateDirectory(parent);
+                    progress.Report(ProgressOperation.Uploading, file);
+                    await using FileStream openStream = File.OpenRead(file.LocalPath);
+                    await using FileStream createStream = File.Create(file.RemotePath);
+                    await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+                    await openStream.CopyToAsync(gzipStream, ct);
 
-                await using FileStream createStream = File.Create(file.RemotePath);
-                await using FileStream openStream = File.OpenRead(file.LocalPath);
+                    File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.GetBaseException().ToString());
+                }
+            });
+        }
+
+        /// <inheritdoc />
+        public async Task UploadFileAsync(string sourcePath, string destinationPath)
+        {
+            try
+            {
+                if (await ExistsAsync(destinationPath)) File.SetAttributes(destinationPath, ~FileAttributes.ReadOnly & File.GetAttributes(destinationPath));
+                string? parent = Path.GetDirectoryName(destinationPath);
+                if (parent != null && !Directory.Exists(parent)) Directory.CreateDirectory(parent);
+
+                await using FileStream openStream = File.OpenRead(sourcePath);
+                await using FileStream createStream = File.Create(destinationPath);
                 await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
                 await openStream.CopyToAsync(gzipStream);
 
-                Log.Debug($"Uploaded '{file.RemotePath}' in {sw.ElapsedMilliseconds}ms");
-                File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
-            })));
+                File.SetAttributes(destinationPath, File.GetAttributes(destinationPath) | FileAttributes.ReadOnly);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.GetBaseException().ToString());
+            }
         }
     }
 }

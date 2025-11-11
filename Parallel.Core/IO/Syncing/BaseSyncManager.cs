@@ -2,7 +2,6 @@
 
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
-using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
@@ -14,8 +13,15 @@ namespace Parallel.Core.IO.Syncing
     /// </summary>
     public abstract class BaseSyncManager : ISyncManager
     {
+        protected string TempDirectory = PathBuilder.TempDirectory;
+        protected string TempConfigFile => Path.Combine(TempDirectory, $"{LocalVault.Id}.json");
+        protected string TempDbFile => Path.Combine(TempDirectory, $"{LocalVault.Id}.db");
+
         /// <inheritdoc />
-        public VaultConfig Vault { get; }
+        public LocalVaultConfig LocalVault { get; private set; }
+
+        /// <inheritdoc />
+        public RemoteVaultConfig RemoteVault { get; private set; }
 
         /// <inheritdoc />
         public IDatabase Database { get; set; }
@@ -26,29 +32,77 @@ namespace Parallel.Core.IO.Syncing
         /// <summary>
         ///
         /// </summary>
-        /// <param name="vault"></param>
-        public BaseSyncManager(VaultConfig vault)
+        /// <param name="remoteVaultConfig"></param>
+        public BaseSyncManager(LocalVaultConfig localVault)
         {
-            FileSystem = FileSystemManager.CreateNew(vault);
-            Vault = vault;
+            FileSystem = FileSystemManager.CreateNew(localVault);
+            LocalVault = localVault;
         }
 
         /// <inheritdoc />
-        public virtual bool Initialize()
+        public async Task<bool> InitializeAsync()
         {
             try
             {
-                Database = DatabaseConnection.CreateNew(Vault);
-                FileSystem.CreateDirectoryAsync(PathBuilder.RootDirectory(Vault));
-                Vault.IgnoreDirectories.Add(Vault.FileSystem.RootDirectory);
-                Vault.SaveToFile();
-                return FileSystem.PingAsync().Result >= 0;
+                return true;
             }
             catch (Exception ex)
             {
                 Log.Error(ex.GetBaseException().ToString());
                 return false;
             }
+        }
+
+        public async Task<bool> ConnectAsync()
+        {
+            string root = PathBuilder.GetRootDirectory(LocalVault);
+            if (!await FileSystem.ExistsAsync(root))
+            {
+                await FileSystem.CreateDirectoryAsync(root);
+                Log.Debug($"Created root directory: {root}");
+            }
+
+            if (!await FileSystem.ExistsAsync(PathBuilder.GetConfigurationFile(LocalVault)))
+            {
+                RemoteVault = new RemoteVaultConfig(LocalVault);
+                RemoteVault.IgnoreDirectories.Add(PathBuilder.GetRootDirectory(LocalVault));
+                RemoteVault.Save(TempConfigFile);
+
+                Log.Debug($"Created config file: {TempConfigFile}");
+            }
+            else
+            {
+                await FileSystem.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new ProgressLogger());
+                RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
+                if(config == null) return false;
+                RemoteVault = config;
+
+                Log.Debug($"Downloaded config file: {TempConfigFile}");
+            }
+
+            if (!await FileSystem.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
+            {
+                Database = new SqliteContext(TempDbFile);
+                await Database.InitializeAsync();
+
+                Log.Debug($"Create db file: {TempDbFile}");
+            }
+            else
+            {
+                await FileSystem.DownloadFilesAsync([new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new ProgressLogger());
+                Database = new SqliteContext(TempDbFile);
+
+                Log.Debug($"Downloaded db file: {TempDbFile}");
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        public async Task DisconnectAsync()
+        {
+            await FileSystem.UploadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new ProgressLogger());
+            FileSystem.Dispose();
         }
 
         /// <inheritdoc />

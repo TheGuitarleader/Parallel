@@ -10,27 +10,35 @@ namespace Parallel.Core.Diagnostics
     public class ProgressLogger : IProgressReporter
     {
         private ProgressOperation currentOperation;
-        private int progressPercentage;
+        private int _percentage;
+        private int _current;
+        private int _total;
 
         /// <inheritdoc />
-        public void Report(ProgressOperation operation, SystemFile file, int current, int total)
+        public void Report(ProgressOperation operation, SystemFile file)
         {
-            int num = (int)(current / (double)total * 100.0 + 0.5);
+            int num = (int)(_current++ / (double)_total * 100.0 + 0.5);
             if (currentOperation != operation)
             {
-                progressPercentage = -1;
+                _percentage = -1;
                 currentOperation = operation;
             }
 
-            if (progressPercentage == num || num % 10 != 0) return;
-            Log.Information($"{operation}: {current} out of {total} ({progressPercentage}%)");
-            progressPercentage = num;
+            if (_percentage == num || num % 10 != 0) return;
+            Log.Information($"{operation}: {_current} out of {_total} ({_percentage}%)");
+            _percentage = num;
+        }
+
+        /// <inheritdoc />
+        public void Reset()
+        {
+            _current = 0;
         }
 
         /// <inheritdoc />
         public void Failed(Exception exception, SystemFile file)
         {
-            Log.Error($"{exception.GetType().FullName}: {exception.Message}. Failed to upload file: '{file.LocalPath}'");
+            Log.Error($"{exception.GetType().FullName}: {exception.Message} Failed to upload file: '{file.LocalPath}'");
         }
     }
 }

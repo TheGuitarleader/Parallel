@@ -8,6 +8,7 @@ using System.IO.Compression;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
+using Parallel.Core.Security;
 using Parallel.Core.Utils;
 
 namespace Parallel.Core.IO.FileSystem
@@ -18,186 +19,145 @@ namespace Parallel.Core.IO.FileSystem
     public class SftpFileSystem : IFileSystem
     {
         private readonly ConnectionInfo _connectionInfo;
-        private readonly VaultConfig _vault;
+        private readonly SftpClient _client;
 
         /// <summary>
         /// Represents an <see cref="IFileSystem"/> for interacting with an SSH server.
         /// </summary>
-        /// <param name="vault">The credentials to log in with.</param>
-        public SftpFileSystem(VaultConfig vault)
+        /// <param name="localVault">The credentials to log in with.</param>
+        public SftpFileSystem(LocalVaultConfig localVault)
         {
-            _connectionInfo = new ConnectionInfo(vault.FileSystem.Address, vault.FileSystem.Username, new PasswordAuthenticationMethod(vault.FileSystem.Username, Encryption.Decode(vault.FileSystem.Password)));
-            _vault = vault;
+            _connectionInfo = new ConnectionInfo(localVault.FileSystem.Address, localVault.FileSystem.Username, new PasswordAuthenticationMethod(localVault.FileSystem.Username, Encryption.Decode(localVault.FileSystem.Password)));
+            _client = new SftpClient(_connectionInfo);
+            _client.Connect();
+        }
+
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (_client.IsConnected) _client.Disconnect();
+            _client.Dispose();
         }
 
         /// <inheritdoc/>
         public async Task CreateDirectoryAsync(string path)
         {
-            using (SftpClient sftp = new SftpClient(_connectionInfo))
+            if (_client.IsConnected)
             {
-                sftp.Connect();
-                if (sftp.IsConnected)
+                string parentDir = string.Empty;
+                foreach (string subPath in path.Split('/'))
                 {
-                    string parentDir = string.Empty;
-                    foreach (string subPath in path.Split('/'))
+                    parentDir += $"/{subPath}";
+                    if (!await _client.ExistsAsync(parentDir))
                     {
-                        parentDir += $"/{subPath}";
-                        if (!await sftp.ExistsAsync(parentDir))
-                        {
-                            await sftp.CreateDirectoryAsync(parentDir);
-                        }
+                        await _client.CreateDirectoryAsync(parentDir);
                     }
                 }
-
-                sftp.Disconnect();
             }
         }
 
         /// <inheritdoc/>
         public async Task DeleteDirectoryAsync(string path)
         {
-            using (SftpClient sftp = new SftpClient(_connectionInfo))
+            if (await ExistsAsync(path))
             {
-                sftp.Connect();
-                if (sftp.IsConnected && await sftp.ExistsAsync(path))
-                {
-                    await sftp.DeleteDirectoryAsync(path);
-                }
-
-                sftp.Disconnect();
+                await _client.DeleteDirectoryAsync(path);
             }
         }
 
         /// <inheritdoc/>
         public async Task DeleteFileAsync(string path)
         {
-            using (SftpClient sftp = new SftpClient(_connectionInfo))
+            if (await ExistsAsync(path))
             {
-                sftp.Connect();
-                if (sftp.IsConnected && await sftp.ExistsAsync(path))
-                {
-                    await sftp.DeleteAsync(path);
-                }
-
-                sftp.Disconnect();
+                await _client.DeleteAsync(path);
             }
-        }
-
-        public Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<string> GetDirectoryNameAsync(string path)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Dictionary<string, SystemFile>> GetFilesAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public async Task<SystemFile[]> GetFilesAsync(string path)
-        {
-            List<SystemFile> list = new();
-            using (SftpClient sftp = new SftpClient(_connectionInfo))
-            {
-                sftp.Connect();
-                if (sftp.IsConnected && await sftp.ExistsAsync(path))
-                {
-                    foreach (ISftpFile file in sftp.ListDirectory(path))
-                    {
-                        list.Add(new SystemFile(file.FullName)
-                        {
-                            Name = file.Name,
-                            RemotePath = file.FullName,
-                            RemoteSize = file.Length
-                        });
-                    }
-                }
-
-                sftp.Disconnect();
-            }
-
-            return list.ToArray();
-        }
-
-        /// <inheritdoc/>
-        public async Task<SystemFile> GetFileAsync(string path)
-        {
-            SystemFile file = new SystemFile(path);
-            using (SftpClient sftp = new SftpClient(_connectionInfo))
-            {
-                sftp.Connect();
-                if (sftp.IsConnected && await sftp.ExistsAsync(path))
-                {
-                    ISftpFile sf = sftp.Get(path);
-                    file = new SystemFile(sf.FullName)
-                    {
-                        Name = sf.Name,
-                        RemotePath = sf.FullName,
-                        RemoteSize = sf.Length,
-                    };
-                }
-
-                sftp.Disconnect();
-            }
-
-            return file;
         }
 
         /// <inheritdoc />
-        public async Task<long> PingAsync()
+        public async Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            CancellationTokenSource cts = new();
-            Stopwatch sw = Stopwatch.StartNew();
-            using (SftpClient sftp = new SftpClient(_connectionInfo))
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
-                await sftp.ConnectAsync(cts.Token);
-                if (!sftp.IsConnected) return -1;
-                sftp.Disconnect();
-            }
+                await using SftpFileStream openStream = _client.OpenRead(file.RemotePath);
+                await using FileStream createStream = File.Create(file.LocalPath);
+                await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
+                await gzipStream.CopyToAsync(createStream, ct);
+            });
+        }
 
-            return sw.ElapsedMilliseconds;
+        /// <inheritdoc />
+        public Task DownloadFileAsync(string sourcePath, string destinationPath)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> ExistsAsync(string path)
+        {
+            return _client.IsConnected && await _client.ExistsAsync(path);
+        }
+
+        /// <inheritdoc/>
+        public async Task<SystemFile?> GetFileAsync(string path)
+        {
+            if (!await ExistsAsync(path)) return null;
+
+            ISftpFile sf = _client.Get(path);
+            return new SystemFile(sf.Name, sf.FullName, sf.Length, sf.LastWriteTime);
         }
 
         /// <inheritdoc />
         public async Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            using SftpClient sftp = new SftpClient(_connectionInfo);
-            sftp.Connect();
-            if (sftp.IsConnected)
+            foreach (SystemFile file in files)
             {
-                for (int i = 0; i < files.Length; i++)
+                try
                 {
-                    SystemFile file = files[i];
                     Stopwatch sw = new Stopwatch();
-                    progress.Report(ProgressOperation.Uploading, file, i, files.Length);
-                    if (await sftp.ExistsAsync(file.RemotePath)) sftp.ChangePermissions(file.RemotePath, 644);
+                    progress.Report(ProgressOperation.Uploading, file);
+                    if (await _client.ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
 
-                    string parentDir = string.Empty;
-                    foreach (string subPath in file.RemotePath.Split('/'))
-                    {
-                        parentDir += $"/{subPath}";
-                        if (!await sftp.ExistsAsync(parentDir))
-                        {
-                            await sftp.CreateDirectoryAsync(parentDir);
-                        }
-                    }
+                    string[] subDirs = file.RemotePath.Split('/');
+                    string parentDir = string.Join("/", subDirs.Take(subDirs.Length - 1));
+                    if(!await _client.ExistsAsync(parentDir)) await CreateDirectoryAsync(parentDir);
 
-                    await using SftpFileStream createStream = sftp.Create(file.RemotePath);
+                    await using SftpFileStream createStream = _client.Create(file.RemotePath);
                     await using FileStream openStream = File.OpenRead(file.LocalPath);
                     await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
                     await openStream.CopyToAsync(gzipStream);
-                    sftp.ChangePermissions(file.RemotePath, 444);
+                    _client.ChangePermissions(file.RemotePath, 444);
 
                     Log.Debug($"Uploaded '{file.RemotePath}' in {sw.ElapsedMilliseconds}ms");
                 }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.GetBaseException().ToString());
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task UploadFileAsync(string sourcePath, string destinationPath)
+        {
+            if (await ExistsAsync(destinationPath)) _client.ChangePermissions(destinationPath, 644);
+
+            string parentDir = string.Empty;
+            foreach (string subPath in destinationPath.Split('/'))
+            {
+                parentDir += $"/{subPath}";
+                if (!await _client.ExistsAsync(parentDir))
+                {
+                    await _client.CreateDirectoryAsync(parentDir);
+                }
             }
 
-            sftp.Disconnect();
+            await using SftpFileStream createStream = _client.Create(destinationPath);
+            await using FileStream openStream = File.OpenRead(sourcePath);
+            await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+            await openStream.CopyToAsync(gzipStream);
+            _client.ChangePermissions(destinationPath, 444);
         }
     }
 }

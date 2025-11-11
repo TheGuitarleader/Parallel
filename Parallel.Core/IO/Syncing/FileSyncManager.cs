@@ -16,14 +16,11 @@ namespace Parallel.Core.IO.Backup
     /// </summary>
     public class FileSyncManager : BaseSyncManager
     {
-        private List<Task> _tasks = new List<Task>();
-        private int _totalFiles;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSyncManager"/> class.
         /// </summary>
-        /// <param name="vault"></param>
-        public FileSyncManager(VaultConfig vault) : base(vault) { }
+        /// <param name="localVault"></param>
+        public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
         public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
@@ -33,20 +30,19 @@ namespace Parallel.Core.IO.Backup
             Log.Information($"Backing up {backupFiles.Length} files...");
             await FileSystem.UploadFilesAsync(backupFiles, progress);
 
-            Console.WriteLine($"Successfully pushed {backupFiles.Length} files.", ConsoleColor.Green);
-            for (int i = 0; i < files.Length; i++)
+            progress.Reset();
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
-                SystemFile file = files.ElementAt(i);
                 if (file.Deleted)
                 {
-                    progress.Report(ProgressOperation.Archiving, file, i, files.Length);
+                    progress.Report(ProgressOperation.Archiving, file);
                     await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
                     await Database.AddFileAsync(file);
                 }
                 else
                 {
-                    progress.Report(ProgressOperation.Syncing, file, i, files.Length);
-                    SystemFile remote = await FileSystem.GetFileAsync(file.RemotePath);
+                    //progress.Report(ProgressOperation.Syncing, file);
+                    SystemFile? remote = await FileSystem.GetFileAsync(file.RemotePath);
                     if (remote is not null)
                     {
                         file.RemoteSize = remote.RemoteSize;
@@ -54,7 +50,7 @@ namespace Parallel.Core.IO.Backup
                         await Database.AddFileAsync(file);
                     }
                 }
-            }
+            });
         }
 
         /// <inheritdoc/>
@@ -64,13 +60,6 @@ namespace Parallel.Core.IO.Backup
 
             if (!restoreFiles.Any()) return;
             await FileSystem.DownloadFilesAsync(restoreFiles, progress);
-
-            for (int i = 0; i < files.Length; i++)
-            {
-                SystemFile file = files[i];
-                Log.Information($"Restoring file: {file.LocalPath}...");
-                file.RemotePath = PathBuilder.Remote(file.LocalPath, Vault);
-            }
         }
     }
 }

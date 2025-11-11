@@ -47,13 +47,8 @@ namespace Parallel.Core.Database
     /// <summary>
     /// An interface for interacting with client data storage.
     /// </summary>
-    public interface IDatabase
+    public interface IDatabase : IDisposable
     {
-        /// <summary>
-        /// The identifier to the vault for this database.
-        /// </summary>
-        string ProfileId { get; }
-
         #region Base
 
         /// <summary>

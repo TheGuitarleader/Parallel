@@ -12,7 +12,7 @@ namespace Parallel.Cli.Commands
         private readonly Argument<string> sourceArg = new("path", "The source path of files to unzip.");
         private readonly Option<bool> keepOpt = new(["--keep", "-k"], "If the original files should be kept.");
 
-        private Stopwatch _sw;
+        private Stopwatch? _sw;
         private readonly List<Task> _tasks = new List<Task>();
         private int _totalTasks = 0;
 
@@ -58,7 +58,7 @@ namespace Parallel.Cli.Commands
                 }
             }
 
-            CommandLine.ProgressBar(_tasks.Count(t => t.IsCompleted), _totalTasks, _sw.Elapsed, ConsoleColor.DarkGray);
+            CommandLine.ProgressBar(_tasks.Count(t => t.IsCompleted), _totalTasks, _sw?.Elapsed ?? TimeSpan.Zero, ConsoleColor.DarkGray);
         }
     }
 }

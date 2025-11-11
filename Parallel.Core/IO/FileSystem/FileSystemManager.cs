@@ -33,13 +33,13 @@ namespace Parallel.Core.IO.FileSystem
         /// <summary>
         /// Creates a new file system association.
         /// </summary>
-        /// <param name="vault">The vault needed for the associated file system.</param>
-        public static IFileSystem CreateNew(VaultConfig vault)
+        /// <param name="vaultConfig">The vault needed for the associated file system.</param>
+        public static IFileSystem CreateNew(LocalVaultConfig vaultConfig)
         {
-            return vault.FileSystem.Service switch
+            return vaultConfig.FileSystem.Service switch
             {
-                FileService.Local => new DotNetFileSystem(vault),
-                FileService.Remote => new SftpFileSystem(vault),
+                FileService.Local => new DotNetFileSystem(vaultConfig),
+                FileService.Remote => new SftpFileSystem(vaultConfig),
                 //FileService.Cloud => new AmazonS3FileSystem(credentials),
                 _ => null
             };

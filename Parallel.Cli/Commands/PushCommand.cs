@@ -2,6 +2,7 @@
 
 using System.CommandLine;
 using Parallel.Cli.Utils;
+using Parallel.Core.Diagnostics;
 using Parallel.Core.IO;
 using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.Scanning;
@@ -40,17 +41,17 @@ namespace Parallel.Cli.Commands
             }, _sourceArg, _configOpt, _verboseOpt);
         }
 
-        private async Task SyncSystemAsync()
+        private Task SyncSystemAsync()
         {
             throw new NotImplementedException();
         }
 
         private async Task SyncPathAsync(string path)
         {
-            await ParallelSettings.ForEachVaultAsync(async vault =>
+            await Program.Settings.ForEachVaultAsync(async vault =>
             {
-                ISyncManager sync = SyncManager.CreateNew(vault);
-                if (!sync.Initialize())
+                FileSyncManager syncManager = new FileSyncManager(vault);
+                if (!await syncManager.ConnectAsync())
                 {
                     CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);
                     return;
@@ -58,8 +59,8 @@ namespace Parallel.Cli.Commands
 
                 // Normalize paths for safe comparison
                 string fullPath = Path.GetFullPath(path);
-                string[] backupFolders = vault.BackupDirectories.ToArray();
-                string[] ignoredFolders = vault.IgnoreDirectories.ToArray();
+                string[] backupFolders = syncManager.RemoteVault.BackupDirectories.ToArray();
+                string[] ignoredFolders = syncManager.RemoteVault.IgnoreDirectories.ToArray();
 
                 bool isFile = PathBuilder.IsFile(fullPath);
                 if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)))
@@ -75,19 +76,21 @@ namespace Parallel.Cli.Commands
                 }
 
                 CommandLine.WriteLine(vault, $"Scanning for file changes in {path}...", ConsoleColor.DarkGray);
-
-                FileScanner scanner = new FileScanner(sync);
+                FileScanner scanner = new FileScanner(syncManager);
                 SystemFile[] files = await scanner.GetFileChangesAsync(path, ignoredFolders);
                 int successFiles = files.Length;
                 if (successFiles == 0)
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is already up to date.", ConsoleColor.Green);
+                    await syncManager.DisconnectAsync();
                     return;
                 }
 
                 CommandLine.WriteLine(vault, $"Backing up {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
-                await sync.PushFilesAsync(files, new ProgressReport(vault));
-                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files to '{vault.FileSystem.Address}'.", ConsoleColor.Green);
+                await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles));
+                await syncManager.DisconnectAsync();
+
+                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files to '{vault.FileSystem.RootDirectory}'.", ConsoleColor.Green);
             });
         }
     }

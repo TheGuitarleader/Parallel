@@ -19,11 +19,11 @@ namespace Parallel.Core.IO.Backup
         /// <summary>
         /// Creates a new instance of an <see cref="ISyncManager"/>.
         /// </summary>
-        /// <param name="vault"></param>
+        /// <param name="localVault"></param>
         /// <returns></returns>
-        public static ISyncManager CreateNew(VaultConfig vault)
+        public static ISyncManager CreateNew(LocalVaultConfig localVault)
         {
-            return new FileSyncManager(vault);
+            return new FileSyncManager(localVault);
         }
     }
 }

@@ -9,13 +9,15 @@ namespace Parallel.Cli
 {
     internal class Program
     {
-        internal static ParallelSettings Settings = new ParallelSettings();
+        internal static ParallelConfig Settings = new ParallelConfig();
 
         public static async Task Main(string[] args)
         {
-            Settings = ParallelSettings.Load();
-            string logFile = Path.Combine(PathBuilder.ProgramData, "Logs", $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log");
-            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.File(logFile).CreateLogger();
+            Settings = ParallelConfig.Load();
+            string logFile = Path.Combine(PathBuilder.ProgramData, "Logs", "latest.txt");
+            if (File.Exists(logFile)) File.Delete(logFile);
+            Log.Logger = new LoggerConfiguration().MinimumLevel.Warning().WriteTo.File(logFile).CreateLogger();
+            //Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
 
             AssemblyName assembly = Assembly.GetExecutingAssembly().GetName();
             Log.Information($"{assembly.Name} [Version {assembly.Version}]");

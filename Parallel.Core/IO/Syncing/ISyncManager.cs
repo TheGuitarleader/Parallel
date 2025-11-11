@@ -14,9 +14,14 @@ namespace Parallel.Core.IO.Syncing
     public interface ISyncManager
     {
         /// <summary>
-        /// The back-up connection vault.
+        /// Gets the local vault configuration.
         /// </summary>
-        public VaultConfig Vault { get; }
+        public LocalVaultConfig LocalVault { get; }
+
+        /// <summary>
+        /// Gets the remote vault configuration.
+        /// </summary>
+        public RemoteVaultConfig RemoteVault { get; }
 
         /// <summary>
         /// The associated database connection.
@@ -29,10 +34,14 @@ namespace Parallel.Core.IO.Syncing
         IFileSystem FileSystem { get; set; }
 
         /// <summary>
-        /// Initializes the backup manager by logging into the <see cref="IDatabase"/> and <see cref="IFileSystem"/>
+        /// Establishes a connection to the associated <see cref="IFileSystem"/> and downloads the needed files.
         /// </summary>
-        /// <returns></returns>
-        bool Initialize();
+        Task<bool> ConnectAsync();
+
+        /// <summary>
+        /// Closes the current connection and releases its resources.
+        /// </summary>
+        Task DisconnectAsync();
 
         /// <summary>
         /// Pushes an array of files to a vault.

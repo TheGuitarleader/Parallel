@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.Text;
+using Parallel.Core.Security;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
 
@@ -74,9 +75,9 @@ namespace Parallel.Cli.Utils
             Console.ResetColor();
         }
 
-        public static void WriteLine(VaultConfig vault, object value, ConsoleColor color = ConsoleColor.Gray)
+        public static void WriteLine(LocalVaultConfig localVault, object value, ConsoleColor color = ConsoleColor.Gray)
         {
-            string baseLog = $"[{vault.Id}] {value}";
+            string baseLog = $"[{localVault.Id}] {value}";
             switch(color)
             {
                 default:
