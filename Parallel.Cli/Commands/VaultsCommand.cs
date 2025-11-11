@@ -3,7 +3,9 @@
 using System.CommandLine;
 using Parallel.Cli.Utils;
 using Parallel.Core.Database;
+using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.FileSystem;
+using Parallel.Core.IO.Syncing;
 using Parallel.Core.Security;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
@@ -12,7 +14,8 @@ namespace Parallel.Cli.Commands
 {
     public class VaultsCommand : Command
     {
-        private Option<string> configOpt = new(["--config", "-c"], "The vault configuration to use.");
+        private readonly Argument<string> configArg = new("config", "The vault configuration to use.");
+        private readonly Option<string> configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
         private Command addCmd = new("add", "Adds a new vault configuration.");
         private Command editCmd = new("edit", "Edits a vault configuration.");
@@ -56,8 +59,8 @@ namespace Parallel.Cli.Commands
                     fsc.Password = CommandLine.ReadPassword("Password");
                 }
 
-                fsc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
-                fsc.EncryptionKey = HashGenerator.GenerateHash(32, true);
+                //fsc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
+                //fsc.EncryptionKey = HashGenerator.GenerateHash(32, true);
 
                 string? profileName = CommandLine.ReadString("Profile Name");
                 LocalVaultConfig localVault = new LocalVaultConfig(profileName, fsc);
@@ -66,6 +69,35 @@ namespace Parallel.Cli.Commands
 
                 CommandLine.WriteLine($"Saved new storage vault: '{localVault.Name}' ({localVault.Id})");
             });
+
+            this.AddCommand(viewCmd);
+            viewCmd.AddArgument(configArg);
+            viewCmd.SetHandler(async (vault) =>
+            {
+                CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
+                LocalVaultConfig? config = ParallelConfig.GetVault(vault);
+                if (config == null)
+                {
+                    CommandLine.WriteLine($"Unable to find vault with name: '{vault}'", ConsoleColor.Yellow);
+                    return;
+                }
+
+                ISyncManager syncManager = new FileSyncManager(config);
+                if (!await syncManager.ConnectAsync())
+                {
+                    CommandLine.WriteLine(config, $"Failed to connect to vault '{config.Name}'!", ConsoleColor.Red);
+                    return;
+                }
+
+                RemoteVaultConfig remoteVault = syncManager.RemoteVault;
+                CommandLine.WriteLine($"'{remoteVault.Name}' ({remoteVault.Id}):");
+                CommandLine.WriteArray($"Backup Directories", remoteVault.BackupDirectories);
+                CommandLine.WriteArray($"Ignore Directories", remoteVault.IgnoreDirectories);
+                CommandLine.WriteArray($"Prune Directories", remoteVault.PruneDirectories);
+                CommandLine.WriteLine($"Prune Period: {remoteVault.PrunePeriod} days");
+
+                await syncManager.DisconnectAsync();
+            }, configArg);
 
             this.AddCommand(setCmd);
             setCmd.SetHandler(() =>

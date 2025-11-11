@@ -278,7 +278,7 @@ namespace Parallel.Core.IO.Scanning
         {
             Dictionary<string, List<SystemFile>> dict = new();
             IEnumerable<string> files = GetFiles(path, "*");
-            foreach (string file in files)
+            System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, file =>
             {
                 SystemFile entry = new(file);
                 if (dict.TryGetValue(entry.Name, out List<SystemFile> value))
@@ -293,7 +293,7 @@ namespace Parallel.Core.IO.Scanning
                 {
                     dict.Add(entry.Name, new List<SystemFile> { entry });
                 }
-            }
+            });
 
             return dict.Where(kv => kv.Value.Count > 1).OrderByDescending(kv => kv.Value.Count).ToDictionary(k => k.Key, v => v.Value.OrderBy(l => l.LastWrite.TotalMilliseconds).ToArray());
         }

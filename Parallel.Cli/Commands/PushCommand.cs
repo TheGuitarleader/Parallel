@@ -14,15 +14,15 @@ namespace Parallel.Cli.Commands
 {
     public class PushCommand : Command
     {
-        private Command addCmd = new("add", "Adds a new directory to the backup list.");
-        private Command listCmd = new("list", "Shows all directories in the backup list.");
-        private Command removeCmd = new("remove", "Removes a directory from the backup list.");
+        private Command addCmd = new("add", "Adds a new directory to the sync list.");
+        private Command listCmd = new("list", "Shows all directories in the sync list.");
+        private Command removeCmd = new("remove", "Removes a directory from the sync list.");
 
-        private readonly Option<string> _sourceArg = new(["--path", "-p"], "The source path to backup.");
+        private readonly Option<string> _sourceArg = new(["--path", "-p"], "The source path to sync.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
         private readonly Option<bool> _verboseOpt = new(["--verbose", "-v"], "Shows verbose output.");
 
-        public PushCommand() : base("push", "Pushes changed files to vaults.")
+        public PushCommand() : base("push", "Pushes changed files to one vault or multiple.")
         {
             this.AddOption(_sourceArg);
             this.AddOption(_configOpt);
@@ -50,7 +50,7 @@ namespace Parallel.Cli.Commands
         {
             await Program.Settings.ForEachVaultAsync(async vault =>
             {
-                FileSyncManager syncManager = new FileSyncManager(vault);
+                ISyncManager syncManager = new FileSyncManager(vault);
                 if (!await syncManager.ConnectAsync())
                 {
                     CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);

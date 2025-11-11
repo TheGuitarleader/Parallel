@@ -56,31 +56,46 @@ namespace Parallel.Core.Database
         /// <inheritdoc />
         public async Task<bool> AddFileAsync(SystemFile file)
         {
-            using (IDbConnection connection = CreateConnection())
-            {
-                string sql = @"INSERT OR REPLACE INTO files (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Id, @Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
-                return await connection.ExecuteAsync(sql, new { file.Id, file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
-            }
+            using IDbConnection connection = CreateConnection();
+            string sql = @"INSERT OR REPLACE INTO files (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Id, @Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
+            return await connection.ExecuteAsync(sql, new { file.Id, file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
+        }
+
+        public async Task<long> GetLocalSizeAsync()
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT SUM(localsize) FROM files;";
+            return await connection.QuerySingleOrDefaultAsync<long>(sql);
+        }
+
+        public async Task<long> GetRemoteSizeAsync()
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT SUM(remotesize) FROM files;";
+            return await connection.QuerySingleOrDefaultAsync<long>(sql);
+        }
+
+        public async Task<long> GetTotalFilesAsync(bool deleted)
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT COUNT(*) FROM files WHERE deleted = @deleted;";
+            return await connection.QuerySingleOrDefaultAsync<long>(sql, new { deleted });
         }
 
         /// <inheritdoc />
         public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted)
         {
-            using (IDbConnection connection = CreateConnection())
-            {
-                string sql = $"SELECT * FROM files WHERE deleted = {deleted} ORDER BY lastupdate DESC";
-                return await connection.QueryAsync<SystemFile>(sql);
-            }
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT * FROM files WHERE deleted = {deleted} ORDER BY lastupdate DESC";
+            return await connection.QueryAsync<SystemFile>(sql);
         }
 
         /// <inheritdoc />
         public async Task<SystemFile?> GetFileAsync(string path)
         {
-            using (IDbConnection connection = CreateConnection())
-            {
-                string sql = $"SELECT (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%{path}%\" OR remotepath LIKE \"%{path}%\" ORDER BY lastupdate DESC";
-                return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql);
-            }
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%{path}%\" OR remotepath LIKE \"%{path}%\" ORDER BY lastupdate DESC";
+            return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql);
         }
 
         #endregion

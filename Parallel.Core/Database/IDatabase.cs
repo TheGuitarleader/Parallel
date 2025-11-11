@@ -74,6 +74,10 @@ namespace Parallel.Core.Database
         /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddFileAsync(SystemFile file);
 
+        Task<long> GetLocalSizeAsync();
+        Task<long> GetRemoteSizeAsync();
+        Task<long> GetTotalFilesAsync(bool deleted);
+
         #endregion
 
         #region History
