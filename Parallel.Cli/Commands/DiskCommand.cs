@@ -52,9 +52,9 @@ namespace Parallel.Cli.Commands
 
             CommandLine.WriteLine($"Using profile '{vault.Name}' ({vault.Id}):");
             CommandLine.WriteLine($"Root Directory: {vault.FileSystem.RootDirectory}");
-            CommandLine.WriteLine($"Managed Files:  {(totalLocalFiles + totalDeletedFiles).ToString("N0")}");
-            CommandLine.WriteLine($"Local Files:    {totalLocalFiles.ToString("N0")}");
-            CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles.ToString("N0")}");
+            CommandLine.WriteLine($"Managed Files:  {(totalLocalFiles + totalDeletedFiles):N0}");
+            CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
+            CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles:N0}");
             CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
             CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(remoteSize)}");
             CommandLine.WriteLine($"Space Saved:    {Math.Round((localSize - remoteSize) / (double)localSize * 100, 1)}%");
