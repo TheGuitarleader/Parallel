@@ -15,14 +15,14 @@ namespace Parallel.Cli.Commands
 {
     public class DiskCommand : Command
     {
-        private readonly Argument<string> vaultArg = new("vault", "The vault config to use.");
+        private readonly Argument<string> configArg = new("config", "The vault configuration to use.");
 
         public DiskCommand() : base("disk", "Shows the current disk usage.")
         {
-            this.AddArgument(vaultArg);
+            this.AddArgument(configArg);
             this.SetHandler(async (vault) =>
             {
-                CommandLine.WriteLine($"Retrieving disk information...", ConsoleColor.DarkGray);
+                CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
                 LocalVaultConfig? config = ParallelConfig.GetVault(vault);
                 if (config == null)
                 {
@@ -31,7 +31,7 @@ namespace Parallel.Cli.Commands
                 }
 
                 await DisplayDiskInformationAsync(config);
-            }, vaultArg);
+            }, configArg);
         }
 
         private async Task DisplayDiskInformationAsync(LocalVaultConfig vault)
@@ -44,13 +44,13 @@ namespace Parallel.Cli.Commands
             }
 
             IDatabase db = syncManager.Database;
-
             long localSize = await db.GetLocalSizeAsync();
             long remoteSize = await db.GetRemoteSizeAsync();
             long totalLocalFiles = await db.GetTotalFilesAsync(false);
             long totalDeletedFiles = await db.GetTotalFilesAsync(true);
 
-            CommandLine.WriteLine($"Using profile '{vault.Name}' ({vault.Id}):");
+            CommandLine.WriteLine($"Using vault '{vault.Name}' ({vault.Id}):");
+            CommandLine.WriteLine($"Service Type:   {vault.FileSystem.Service}");
             CommandLine.WriteLine($"Root Directory: {vault.FileSystem.RootDirectory}");
             CommandLine.WriteLine($"Managed Files:  {(totalLocalFiles + totalDeletedFiles):N0}");
             CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
@@ -68,6 +68,8 @@ namespace Parallel.Cli.Commands
                 CommandLine.WriteLine($"Disk Free:      {Formatter.FromBytes(drive.TotalFreeSpace)} ({Math.Round(drive.TotalFreeSpace / (double)drive.TotalSize * 100, 1)}%)");
                 CommandLine.WriteLine($"Disk Total:     {Formatter.FromBytes(drive.TotalSize)}");
             }
+
+            await syncManager.DisconnectAsync();
         }
     }
 }

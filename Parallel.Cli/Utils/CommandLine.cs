@@ -156,5 +156,25 @@ namespace Parallel.Cli.Utils
 
             Console.Write($"\r{percentStr} [{progressBar.ToString()}] {remainingStr}");
         }
+
+        public static void WriteArray(string message, IEnumerable<string> elements)
+        {
+            lock (_consoleLock)
+            {
+                string[] array = elements.Order().ToArray();
+                if (array.Length > 0)
+                {
+                    Console.WriteLine($"> {message}:");
+                    foreach (string item in array)
+                    {
+                        Console.WriteLine($">   - {item}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"> {message}: 0");
+                }
+            }
+        }
     }
 }
