@@ -23,12 +23,6 @@ namespace Parallel.Core.Settings
         public int BackupInterval { get; set; } = 60;
 
         /// <summary>
-        /// The amount of time, in days, to hold a file before it can be cleaned.
-        /// <para>Default: 90 days</para>
-        /// </summary>
-        public int RetentionPeriod { get; set; } = 90;
-
-        /// <summary>
         /// The amount of time, in days, to hold a file before it can be pruned.
         /// <para>Default: 180 days (6 months)</para>
         /// </summary>
@@ -47,13 +41,6 @@ namespace Parallel.Core.Settings
         public HashSet<string> IgnoreDirectories { get; } = CreateIgnoreDirectories();
 
         /// <summary>
-        /// A collection of directories to be cleaned on the machine.
-        /// <para>It's important to note that when using the service host this will delete any available file.</para>
-        /// <para>Default: Empty</para>
-        /// </summary>
-        public HashSet<string> CleanDirectories { get; } = CreateCleanDirectories();
-
-        /// <summary>
         /// A collection of deleted directories allowed to be pruned.
         /// <para>Recommended when using a cloud-based <see cref="FileService"/> to save on storage costs.</para>
         /// <para>Default: Empty</para>
@@ -66,14 +53,12 @@ namespace Parallel.Core.Settings
         public RemoteVaultConfig(string profileName, FileSystemCredentials fsc) : base(profileName, fsc) { }
 
         [JsonConstructor]
-        public RemoteVaultConfig(string id, string name, FileSystemCredentials fileSystem, int backupInterval, int retentionPeriod, int prunePeriod, IEnumerable<string> backupDirectories, IEnumerable<string> ignoreDirectories, IEnumerable<string> cleanDirectories, IEnumerable<string> pruneDirectories) : base(id, name, fileSystem)
+        public RemoteVaultConfig(string id, string name, FileSystemCredentials fileSystem, int backupInterval, int prunePeriod, IEnumerable<string> backupDirectories, IEnumerable<string> ignoreDirectories, IEnumerable<string> pruneDirectories) : base(id, name, fileSystem)
         {
             BackupInterval = backupInterval;
-            RetentionPeriod = retentionPeriod;
             PrunePeriod = prunePeriod;
             BackupDirectories = new HashSet<string>(backupDirectories);
             IgnoreDirectories = new HashSet<string>(ignoreDirectories);
-            CleanDirectories = new HashSet<string>(cleanDirectories);
             PruneDirectories = new HashSet<string>(pruneDirectories);
         }
 
@@ -118,14 +103,6 @@ namespace Parallel.Core.Settings
             }
 
             return list;
-        }
-
-        private static HashSet<string> CreateCleanDirectories()
-        {
-            return
-            [
-                Path.GetTempPath(),
-            ];
         }
 
         #endregion

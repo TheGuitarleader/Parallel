@@ -56,7 +56,7 @@ namespace Parallel.Core.IO.Scanning
             if (!Directory.Exists(path)) return Array.Empty<SystemFile>();
 
             List<SystemFile> scannedFiles = new List<SystemFile>();
-            HashSet<string> localFiles = FileScanner.GetFiles(path, ".", ignoreFolders).ToHashSet();
+            HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
             IEnumerable<SystemFile> remoteFiles = await _db.GetFilesAsync(path, false);
             await System.Threading.Tasks.Parallel.ForEachAsync(remoteFiles, ParallelConfig.Options, async (remoteFile, ct) =>
             {
@@ -152,7 +152,7 @@ namespace Parallel.Core.IO.Scanning
         /// <param name="path">The root directory to search.</param>
         /// <param name="recursive">If it should search recursively.</param>
         /// <returns>An array of empty directories.</returns>
-        public static DirectoryInfo[] GetEmptyDirectories(string path, bool recursive = true)
+        public static IEnumerable<DirectoryInfo> GetEmptyDirectories(string path, bool recursive = true)
         {
             List<DirectoryInfo> list = new();
             DirectoryInfo directory = new(path);
@@ -164,12 +164,13 @@ namespace Parallel.Core.IO.Scanning
 
             foreach (DirectoryInfo di in directory.EnumerateDirectories("*", options))
             {
-                Log.Debug($"Checking -> {di.FullName}");
-                if (!di.EnumerateFileSystemInfos().Any()) list.Add(di);
+                var files = di.EnumerateFiles("*", options);
+                Log.Debug($"{files.Count()} files: {di.FullName}");
+                if (!files.Any()) list.Add(di);
             }
 
             Log.Debug($"Found {list.Count} empty directories");
-            return list.ToArray();
+            return list.OrderByDescending(d => d.FullName.Count(c => c == Path.DirectorySeparatorChar)).ToArray();
         }
 
         /// <summary>
@@ -180,7 +181,7 @@ namespace Parallel.Core.IO.Scanning
         /// <param name="start">The time, as a <see cref="UnixTime"/>.</param>
         /// <param name="recursive">If it should search recursively.</param>
         /// <returns>An array of directories in order of oldest first.</returns>
-        public static DirectoryInfo[] GetCleanableDirectories(string path, UnixTime start, bool recursive = true)
+        public static IEnumerable<DirectoryInfo> GetCleanableDirectories(string path, UnixTime start, bool recursive = true)
         {
             Dictionary<DirectoryInfo, DateTime> list = new();
             DirectoryInfo directory = new(path);
@@ -199,14 +200,14 @@ namespace Parallel.Core.IO.Scanning
             }
 
             Log.Debug($"Found {list.Count} cleanable directories");
-            return list.OrderBy(d => d.Value).ToDictionary().Keys.ToArray();
+            return list.OrderBy(d => d.Value).ToDictionary().Keys;
         }
 
-        public static FileInfo[] GetCleanableFiles(string path, UnixTime start, bool recursive = true)
+        public static IEnumerable<FileInfo> GetCleanableFiles(string path, UnixTime start, bool recursive = true)
         {
             Dictionary<FileInfo, DateTime> list = new();
             Log.Debug($"Searching '{path}' for files older than {start.ToString("g")}");
-            foreach (string file in GetFiles(path, "*"))
+            foreach (string file in GetFiles(path, [], "*", recursive))
             {
                 FileInfo fi = new FileInfo(file);
                 DateTime compare = fi.CreationTime > fi.LastWriteTime ? fi.CreationTime : fi.LastWriteTime;
@@ -215,55 +216,58 @@ namespace Parallel.Core.IO.Scanning
             }
 
             Log.Debug($"Found {list.Count} cleanable files");
-            return list.OrderBy(d => d.Value).ToDictionary().Keys.ToArray();
+            return list.OrderBy(d => d.Value).ToDictionary().Keys;
         }
 
         public static IEnumerable<string> GetFiles(string root, string searchPattern)
         {
-            return GetFiles(root, searchPattern, []);
+            return GetFiles(root, [], searchPattern);
         }
 
-        public static IEnumerable<string> GetFiles(string root, string searchPattern, string[] exempt)
+        public static IEnumerable<string> GetFiles(string root, string[] exempt, string searchPattern = "*", bool recursive = true)
         {
             Stack<string> pending = new();
             pending.Push(root);
-            while (pending.Count != 0)
+
+            while (pending.Count > 0)
             {
-                string path = pending.Pop();
-                IEnumerable<string>? next = null;
+                string current = pending.Pop();
+
+                if (IsIgnored(current, exempt))
+                {
+                    Log.Debug($"Ignored -> {current}");
+                    continue;
+                }
+
+                // Get files in current directory
+                string[] files = [];
                 try
                 {
-                    if (!IsIgnored(path, exempt))
+                    files = Directory.GetFiles(current, searchPattern);
+                }
+                catch
+                {
+                    Log.Debug($"No file access -> {current}");
+                }
+
+                foreach (var file in files) yield return file;
+                if (recursive)
+                {
+                    string[] subdirs = [];
+                    try
                     {
-                        //Log.Debug($"Searching -> {path}");
-                        next = Directory.EnumerateFiles(path, searchPattern);
+                        subdirs = Directory.GetDirectories(current);
                     }
-                    // else
-                    // {
-                    //     Log.Debug($"Ignored -> {path}");
-                    // }
-                }
-                catch
-                {
-                    Log.Debug("No file access -> " + path);
-                }
+                    catch
+                    {
+                        Log.Debug($"No folder access -> {current}");
+                    }
 
-                if (next != null && next.Count() != 0)
-                {
-                    foreach (string file in next) yield return file;
-                }
-
-                try
-                {
-                    next = Directory.EnumerateDirectories(path);
-                    foreach (string subdir in next) pending.Push(subdir);
-                }
-                catch
-                {
-                    Log.Debug("No folder access -> " + path);
+                    foreach (var dir in subdirs) pending.Push(dir);
                 }
             }
         }
+
 
         /// <summary>
         /// Scans a directory for duplicate files with the same name and size.

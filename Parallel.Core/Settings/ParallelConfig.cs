@@ -51,6 +51,19 @@ namespace Parallel.Core.Settings
         public int MaxConcurrentProcesses { get; set; } = Math.Clamp(Environment.ProcessorCount / 2, 1, Environment.ProcessorCount);
 
         /// <summary>
+        /// The amount of time, in days, to hold a file before it can be cleaned.
+        /// <para>Default: 90 days</para>
+        /// </summary>
+        public int RetentionPeriod { get; set; } = 90;
+
+        /// <summary>
+        /// A collection of directories to be cleaned on the machine.
+        /// <para>It's important to note that when using the service host this will delete any available file.</para>
+        /// <para>Default: Empty</para>
+        /// </summary>
+        public HashSet<string> CleanDirectories { get; } = CreateCleanDirectories();
+
+        /// <summary>
         /// The profiles to use.
         /// <para>When pulling, the CLI defaults to the first in the list.</para>
         /// </summary>
@@ -63,15 +76,11 @@ namespace Parallel.Core.Settings
         public static ParallelConfig Load()
         {
             Log.Debug($"Loading config file: {ConfigFile}");
-            if (File.Exists(ConfigFile))
-            {
-                string json = File.ReadAllText(ConfigFile);
-                return JsonConvert.DeserializeObject<ParallelConfig>(json);
-            }
-            else
-            {
-                return new ParallelConfig();
-            }
+            if (!File.Exists(ConfigFile)) return new ParallelConfig();
+
+            string json = File.ReadAllText(ConfigFile);
+            ParallelConfig? config = JsonConvert.DeserializeObject<ParallelConfig>(json);
+            return config ?? new ParallelConfig();
         }
 
         /// <summary>
@@ -82,6 +91,18 @@ namespace Parallel.Core.Settings
             Log.Debug($"Saving config file: {ConfigFile}");
             if (!Directory.Exists(PathBuilder.ProgramData)) Directory.CreateDirectory(PathBuilder.ProgramData);
             File.WriteAllText(ConfigFile, JsonConvert.SerializeObject(this, Formatting.Indented));
+        }
+
+        /// <summary>
+        /// Creates a default array of cleanable directories.
+        /// </summary>
+        /// <returns></returns>
+        private static HashSet<string> CreateCleanDirectories()
+        {
+            return
+            [
+                Path.GetTempPath(),
+            ];
         }
 
         /// <summary>
