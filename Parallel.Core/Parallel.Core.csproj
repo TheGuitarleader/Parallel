@@ -3,18 +3,17 @@
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <RootNamespace>Parallel.Core</RootNamespace>
+        <Platforms>AnyCPU</Platforms>
         <Nullable>enable</Nullable>
-        <AssemblyVersion>1.0.1.0</AssemblyVersion>
-        <Company>Entex Interactive, LLC</Company>
-        <Copyright>Copyright Entex Interactive, LLC. All Rights Reserved.</Copyright>
+        <AssemblyName>Parallel.Core</AssemblyName>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <Company>Kyle Ebbinga</Company>
+        <Copyright>Copyright $(Company). All Rights Reserved.</Copyright>
         <FileVersion>$(AssemblyVersion)</FileVersion>
         <Version>$(VersionPrefix)$(AssemblyVersion)</Version>
         <Authors>$(Company)</Authors>
-        <AssemblyName>Parallel.Core</AssemblyName>
-        <GenerateDocumentationFile>True</GenerateDocumentationFile>
-        <RootNamespace>Parallel.Core</RootNamespace>
-        <Configurations>Debug;Release;Analyze</Configurations>
-        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
