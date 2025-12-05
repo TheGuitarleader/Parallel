@@ -2,7 +2,6 @@
 
 using System.CommandLine;
 using Parallel.Cli.Utils;
-using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.Scanning;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Settings;
@@ -13,6 +12,8 @@ namespace Parallel.Cli.Commands
     public class CleanCommand : Command
     {
         private long _freedBytes = 0;
+        private int _filesCount = 0;
+        private int _dirsCount = 0;
 
         private readonly Option<string> _sourceOpt = new(["--path", "-p"], "The source path to clean.");
         private readonly Option<int> _daysOpt = new(["--days", "-d"], "The amount of days to hang onto files.");
@@ -39,6 +40,7 @@ namespace Parallel.Cli.Commands
                     await CleanDirectoryAsync(config, path, days, recursive, verbose);
                 }
 
+                CommandLine.WriteLine($"Successfully cleaned {_filesCount:N0} files and {_dirsCount:N0} directories, ({Formatter.FromBytes(_freedBytes)} removed)", ConsoleColor.Green);
             }, _sourceOpt, _daysOpt, _recursiveOpt, _verboseOpt);
         }
 
@@ -62,7 +64,6 @@ namespace Parallel.Cli.Commands
             UnixTime minTime = UnixTime.FromMilliseconds(UnixTime.Now.TotalMilliseconds - (days * UnixTime.Day));
             IEnumerable<FileInfo> cleanableFiles = FileScanner.GetCleanableFiles(path, minTime, recursive);
             if (!cleanableFiles.Any()) CommandLine.WriteLine($"No cleanable files were found in the provided path.", ConsoleColor.Green);
-            int filesCount = cleanableFiles.Count();
 
             await System.Threading.Tasks.Parallel.ForEachAsync(cleanableFiles, ParallelConfig.Options, (fi, ct) =>
             {
@@ -71,6 +72,7 @@ namespace Parallel.Cli.Commands
                     try
                     {
                         _freedBytes += fi.Length;
+                        _filesCount++;
                         fi.Delete();
                     }
                     catch (Exception ex)
@@ -85,11 +87,10 @@ namespace Parallel.Cli.Commands
 
             IEnumerable<DirectoryInfo> directories = FileScanner.GetEmptyDirectories(path, recursive);
             if (!directories.Any()) CommandLine.WriteLine($"No empty directories were found in the provided path.", ConsoleColor.Green);
-            int directoriesCount = directories.Count();
 
             await System.Threading.Tasks.Parallel.ForEachAsync(directories, ParallelConfig.Options, (di, ct) =>
             {
-                if (di.Exists && di.EnumerateFiles().Any())
+                if (di.Exists && !di.EnumerateFiles().Any())
                 {
                     try
                     {
@@ -98,7 +99,7 @@ namespace Parallel.Cli.Commands
                     }
                     catch (Exception ex)
                     {
-                        Log.Warning($"{ex.GetBaseException().Message}");
+                        Log.Error($"{ex.GetBaseException().Message}");
                     }
                 }
 
@@ -113,15 +114,13 @@ namespace Parallel.Cli.Commands
                 {
                     Log.Debug($"Removing empty directory: {currentDir.FullName}");
                     currentDir.Delete(true);
-                    directoriesCount++;
+                    _dirsCount++;
                 }
                 catch (Exception ex)
                 {
                     Log.Warning($"{ex.GetBaseException().Message}");
                 }
             }
-
-            if(filesCount > 0 || directoriesCount > 0) CommandLine.WriteLine($"Successfully cleaned {filesCount:N0} files and {directoriesCount:N0} directories, ({Formatter.FromBytes(_freedBytes)} removed)", ConsoleColor.Green);
         }
     }
 }
