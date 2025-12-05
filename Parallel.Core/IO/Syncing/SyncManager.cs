@@ -1,15 +1,8 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
-using Newtonsoft.Json.Linq;
 using Parallel.Core.Settings;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Parallel.Core.IO.Syncing;
 
-namespace Parallel.Core.IO.Backup
+namespace Parallel.Core.IO.Syncing
 {
     /// <summary>
     /// Represents the way manage <see cref="ISyncManager"/>s.

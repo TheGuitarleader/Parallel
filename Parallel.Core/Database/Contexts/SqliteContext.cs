@@ -83,6 +83,14 @@ namespace Parallel.Core.Database
         }
 
         /// <inheritdoc />
+        public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path)
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT * FROM files WHERE localpath LIKE \"%{path}%\" OR remotepath LIKE \"%{path}%\" ORDER BY lastupdate DESC";
+            return await connection.QueryAsync<SystemFile>(sql);
+        }
+
+        /// <inheritdoc />
         public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted)
         {
             using IDbConnection connection = CreateConnection();

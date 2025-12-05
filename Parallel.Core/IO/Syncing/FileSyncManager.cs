@@ -1,18 +1,14 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
-using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
-using Parallel.Core.Events;
-using Parallel.Core.IO.FileSystem;
-using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 
-namespace Parallel.Core.IO.Backup
+namespace Parallel.Core.IO.Syncing
 {
     /// <summary>
-    /// Represents the way to archive files to an associated file system.
+    /// Represents the way to sync whole files to an associated file system.
     /// </summary>
     public class FileSyncManager : BaseSyncManager
     {
@@ -56,10 +52,7 @@ namespace Parallel.Core.IO.Backup
         /// <inheritdoc/>
         public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            SystemFile[] restoreFiles = files.Where(f => f.Deleted).ToArray();
-
-            if (!restoreFiles.Any()) return;
-            await FileSystem.DownloadFilesAsync(restoreFiles, progress);
+            await FileSystem.DownloadFilesAsync(files, progress);
         }
     }
 }

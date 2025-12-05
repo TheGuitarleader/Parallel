@@ -9,7 +9,7 @@ using Parallel.Core.Settings;
 namespace Parallel.Core.IO.Syncing
 {
     /// <summary>
-    /// Represents the base way of backing up files to an associated file system.
+    /// Represents the base functionality for syncing files to an associated file system.
     /// </summary>
     public abstract class BaseSyncManager : ISyncManager
     {
@@ -40,19 +40,6 @@ namespace Parallel.Core.IO.Syncing
         }
 
         /// <inheritdoc />
-        public async Task<bool> InitializeAsync()
-        {
-            try
-            {
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.GetBaseException().ToString());
-                return false;
-            }
-        }
-
         public async Task<bool> ConnectAsync()
         {
             string root = PathBuilder.GetRootDirectory(LocalVault);
@@ -101,7 +88,8 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public async Task DisconnectAsync()
         {
-            await FileSystem.UploadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new ProgressLogger());
+            SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
+            await FileSystem.UploadFilesAsync(tempFiles, new ProgressLogger());
             FileSystem.Dispose();
         }
 

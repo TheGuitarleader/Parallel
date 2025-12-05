@@ -59,7 +59,7 @@ namespace Parallel.Core.IO.Scanning
             IEnumerable<SystemFile> remoteFiles = await _db.GetFilesAsync(path, false);
             await System.Threading.Tasks.Parallel.ForEachAsync(remoteFiles, ParallelConfig.Options, async (remoteFile, ct) =>
             {
-                if (File.Exists(remoteFile.LocalPath) && remoteFile.RemotePath != null)
+                if (File.Exists(remoteFile.LocalPath))
                 {
                     SystemFile localFile = new SystemFile(remoteFile.LocalPath);
                     if (IsIgnored(localFile.LocalPath, ignoreFolders))
@@ -86,17 +86,7 @@ namespace Parallel.Core.IO.Scanning
                 }
             });
 
-            // foreach (SystemFile remoteFile in remoteFiles)
-            // {
-            //
-            // }
-
             Log.Debug($"{localFiles.Count} files are untracked! Adding...");
-            // foreach (var file in localFiles)
-            // {
-            //
-            // }
-
             await System.Threading.Tasks.Parallel.ForEachAsync(localFiles, ParallelConfig.Options, async (file, ct) =>
             {
                 if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
@@ -114,12 +104,14 @@ namespace Parallel.Core.IO.Scanning
         /// <summary>
         /// Gets if a file has changed.
         /// </summary>
-        /// <param name="localFile">The base file to compare.</param>
-        /// <param name="remoteFile">The remote file to compare to.</param>
+        /// <param name="sourcePath">The source file to compare.</param>
+        /// <param name="targetPath">The target file to compare to.</param>
         /// <returns>True is success, otherwise false.</returns>
-        public static bool HasChanged(SystemFile localFile, SystemFile? remoteFile)
+        public static bool HasChanged(SystemFile sourcePath, SystemFile? targetPath)
         {
-            return remoteFile == null || (localFile.LastWrite.TotalMilliseconds > remoteFile.LastWrite.TotalMilliseconds && !localFile.CheckSum.SequenceEqual(remoteFile.CheckSum));
+            Console.WriteLine($"{sourcePath.Name}: {targetPath} == null || ({sourcePath.LastWrite.TotalMilliseconds} > {targetPath.LastWrite.TotalMilliseconds} && {!sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum)}");
+
+            return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && !sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum));
         }
 
 
