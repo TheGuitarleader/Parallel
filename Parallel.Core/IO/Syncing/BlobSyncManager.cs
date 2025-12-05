@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.Reflection.Metadata;
+using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
@@ -29,15 +30,15 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            IEnumerable<string> hashes = await _blobStorage.ChunkFileAsync(files.First().LocalPath, Path.Combine(TempDirectory, "objects"), new ProgressLogger());
-            File.WriteAllText(_hashes, JsonConvert.SerializeObject(hashes, Formatting.Indented));
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            {
+                await _blobStorage.ChunkFileAsync(file.LocalPath, Path.Combine(TempDirectory, "objects"), new ProgressLogger());
+            });
         }
 
         /// <inheritdoc />
         public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            IEnumerable<string>? hashes = JsonConvert.DeserializeObject<IEnumerable<string>>(await File.ReadAllTextAsync(_hashes));
-            await _blobStorage.AssembleFileAsync(hashes, Path.Combine(TempDirectory, "objects"), files.First().LocalPath);
         }
     }
 }
