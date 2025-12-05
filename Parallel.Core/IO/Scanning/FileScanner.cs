@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
-using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
@@ -164,7 +163,7 @@ namespace Parallel.Core.IO.Scanning
 
             foreach (DirectoryInfo di in directory.EnumerateDirectories("*", options))
             {
-                var files = di.EnumerateFiles("*", options);
+                IEnumerable<FileInfo> files = di.EnumerateFiles("*", options);
                 Log.Debug($"{files.Count()} files: {di.FullName}");
                 if (!files.Any()) list.Add(di);
             }

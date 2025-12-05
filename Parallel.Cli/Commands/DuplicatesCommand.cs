@@ -2,7 +2,6 @@
 
 using System.CommandLine;
 using Parallel.Cli.Utils;
-using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.Scanning;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
