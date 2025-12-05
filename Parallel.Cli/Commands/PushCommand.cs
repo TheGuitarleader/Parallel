@@ -4,7 +4,6 @@ using System.CommandLine;
 using Parallel.Cli.Utils;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.IO;
-using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.Scanning;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
@@ -22,7 +21,7 @@ namespace Parallel.Cli.Commands
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
         private readonly Option<bool> _verboseOpt = new(["--verbose", "-v"], "Shows verbose output.");
 
-        public PushCommand() : base("push", "Pushes changed files to one vault or multiple.")
+        public PushCommand() : base("push", "Pushes changed files to vaults.")
         {
             this.AddOption(_sourceArg);
             this.AddOption(_configOpt);
@@ -50,7 +49,7 @@ namespace Parallel.Cli.Commands
         {
             await Program.Settings.ForEachVaultAsync(async vault =>
             {
-                ISyncManager syncManager = new FileSyncManager(vault);
+                ISyncManager syncManager = SyncManager.CreateNew(vault);
                 if (!await syncManager.ConnectAsync())
                 {
                     CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);

@@ -3,7 +3,6 @@
 using System.CommandLine;
 using Parallel.Cli.Utils;
 using Parallel.Core.Database;
-using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Security;
@@ -82,7 +81,7 @@ namespace Parallel.Cli.Commands
                     return;
                 }
 
-                ISyncManager syncManager = new FileSyncManager(config);
+                ISyncManager syncManager = SyncManager.CreateNew(config);
                 if (!await syncManager.ConnectAsync())
                 {
                     CommandLine.WriteLine(config, $"Failed to connect to vault '{config.Name}'!", ConsoleColor.Red);

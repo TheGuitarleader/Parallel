@@ -7,7 +7,7 @@ using Parallel.Core.Settings;
 namespace Parallel.Core.IO.Syncing
 {
     /// <summary>
-    /// Represents the way to clone files to an associated file system using file deltas.
+    /// Represents the way to sync files to an associated file system using file deltas.
     /// </summary>
     public class DeltaSyncManager : BaseSyncManager
     {

@@ -5,7 +5,6 @@ using System.Data;
 using Newtonsoft.Json.Linq;
 using Parallel.Cli.Utils;
 using Parallel.Core.Database;
-using Parallel.Core.IO.Backup;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Settings;
@@ -36,7 +35,7 @@ namespace Parallel.Cli.Commands
 
         private async Task DisplayDiskInformationAsync(LocalVaultConfig vault)
         {
-            ISyncManager syncManager = new FileSyncManager(vault);
+            ISyncManager syncManager = SyncManager.CreateNew(vault);
             if (!await syncManager.ConnectAsync())
             {
                 CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);

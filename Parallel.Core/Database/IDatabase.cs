@@ -96,6 +96,7 @@ namespace Parallel.Core.Database
 
         #endregion
 
+        Task<IEnumerable<SystemFile>> GetFilesAsync(string path);
         Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted);
         Task<SystemFile?> GetFileAsync(string path);
     }

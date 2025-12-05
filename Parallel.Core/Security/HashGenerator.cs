@@ -72,6 +72,16 @@ namespace Parallel.Core.Security
         }
 
         /// <summary>
+        /// Computes a SHA256 hash from bytes.
+        /// </summary>
+        /// <param name="value">The string to hash.</param>
+        /// <returns>A <see cref="SHA256"/> hash as a string.</returns>
+        public static string CreateSHA256(byte[] value)
+        {
+            return Convert.ToHexString(SHA256.HashData(value)).ToLower();
+        }
+
+        /// <summary>
         /// Computes a SHA256 hash from a string.
         /// </summary>
         /// <param name="value">The string to hash.</param>
