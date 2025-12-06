@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Collections.Concurrent;
 using System.Data;
 using System.Diagnostics;
 using System.Text;
@@ -54,51 +55,57 @@ namespace Parallel.Core.IO.Scanning
         {
             if (!Directory.Exists(path)) return Array.Empty<SystemFile>();
 
-            List<SystemFile> scannedFiles = new List<SystemFile>();
+            ConcurrentBag<string> scannedFiles = new();
+            ConcurrentBag<SystemFile> changedFiles = new();
+
             HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
             IEnumerable<SystemFile> remoteFiles = await _db.GetFilesAsync(path, false);
-            await System.Threading.Tasks.Parallel.ForEachAsync(remoteFiles, ParallelConfig.Options, async (remoteFile, ct) =>
+            System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile, ct) =>
             {
                 if (File.Exists(remoteFile.LocalPath))
                 {
                     SystemFile localFile = new SystemFile(remoteFile.LocalPath);
                     if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
-                        Log.Debug($"Ignored -> {localFile.LocalPath}");
+                        //Log.Debug($"Ignored -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;
                         localFile.Deleted = true;
-                        scannedFiles.Add(localFile);
+                        changedFiles.Add(localFile);
                     }
                     else if (HasChanged(localFile, remoteFile))
                     {
-                        Log.Debug($"Changed -> {localFile.LocalPath}");
+                        //Log.Debug($"Changed -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;
-                        scannedFiles.Add(localFile);
+                        changedFiles.Add(localFile);
                     }
 
-                    localFiles.Remove(localFile.LocalPath);
+                    scannedFiles.Add(localFile.LocalPath);
                 }
                 else
                 {
-                    Log.Debug($"Deleted -> {remoteFile.LocalPath}");
+                    //Log.Debug($"Deleted -> {remoteFile.LocalPath}");
                     remoteFile.Deleted = true;
-                    scannedFiles.Add(remoteFile);
+                    changedFiles.Add(remoteFile);
                 }
             });
 
-            Log.Debug($"{localFiles.Count} files are untracked! Adding...");
-            await System.Threading.Tasks.Parallel.ForEachAsync(localFiles, ParallelConfig.Options, async (file, ct) =>
+            HashSet<string> remainingFiles = localFiles.Except(new HashSet<string>(scannedFiles)).ToHashSet();
+            Log.Debug($"{remainingFiles.Count} files are untracked! Adding...");
+            System.Threading.Tasks.Parallel.ForEach(remainingFiles, ParallelConfig.Options, (file, ct) =>
             {
-                if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
+                if (!IsIgnored(file, ignoreFolders))
                 {
-                    Log.Debug($"Created -> {file}");
-                    scannedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
+                    if (File.Exists(file))
+                    {
+                        //Log.Debug($"Created -> {file}");
+                        changedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
+                    }
                 }
             });
 
             Log.Debug($"{localFiles.Count} files remaining.");
-            Log.Information($"Found {scannedFiles.Count:N0} changes in '{path}'");
-            return scannedFiles.ToArray();
+            Log.Information($"Found {changedFiles.Count:N0} changes in '{path}'");
+            return changedFiles.ToArray();
         }
 
         /// <summary>
@@ -109,8 +116,6 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>True is success, otherwise false.</returns>
         public static bool HasChanged(SystemFile sourcePath, SystemFile? targetPath)
         {
-            Console.WriteLine($"{sourcePath.Name}: {targetPath} == null || ({sourcePath.LastWrite.TotalMilliseconds} > {targetPath.LastWrite.TotalMilliseconds} && {!sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum)}");
-
             return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && !sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum));
         }
 
@@ -223,7 +228,6 @@ namespace Parallel.Core.IO.Scanning
             while (pending.Count > 0)
             {
                 string current = pending.Pop();
-
                 if (IsIgnored(current, exempt))
                 {
                     Log.Debug($"Ignored -> {current}");

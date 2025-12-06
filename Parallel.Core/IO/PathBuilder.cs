@@ -168,12 +168,11 @@ namespace Parallel.Core.IO
             return !Directory.Exists(path) && File.Exists(path);
         }
 
-        public static string GetObjectPath(string basePath, string hash, int shards = 3)
+        public static string GetObjectPath(string basePath, string hash)
         {
-            if (hash.Length < shards * 2) throw new ArgumentException("Hash too short for sharding", nameof(hash));
-            string parentDir = Path.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2), hash.Substring(4, 2), hash.Substring(6, 2));
+            string parentDir = Path.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
             if (!Directory.Exists(parentDir))  Directory.CreateDirectory(parentDir);
-            return Path.Combine(parentDir, hash);
+            return Path.Combine(parentDir, hash[4..]);
         }
     }
 }

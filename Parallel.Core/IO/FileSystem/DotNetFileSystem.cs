@@ -5,6 +5,7 @@ using System.IO.Compression;
 using Microsoft.VisualBasic.FileIO;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
+using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
@@ -70,12 +71,11 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc />
-        public async Task DownloadFileAsync(string sourcePath, string destinationPath)
+        public async Task DownloadStreamAsync(Stream output, string remotePath)
         {
-            await using FileStream openStream = File.OpenRead(destinationPath);
-            await using FileStream createStream = File.Create(sourcePath);
+            await using FileStream openStream = File.OpenRead(remotePath);
             await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
-            await gzipStream.CopyToAsync(createStream);
+            await gzipStream.CopyToAsync(output);
         }
 
         /// <inheritdoc />
@@ -126,25 +126,13 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc />
-        public async Task UploadFileAsync(string sourcePath, string destinationPath)
+        public async Task UploadStreamAsync(Stream input, string remotePath)
         {
-            try
-            {
-                if (await ExistsAsync(destinationPath)) File.SetAttributes(destinationPath, ~FileAttributes.ReadOnly & File.GetAttributes(destinationPath));
-                string? parent = Path.GetDirectoryName(destinationPath);
-                if (parent != null && !Directory.Exists(parent)) Directory.CreateDirectory(parent);
+            await using FileStream createStream = File.Create(remotePath);
+            await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+            await input.CopyToAsync(gzipStream);
 
-                await using FileStream openStream = File.OpenRead(sourcePath);
-                await using FileStream createStream = File.Create(destinationPath);
-                await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-                await openStream.CopyToAsync(gzipStream);
-
-                File.SetAttributes(destinationPath, File.GetAttributes(destinationPath) | FileAttributes.ReadOnly);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.GetBaseException().ToString());
-            }
+            //File.SetAttributes(remotePath, File.GetAttributes(remotePath) | FileAttributes.ReadOnly);
         }
     }
 }

@@ -76,7 +76,7 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The checksum used to check if the file has changed.
         /// </summary>
-        public string? CheckSum { get; set; }
+        public byte[]? CheckSum { get; set; }
 
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace Parallel.Core.Models
         /// <param name="salt"></param>
         /// <param name="iv"></param>
         /// <param name="checksum"></param>
-        public SystemFile(string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
+        public SystemFile(string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, byte[] checksum)
         {
             Id = id;
             Name = name;

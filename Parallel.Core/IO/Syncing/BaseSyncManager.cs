@@ -88,6 +88,9 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public async Task DisconnectAsync()
         {
+            Log.Debug($"Uploaded config file: {TempConfigFile}");
+            Log.Debug($"Uploaded db file: {TempDbFile}");
+
             SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
             await FileSystem.UploadFilesAsync(tempFiles, new ProgressLogger());
             FileSystem.Dispose();

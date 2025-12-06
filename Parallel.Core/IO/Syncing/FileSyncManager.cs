@@ -37,7 +37,7 @@ namespace Parallel.Core.IO.Syncing
                 }
                 else
                 {
-                    //progress.Report(ProgressOperation.Syncing, file);
+                    progress.Report(ProgressOperation.Syncing, file);
                     SystemFile? remote = await FileSystem.GetFileAsync(file.RemotePath);
                     if (remote is not null)
                     {

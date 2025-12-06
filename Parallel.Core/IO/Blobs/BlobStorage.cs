@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using Parallel.Core.Diagnostics;
+using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Security;
 
 namespace Parallel.Core.IO.Blobs
@@ -8,32 +9,21 @@ namespace Parallel.Core.IO.Blobs
     /// <summary>
     /// Represents the way to chunk files into blobs for syncing.
     /// </summary>
-    public class BlobStorage
+    public abstract class BlobStorage
     {
         /// <summary>
         /// The size, in bytes, to use for chunks of a file.
         /// </summary>
-        public int ChunkSize { get; set; }
-
-        /// <summary>
-        /// Gets the temp directory for storing blobs.
-        /// </summary>
-        public string TempDirectory { get; set; }
-
-        public BlobStorage(string tempDir, int chunkSize = 4194304)
-        {
-            TempDirectory = tempDir;
-            ChunkSize = chunkSize;
-        }
+        private static readonly int ChunkSize = 4194304;
 
         /// <summary>
         /// Chunks a file into hashes for blob storage.
         /// </summary>
         /// <param name="sourcePath">The source path of the file.</param>
-        /// <param name="destPath">The destination to send chunked objects to.</param>
+        /// <param name="tempObjDir">The temp directory to send chunked objects to.</param>
         /// <param name="progress"></param>
         /// <returns></returns>
-        public async Task<IEnumerable<string>> ChunkFileAsync(string sourcePath, string destPath, IProgressReporter progress)
+        public static async Task<FileManifest> CreateManifestAsync(IFileSystem fileSystem, string sourcePath, string tempObjDir, IProgressReporter progress)
         {
             List<string> chunkHashes = new List<string>();
             await using FileStream fs = File.OpenRead(sourcePath);
@@ -46,14 +36,14 @@ namespace Parallel.Core.IO.Blobs
                 Buffer.BlockCopy(buffer, 0, chunkData, 0, bytesRead);
 
                 string hash = HashGenerator.CreateSHA256(chunkData);
-                string chunkPath = PathBuilder.GetObjectPath(destPath, hash);
+                string chunkPath = PathBuilder.GetObjectPath(tempObjDir, hash);
 
                 if(!File.Exists(chunkPath)) await File.WriteAllBytesAsync(chunkPath, chunkData);
                 chunkHashes.Add(hash);
             }
 
-            Log.Debug($"Wrote {chunkHashes.Count} hashes to {destPath}");
-            return chunkHashes;
+            Log.Debug($"Wrote {chunkHashes.Count} hashes to {tempObjDir}");
+            return new FileManifest(sourcePath, chunkHashes, new FileInfo(sourcePath).Length);
         }
 
         /// <summary>

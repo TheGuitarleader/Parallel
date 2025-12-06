@@ -72,7 +72,7 @@ namespace Parallel.Core.Database
         /// </summary>
         /// <param name="file"></param>
         /// <returns>True if successful, false otherwise</returns>
-        Task<bool> AddFileAsync(SystemFile file);
+        Task<int> AddFileAsync(SystemFile file);
 
         Task<long> GetLocalSizeAsync();
         Task<long> GetRemoteSizeAsync();
@@ -88,7 +88,7 @@ namespace Parallel.Core.Database
         /// <param name="path"></param>
         /// <param name="type"></param>
         /// <returns>True if successful, false otherwise</returns>
-        Task<bool> AddHistoryAsync(string path, HistoryType type);
+        Task<int> AddHistoryAsync(string path, HistoryType type);
 
         IEnumerable<HistoryEvent>? GetHistory(string path, int limit);
 
@@ -99,5 +99,7 @@ namespace Parallel.Core.Database
         Task<IEnumerable<SystemFile>> GetFilesAsync(string path);
         Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted);
         Task<SystemFile?> GetFileAsync(string path);
+        Task<int> AddManifestAsync(SystemFile file);
+        Task<int> AddChunkAsync(int manifestId, string hash, int length);
     }
 }
