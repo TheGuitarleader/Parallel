@@ -1,4 +1,4 @@
-# [<img src="https://raw.githubusercontent.com/TheGuitarleader/Parallel/master/Parallel.Cli/parallel-red.ico" alt="Parallel Icon" width="38" height="38">](https://github.com/TheGuitarleader/Parallel) Parallel
+# [<img src="https://raw.githubusercontent.com/TheGuitarleader/Parallel/master/Parallel.Service/parallel-red.ico" alt="Parallel Icon" width="38" height="38">](https://github.com/TheGuitarleader/Parallel) Parallel
 
 [![.NET](https://img.shields.io/github/actions/workflow/status/TheGuitarleader/Parallel/dotnet.yml?label=Main%20build&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/actions/workflows/dotnet.yml) [![latest version](https://img.shields.io/github/v/release/TheGuitarleader/Parallel?label=Latest%20release&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest) [![GitHub Downloads](https://img.shields.io/github/downloads/TheGuitarleader/Parallel/total?style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest)
 
@@ -30,30 +30,9 @@ Your computer already gives you enough to fight with — your files don't have t
 
 
 
-## 📦 Quick Start Guide
-#### 1. Install Parallel
-Download the latest [release](https://github.com/TheGuitarleader/Parallel/releases/latest) or build from source:
-```
-git clone https://github.com/TheGuitarleader/Parallel
-cd Parallel
-dotnet build
-```
-#### 2. Set Up Your Vaults
-Vaults are storage targets where Parallel sends and recieves files. This can be an external drive, NAS share, SSH server, or S3-compatible cloud.
-```
-parallel vaults create
-```
-*Note: All vaults are saved as JSON in `%AppData%\Parallel\Vaults` for easy importing and exporting.*
-#### 3. Push Files to Vaults
-Parallel can push all changed files on the system with:
-```
-parallel push
-```
-Or you can specify a path which can be a file or folder.
-```
-parallel push --path "C:\Windows\System32"
-parallel push -p "C:\Windows\System32\cmd.exe"
-```
+## 📦 Installation
+
+> Coming soon — Parallel is currently in active development. Stay tuned for install instructions, binaries, and package manager support.
 
 ## 🧪 Status
 

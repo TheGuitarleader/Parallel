@@ -1,8 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.RegularExpressions;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
@@ -11,18 +9,15 @@ using Parallel.Core.Utils;
 namespace Parallel.Core.IO
 {
     /// <summary>
-    /// Represents the way to build paths on different operating systems. This class cannot be inherited.
+    /// Represents the way to build paths on different operating systems.
     /// </summary>
     public class PathBuilder
     {
-        private static readonly Regex DriveLetterRegex = new(@"^[a-zA-Z]:", RegexOptions.Compiled);
-
         public static string TempDirectory
         {
             get
             {
-                string tempFolder = Path.Combine(Path.GetTempPath(), "Parallel");
-                Log.Debug($"Temp directory: {tempFolder}");
+                string tempFolder = Path.Combine(Path.GetTempPath(), $"parallel_{UnixTime.Now.TotalSeconds}");
                 if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
                 return tempFolder;
             }
@@ -55,90 +50,37 @@ namespace Parallel.Core.IO
         }
 
         /// <summary>
-        /// Combines an array of strings into a path. This differs from <see cref="Path.Combine(string,string)"/> by using the string context for combining paths instead of using the path operator environment variable.
+        /// Builds the path for the local file system.
         /// </summary>
-        /// <param name="paths"></param>
+        /// <param name="path"></param>
+        /// <param name="credentials"></param>
         /// <returns></returns>
-        public static string Combine(params string[] paths)
+        public static string Local(string path, FileSystemCredentials credentials)
         {
-            ArgumentNullException.ThrowIfNull(paths);
-            if (paths.Length == 0) return string.Empty;
+            string root = Path.Combine(credentials.RootDirectory, "Parallel", Environment.MachineName);
+            string main = path.Replace("/", "\\").Replace(root, string.Empty).Replace(".gz", string.Empty);
 
-            // Detect context from the first path
-            bool isWindowsStyle = DriveLetterRegex.IsMatch(paths[0]);
+            Console.WriteLine(root);
+            Console.WriteLine(main);
 
-            char separator = isWindowsStyle ? '\\' : '/';
-            char altSeparator = isWindowsStyle ? '/' : '\\';
-
-            StringBuilder sb = new StringBuilder();
-            foreach (string p in paths)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (string.IsNullOrWhiteSpace(p)) continue;
-
-                string part = p.Replace(altSeparator, separator);
-
-                if (sb.Length == 0)
-                {
-                    sb.Append(part.TrimEnd(separator));
-                }
-                else
-                {
-                    sb.Append(separator);
-                    sb.Append(part.Trim(separator));
-                }
+                return main.Substring(1, main.Length - 1).Insert(1, ":");
             }
 
-            return sb.ToString();
+            return main.Replace(@"\", "/");
         }
 
-        /// <summary>
-        /// Gets the root directory of the vault.
-        /// </summary>
-        /// <param name="localVault"></param>
-        /// <returns></returns>
-        public static string GetRootDirectory(LocalVaultConfig localVault)
+        public static string RootDirectory(FileSystemCredentials credentials)
         {
-            return Combine(localVault.FileSystem.RootDirectory, "Parallel", localVault.Id);
-        }
-
-        /// <summary>
-        /// Gets the primary location where files are stored in the vault.
-        /// </summary>
-        /// <param name="localVault"></param>
-        /// <returns></returns>
-        public static string GetFilesDirectory(LocalVaultConfig localVault)
-        {
-            return Combine(GetRootDirectory(localVault), "Files");
-        }
-
-        /// <summary>
-        /// Gets the location where snapshots are stored in the vault.
-        /// </summary>
-        /// <param name="localVault"></param>
-        /// <returns></returns>
-        public static string GetSnapshotsDirectory(LocalVaultConfig localVault)
-        {
-            return Combine(GetRootDirectory(localVault), "Snapshots");
-        }
-
-        /// <summary>
-        /// Gets the path to the vault's configuration file.
-        /// </summary>
-        /// <param name="localVault"></param>
-        /// <returns></returns>
-        public static string GetConfigurationFile(LocalVaultConfig localVault)
-        {
-            return Combine(GetRootDirectory(localVault), "config.json.gz");
-        }
-
-        /// <summary>
-        /// Gets the path to the vault's database file.
-        /// </summary>
-        /// <param name="localVault"></param>
-        /// <returns></returns>
-        public static string GetDatabaseFile(LocalVaultConfig localVault)
-        {
-            return Combine(GetRootDirectory(localVault), "index.db.gz");
+            string root = Path.Combine(credentials.RootDirectory, "Parallel", Environment.MachineName);
+            Log.Debug($"Root directory: {root}");
+            return credentials.Service switch
+            {
+                FileService.Local => root,
+                FileService.Remote => root.Replace('\\', '/'),
+                _ => null
+            };
         }
 
         /// <summary>
@@ -147,14 +89,14 @@ namespace Parallel.Core.IO
         /// <param name="path"></param>
         /// <param name="credentials"></param>
         /// <returns></returns>
-        public static string Remote(string path, RemoteVaultConfig remoteVaultConfig)
+        public static string Remote(string path, FileSystemCredentials credentials)
         {
-            string root = Path.Combine(remoteVaultConfig.FileSystem.RootDirectory, "Parallel", remoteVaultConfig.Id, "Files", path.Replace(":", string.Empty)) + ".gz";
-            return remoteVaultConfig.FileSystem.Service switch
+            string root = Path.Combine(credentials.RootDirectory, "Parallel", Environment.MachineName, path.Replace(":", string.Empty)) + ".gz";
+            return credentials.Service switch
             {
                 FileService.Local => root,
                 FileService.Remote => root.Replace('\\', '/'),
-                _ => string.Empty
+                _ => null
             };
         }
 
@@ -166,12 +108,6 @@ namespace Parallel.Core.IO
         public static bool IsFile(string path)
         {
             return !Directory.Exists(path) && File.Exists(path);
-        }
-
-        public static string GetObjectPath(string basePath, string hash)
-        {
-            if (hash.Length < 8) throw new ArgumentException("Hash too short for sharding", nameof(hash));
-            return Path.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2), hash.Substring(4, 2), hash.Substring(6, 2), hash);
         }
     }
 }

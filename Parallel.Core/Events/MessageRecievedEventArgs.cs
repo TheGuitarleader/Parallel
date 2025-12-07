@@ -2,7 +2,6 @@
 
 using System.Net.Sockets;
 using System.Text;
-using Parallel.Core.Security;
 using Parallel.Core.Utils;
 
 namespace Parallel.Core.Events

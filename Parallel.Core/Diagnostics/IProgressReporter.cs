@@ -22,12 +22,7 @@ namespace Parallel.Core.Diagnostics
         /// <summary>
         /// Reports a progress update.
         /// </summary>
-        void Report(ProgressOperation operation, SystemFile file);
-
-        /// <summary>
-        /// Resets the ticking.
-        /// </summary>
-        void Reset();
+        void Report(ProgressOperation operation, SystemFile file, int current, int total);
 
         /// <summary>
         /// Reports a failed update.

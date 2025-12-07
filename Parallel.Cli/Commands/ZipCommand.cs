@@ -35,11 +35,25 @@ namespace Parallel.Cli.Commands
 
                 CommandLine.WriteLine($"Zipping {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
                 _totalTasks = files.Length;
-                _tasks.AddRange(files.Select(file => Task.Run(() => CompressFile(file, keep))));
-                await Task.WhenAll(_tasks);
+                foreach (string file in files)
+                {
+                    StartCompressFile(file, keep);
+                }
 
+                await Task.WhenAll(_tasks);
                 CommandLine.WriteLine($"Successfully zipped {files.Length.ToString("N0")} files in {_sw.Elapsed}.", ConsoleColor.Green);
             }, sourceArg, keepOpt);
+        }
+
+        private void StartCompressFile(string path, bool keep)
+        {
+            Task compTask = Task.Run(() =>
+            {
+                CompressFile(path, keep);
+            });
+
+            compTask.ContinueWith(t => t.Dispose());
+            _tasks.Add(compTask);
         }
 
         private void CompressFile(string path, bool keep)

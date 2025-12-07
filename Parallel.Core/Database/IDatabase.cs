@@ -29,26 +29,31 @@ namespace Parallel.Core.Database
         Cloned,
 
         /// <summary>
-        /// A file that has been deleted from the vault.
+        /// A file that has been deleted from the backup.
         /// </summary>
         Pruned,
 
         /// <summary>
-        /// A file that was pulled from the vault.
+        /// A file that was deleted and has been restored.
         /// </summary>
-        Pulled,
+        Restored,
 
         /// <summary>
-        /// A file that was pushed to the vault.
+        /// A newly synced file.
         /// </summary>
-        Pushed
+        Synced
     }
 
     /// <summary>
     /// An interface for interacting with client data storage.
     /// </summary>
-    public interface IDatabase : IDisposable
+    public interface IDatabase
     {
+        /// <summary>
+        /// The identifier to the profile for this database.
+        /// </summary>
+        string ProfileId { get; }
+
         #region Base
 
         /// <summary>
@@ -74,10 +79,6 @@ namespace Parallel.Core.Database
         /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddFileAsync(SystemFile file);
 
-        Task<long> GetLocalSizeAsync();
-        Task<long> GetRemoteSizeAsync();
-        Task<long> GetTotalFilesAsync(bool deleted);
-
         #endregion
 
         #region History
@@ -90,14 +91,9 @@ namespace Parallel.Core.Database
         /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddHistoryAsync(string path, HistoryType type);
 
-        IEnumerable<HistoryEvent>? GetHistory(string path, int limit);
-
-        IEnumerable<HistoryEvent>? GetHistory(string path, HistoryType type, int limit);
-
         #endregion
 
-        Task<IEnumerable<SystemFile>> GetFilesAsync(string path);
-        Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted);
+        Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool b);
         Task<SystemFile?> GetFileAsync(string path);
     }
 }
