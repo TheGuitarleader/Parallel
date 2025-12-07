@@ -32,7 +32,7 @@ namespace Parallel.Core.IO.Syncing
         /// <summary>
         ///
         /// </summary>
-        /// <param name="remoteVaultConfig"></param>
+        /// <param name="localVault"></param>
         public BaseSyncManager(LocalVaultConfig localVault)
         {
             FileSystem = FileSystemManager.CreateNew(localVault);
