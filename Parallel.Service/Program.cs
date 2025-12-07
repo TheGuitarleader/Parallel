@@ -32,6 +32,7 @@ namespace Parallel.Service
             // Add Windows services
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                builder.Services.AddHostedService<WindowsShellService>();
                 builder.Services.AddWindowsService();
             }
 
