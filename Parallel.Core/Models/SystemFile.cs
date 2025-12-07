@@ -3,6 +3,7 @@
 using System.Data;
 using Parallel.Core.Data;
 using Parallel.Core.Diagnostics;
+using Parallel.Core.Security;
 using Parallel.Core.Utils;
 
 namespace Parallel.Core.Models
@@ -73,19 +74,9 @@ namespace Parallel.Core.Models
         public bool Deleted { get; set; } = false;
 
         /// <summary>
-        /// If the file is encrypted in the backup.
+        /// The checksum used to check if the file has changed.
         /// </summary>
-        public bool Encrypted { get; set; } = false;
-
-        /// <summary>
-        /// The salt used to encrypt the file.
-        /// </summary>
-        public byte[] Salt { get; set; } = Array.Empty<byte>();
-
-        /// <summary>
-        /// The initialization vector used to encrypt the file.
-        /// </summary>
-        public byte[] IV { get; set; } = Array.Empty<byte>();
+        public string? CheckSum { get; set; }
 
 
         /// <summary>
@@ -99,27 +90,41 @@ namespace Parallel.Core.Models
             LocalPath = fileInfo.FullName;
             LocalSize = fileInfo.Length;
             RemoteSize = fileInfo.Length;
-            Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
             LastWrite = new UnixTime(fileInfo.LastWriteTime);
             LastUpdate = UnixTime.Now;
+            Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
+            Hidden = fileInfo.Attributes.HasFlag(FileAttributes.Hidden);
+            ReadOnly = fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly);
             Deleted = !fileInfo.Exists;
+            CheckSum = HashGenerator.CheckSum(path);
+        }
 
-            if (fileInfo.Attributes.HasFlag(FileAttributes.Hidden))
-            {
-                Hidden = true;
-            }
-
-            if (fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly))
-            {
-                ReadOnly = true;
-            }
+        public SystemFile(string localPath, string remotePath)
+        {
+            LocalPath = localPath;
+            RemotePath = remotePath;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemFile"/> class.
         /// </summary>
-        /// <param name="row"></param>
-        public SystemFile(string profile, string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, long encrypted, byte[] salt, byte[] iv)
+        /// <param name="id"></param>
+        /// <param name="name"></param>
+        /// <param name="localpath"></param>
+        /// <param name="remotepath"></param>
+        /// <param name="lastwrite"></param>
+        /// <param name="lastupdate"></param>
+        /// <param name="localsize"></param>
+        /// <param name="remotesize"></param>
+        /// <param name="type"></param>
+        /// <param name="hidden"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="deleted"></param>
+        /// <param name="encrypted"></param>
+        /// <param name="salt"></param>
+        /// <param name="iv"></param>
+        /// <param name="checksum"></param>
+        public SystemFile(string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
         {
             Id = id;
             Name = name;
@@ -129,15 +134,27 @@ namespace Parallel.Core.Models
             LastUpdate = UnixTime.FromMilliseconds(lastupdate);
             LocalSize = localsize;
             RemoteSize = remotesize;
-            //Type = type;
             Hidden = Converter.ToBool(hidden);
             ReadOnly = Converter.ToBool(readOnly);
             Deleted = Converter.ToBool(deleted);
-            Encrypted = Converter.ToBool(encrypted);
-            Salt = salt;
-            IV = iv;
+            CheckSum = checksum;
         }
 
+        public SystemFile(string name, string remotePath, long length, DateTime lastWriteTime)
+        {
+            Name = name;
+            RemotePath = remotePath;
+            RemoteSize = length;
+            LastWrite = new UnixTime(lastWriteTime);
+        }
+
+        //public SystemFile() { }
+
+        /// <summary>
+        /// Determines if this instance and another <see cref="SystemFile"/> have the same values.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns>True if equal, otherwise false.</returns>
         public bool Equals(SystemFile value)
         {
             bool?[] results =
@@ -152,9 +169,7 @@ namespace Parallel.Core.Models
                 value?.Hidden != null ? this.Hidden.Equals(value.Hidden) : (bool?)null,
                 value?.ReadOnly != null ? this.ReadOnly.Equals(value.ReadOnly) : (bool?)null,
                 value?.Deleted != null ? this.Deleted.Equals(value.Deleted) : (bool?)null,
-                value?.Encrypted != null ? this.Encrypted.Equals(value.Encrypted) : (bool?)null,
-                this?.Salt != null && value?.Salt != null ? this.Salt.SequenceEqual(value.Salt) : (bool?)null,
-                this?.IV != null && value?.IV != null ? this.IV.SequenceEqual(value.IV) : (bool?)null,
+                this?.CheckSum != null && value?.CheckSum != null ? this.CheckSum.SequenceEqual(value.CheckSum) : (bool?)null,
             ];
 
             return results.All(b => b != null && (bool)b);

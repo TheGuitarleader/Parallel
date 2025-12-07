@@ -13,9 +13,9 @@ namespace Parallel.Core.Settings
     {
         public FileService Service { get; set; } = FileService.Local;
         public string RootDirectory { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        public string? Address { get; set; }
+        public string? Username { get; set; }
+        public string? Password { get; set; }
 
         /// <summary>
         /// If the file system is encrypting files.

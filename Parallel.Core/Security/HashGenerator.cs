@@ -3,13 +3,18 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Parallel.Core.Utils
+namespace Parallel.Core.Security
 {
     /// <summary>
     /// Provides functionality for generating random hashes. This class cannot be inherited.
     /// </summary>
     public static class HashGenerator
     {
+        /// <summary>
+        /// Generates a random series of bytes.
+        /// </summary>
+        /// <param name="length"></param>
+        /// <returns></returns>
         public static byte[] RandomBytes(int length)
         {
             byte[] bytes = new byte[length];
@@ -67,6 +72,16 @@ namespace Parallel.Core.Utils
         }
 
         /// <summary>
+        /// Computes a SHA256 hash from bytes.
+        /// </summary>
+        /// <param name="value">The string to hash.</param>
+        /// <returns>A <see cref="SHA256"/> hash as a string.</returns>
+        public static string CreateSHA256(byte[] value)
+        {
+            return Convert.ToHexString(SHA256.HashData(value)).ToLower();
+        }
+
+        /// <summary>
         /// Computes a SHA256 hash from a string.
         /// </summary>
         /// <param name="value">The string to hash.</param>
@@ -75,6 +90,19 @@ namespace Parallel.Core.Utils
         {
             ArgumentException.ThrowIfNullOrEmpty(value);
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLower();
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static string? CheckSum(string path)
+        {
+            if (!File.Exists(path)) return null;
+            using FileStream fs = File.OpenRead(path);
+            using SHA256 sha256 = SHA256.Create();
+            return Convert.ToHexString(sha256.ComputeHash(fs)).ToLowerInvariant();
         }
     }
 }

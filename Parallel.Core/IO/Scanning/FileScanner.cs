@@ -2,8 +2,10 @@
 
 using System.Data;
 using System.Diagnostics;
+using System.Text;
+using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
-using Parallel.Core.IO.Backup;
+using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
@@ -16,19 +18,13 @@ namespace Parallel.Core.IO.Scanning
     /// </summary>
     public class FileScanner
     {
-        private readonly ProfileConfig _profile;
+        private readonly RemoteVaultConfig _config;
         private readonly IDatabase _db;
 
-        public FileScanner(ProfileConfig profile, IDatabase database)
+        public FileScanner(ISyncManager syncManager)
         {
-            _profile = profile;
-            _db = database;
-        }
-
-        public FileScanner(IBackupManager backup)
-        {
-            _profile = backup.Profile;
-            _db = backup.Database;
+            _config = syncManager.RemoteVault;
+            _db = syncManager.Database;
         }
 
         /*/// <summary>
@@ -58,76 +54,66 @@ namespace Parallel.Core.IO.Scanning
         {
             if (!Directory.Exists(path)) return Array.Empty<SystemFile>();
 
-            List<SystemFile> scannedFiles = new();
-            List<string> localFiles = FileScanner.GetFiles(path, ".", ignoreFolders).ToList();
-            List<SystemFile> remoteFiles = (await _db.GetFilesAsync(path, false)).ToList();
-            Stopwatch sw = Stopwatch.StartNew();
-
-            foreach (SystemFile rsf in remoteFiles.ToArray())
+            List<SystemFile> scannedFiles = new List<SystemFile>();
+            HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
+            IEnumerable<SystemFile> remoteFiles = await _db.GetFilesAsync(path, false);
+            await System.Threading.Tasks.Parallel.ForEachAsync(remoteFiles, ParallelConfig.Options, async (remoteFile, ct) =>
             {
-                // Checks if the local file has a valid path and is part of a backup folder.
-                if (rsf.LocalPath != null && rsf.LocalPath.Contains(path))
+                if (File.Exists(remoteFile.LocalPath))
                 {
-                    // Checks if a LocalFile exists on the current file system.
-                    if (File.Exists(rsf.LocalPath) && rsf.RemotePath != null)
+                    SystemFile localFile = new SystemFile(remoteFile.LocalPath);
+                    if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
-                        SystemFile lfi = new(rsf.LocalPath);
-                        if (IsIgnored(lfi.LocalPath, ignoreFolders))
-                        {
-                            Log.Debug($"Is ignored -> {lfi.LocalPath}");
-
-                            lfi.Deleted = true;
-                            scannedFiles.Add(lfi);
-                        }
-
-                        if (rsf.LastWrite.TotalMilliseconds < lfi.LastWrite.TotalMilliseconds)
-                        {
-                            Log.Debug($"Changed -> {lfi.LocalPath}");
-
-                            // Changed file
-                            rsf.Deleted = false;
-                            scannedFiles.Add(lfi);
-                        }
-
-                        localFiles.Remove(lfi.LocalPath);
+                        Log.Debug($"Ignored -> {localFile.LocalPath}");
+                        localFile.RemotePath = remoteFile.RemotePath;
+                        localFile.Deleted = true;
+                        scannedFiles.Add(localFile);
                     }
-                    else
+                    else if (HasChanged(localFile, remoteFile))
                     {
-                        // Adds deleted files
-                        Log.Debug($"Deleted -> {rsf.LocalPath}");
-
-                        rsf.Deleted = true;
-                        scannedFiles.Add(rsf);
+                        Log.Debug($"Changed -> {localFile.LocalPath}");
+                        localFile.RemotePath = remoteFile.RemotePath;
+                        scannedFiles.Add(localFile);
                     }
+
+                    localFiles.Remove(localFile.LocalPath);
                 }
                 else
                 {
-                    // Deletes ignored files
-                    Log.Debug($"No contains Ignored -> {rsf.LocalPath}");
-
-                    rsf.Deleted = true;
-                    scannedFiles.Add(rsf);
+                    Log.Debug($"Deleted -> {remoteFile.LocalPath}");
+                    remoteFile.Deleted = true;
+                    scannedFiles.Add(remoteFile);
                 }
-            }
+            });
 
             Log.Debug($"{localFiles.Count} files are untracked! Adding...");
-            if (localFiles.Count > 0)
+            await System.Threading.Tasks.Parallel.ForEachAsync(localFiles, ParallelConfig.Options, async (file, ct) =>
             {
-                foreach (string file in localFiles.ToArray())
+                if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
                 {
-                    if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
-                    {
-                        Log.Debug($"Created -> {file}");
-                        scannedFiles.Add(new SystemFile(file));
-                        localFiles.Remove(file);
-                    }
+                    Log.Debug($"Created -> {file}");
+                    scannedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
                 }
-            }
+            });
 
             Log.Debug($"{localFiles.Count} files remaining.");
-            Log.Information($"Found {localFiles.Count.ToString("N0")} files in '{path}'. ({sw.ElapsedMilliseconds}ms)");
+            Log.Information($"Found {scannedFiles.Count:N0} changes in '{path}'");
             return scannedFiles.ToArray();
         }
+
+        /// <summary>
+        /// Gets if a file has changed.
+        /// </summary>
+        /// <param name="sourcePath">The source file to compare.</param>
+        /// <param name="targetPath">The target file to compare to.</param>
+        /// <returns>True is success, otherwise false.</returns>
+        public static bool HasChanged(SystemFile sourcePath, SystemFile? targetPath)
+        {
+            Console.WriteLine($"{sourcePath.Name}: {targetPath} == null || ({sourcePath.LastWrite.TotalMilliseconds} > {targetPath.LastWrite.TotalMilliseconds} && {!sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum)}");
+
+            return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && !sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum));
+        }
+
 
         /// <summary>
         /// Gets the total size, in bytes, of a directory.
@@ -157,7 +143,7 @@ namespace Parallel.Core.IO.Scanning
         /// <param name="path">The root directory to search.</param>
         /// <param name="recursive">If it should search recursively.</param>
         /// <returns>An array of empty directories.</returns>
-        public static DirectoryInfo[] GetEmptyDirectories(string path, bool recursive = true)
+        public static IEnumerable<DirectoryInfo> GetEmptyDirectories(string path, bool recursive = true)
         {
             List<DirectoryInfo> list = new();
             DirectoryInfo directory = new(path);
@@ -169,12 +155,13 @@ namespace Parallel.Core.IO.Scanning
 
             foreach (DirectoryInfo di in directory.EnumerateDirectories("*", options))
             {
-                Log.Debug($"Checking -> {di.FullName}");
-                if (!di.EnumerateFileSystemInfos().Any()) list.Add(di);
+                IEnumerable<FileInfo> files = di.EnumerateFiles("*", options);
+                Log.Debug($"{files.Count()} files: {di.FullName}");
+                if (!files.Any()) list.Add(di);
             }
 
             Log.Debug($"Found {list.Count} empty directories");
-            return list.ToArray();
+            return list.OrderByDescending(d => d.FullName.Count(c => c == Path.DirectorySeparatorChar)).ToArray();
         }
 
         /// <summary>
@@ -185,7 +172,7 @@ namespace Parallel.Core.IO.Scanning
         /// <param name="start">The time, as a <see cref="UnixTime"/>.</param>
         /// <param name="recursive">If it should search recursively.</param>
         /// <returns>An array of directories in order of oldest first.</returns>
-        public static DirectoryInfo[] GetCleanableDirectories(string path, UnixTime start, bool recursive = true)
+        public static IEnumerable<DirectoryInfo> GetCleanableDirectories(string path, UnixTime start, bool recursive = true)
         {
             Dictionary<DirectoryInfo, DateTime> list = new();
             DirectoryInfo directory = new(path);
@@ -204,14 +191,14 @@ namespace Parallel.Core.IO.Scanning
             }
 
             Log.Debug($"Found {list.Count} cleanable directories");
-            return list.OrderBy(d => d.Value).ToDictionary().Keys.ToArray();
+            return list.OrderBy(d => d.Value).ToDictionary().Keys;
         }
 
-        public static FileInfo[] GetCleanableFiles(string path, UnixTime start, bool recursive = true)
+        public static IEnumerable<FileInfo> GetCleanableFiles(string path, UnixTime start, bool recursive = true)
         {
             Dictionary<FileInfo, DateTime> list = new();
             Log.Debug($"Searching '{path}' for files older than {start.ToString("g")}");
-            foreach (string file in GetFiles(path, "*"))
+            foreach (string file in GetFiles(path, [], "*", recursive))
             {
                 FileInfo fi = new FileInfo(file);
                 DateTime compare = fi.CreationTime > fi.LastWriteTime ? fi.CreationTime : fi.LastWriteTime;
@@ -220,55 +207,58 @@ namespace Parallel.Core.IO.Scanning
             }
 
             Log.Debug($"Found {list.Count} cleanable files");
-            return list.OrderBy(d => d.Value).ToDictionary().Keys.ToArray();
+            return list.OrderBy(d => d.Value).ToDictionary().Keys;
         }
 
         public static IEnumerable<string> GetFiles(string root, string searchPattern)
         {
-            return GetFiles(root, searchPattern, Array.Empty<string>());
+            return GetFiles(root, [], searchPattern);
         }
 
-        public static IEnumerable<string> GetFiles(string root, string searchPattern, string[] exempt)
+        public static IEnumerable<string> GetFiles(string root, string[] exempt, string searchPattern = "*", bool recursive = true)
         {
             Stack<string> pending = new();
             pending.Push(root);
-            while (pending.Count != 0)
+
+            while (pending.Count > 0)
             {
-                string path = pending.Pop();
-                IEnumerable<string> next = null;
+                string current = pending.Pop();
+
+                if (IsIgnored(current, exempt))
+                {
+                    Log.Debug($"Ignored -> {current}");
+                    continue;
+                }
+
+                // Get files in current directory
+                string[] files = [];
                 try
                 {
-                    if (!IsIgnored(path, exempt))
+                    files = Directory.GetFiles(current, searchPattern);
+                }
+                catch
+                {
+                    Log.Debug($"No file access -> {current}");
+                }
+
+                foreach (var file in files) yield return file;
+                if (recursive)
+                {
+                    string[] subdirs = [];
+                    try
                     {
-                        //Log.Debug($"Searching -> {path}");
-                        next = Directory.EnumerateFiles(path, searchPattern);
+                        subdirs = Directory.GetDirectories(current);
                     }
-                    // else
-                    // {
-                    //     Log.Debug($"Ignored -> {path}");
-                    // }
-                }
-                catch
-                {
-                    Log.Debug("No file access -> " + path);
-                }
+                    catch
+                    {
+                        Log.Debug($"No folder access -> {current}");
+                    }
 
-                if (next != null && next.Count() != 0)
-                {
-                    foreach (string file in next) yield return file;
-                }
-
-                try
-                {
-                    next = Directory.EnumerateDirectories(path);
-                    foreach (string subdir in next) pending.Push(subdir);
-                }
-                catch
-                {
-                    Log.Debug("No folder access -> " + path);
+                    foreach (var dir in subdirs) pending.Push(dir);
                 }
             }
         }
+
 
         /// <summary>
         /// Scans a directory for duplicate files with the same name and size.
@@ -279,7 +269,7 @@ namespace Parallel.Core.IO.Scanning
         {
             Dictionary<string, List<SystemFile>> dict = new();
             IEnumerable<string> files = GetFiles(path, "*");
-            foreach (string file in files)
+            System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, file =>
             {
                 SystemFile entry = new(file);
                 if (dict.TryGetValue(entry.Name, out List<SystemFile> value))
@@ -294,7 +284,7 @@ namespace Parallel.Core.IO.Scanning
                 {
                     dict.Add(entry.Name, new List<SystemFile> { entry });
                 }
-            }
+            });
 
             return dict.Where(kv => kv.Value.Count > 1).OrderByDescending(kv => kv.Value.Count).ToDictionary(k => k.Key, v => v.Value.OrderBy(l => l.LastWrite.TotalMilliseconds).ToArray());
         }

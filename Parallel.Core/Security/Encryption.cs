@@ -2,9 +2,9 @@
 
 using System.Security.Cryptography;
 using System.Text;
-using Parallel.Core.Models;
+using Parallel.Core.Utils;
 
-namespace Parallel.Core.Utils
+namespace Parallel.Core.Security
 {
     /// <summary>
     /// Provides functionality for encryption. This class cannot be inherited.
@@ -46,14 +46,14 @@ namespace Parallel.Core.Utils
         /// <param name="systemFile"></param>
         /// <param name="masterKey"></param>
         /// <returns></returns>
-        public static void EncryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, byte[] salt, byte[] iv)
+        public static void EncryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, string salt, string iv)
         {
             input.Position = 0;
-            byte[] derivedKey = HashGenerator.HKDF(masterKey, salt, timestamp.ToISOString(), 32);
+            byte[] derivedKey = HashGenerator.HKDF(masterKey, Encoding.ASCII.GetBytes(salt), timestamp.ToISOString(), 32);
             using (Aes aes = Aes.Create())
             {
                 aes.Key = derivedKey;
-                aes.IV = iv;
+                aes.IV = Encoding.UTF8.GetBytes(iv);
                 aes.Mode = CipherMode.CBC;
                 using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateEncryptor(), CryptoStreamMode.Write))
                 {
@@ -69,14 +69,14 @@ namespace Parallel.Core.Utils
         /// <param name="output"></param>
         /// <param name="systemFile"></param>
         /// <param name="masterKey"></param>
-        public static void DecryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, byte[] salt, byte[] iv)
+        public static void DecryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, string salt, string iv)
         {
             input.Position = 0;
-            byte[] derivedKey = HashGenerator.HKDF(masterKey, salt, timestamp.ToISOString(), 32);
+            byte[] derivedKey = HashGenerator.HKDF(masterKey, Encoding.ASCII.GetBytes(salt), timestamp.ToISOString(), 32);
             using (Aes aes = Aes.Create())
             {
                 aes.Key = derivedKey;
-                aes.IV = iv;
+                aes.IV = Encoding.ASCII.GetBytes(iv);
                 aes.Mode = CipherMode.CBC;
                 using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
                 {

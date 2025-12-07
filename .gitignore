@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 *.sln
+*.lnk
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -398,3 +399,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 .idea/
+
+# Batch Script Outputs
+Builds/
