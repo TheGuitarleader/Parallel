@@ -45,9 +45,15 @@ namespace Parallel.Cli.Commands
 
             IDatabase db = syncManager.Database;
             long localSize = await db.GetLocalSizeAsync();
-            long remoteSize = await db.GetRemoteSizeAsync();
             long totalLocalFiles = await db.GetTotalFilesAsync(false);
             long totalDeletedFiles = await db.GetTotalFilesAsync(true);
+            long totalObjects = await db.GetTotalObjectsAsync();
+
+            int chunkSize = ((ObjectSyncManager)syncManager).ChunkSize;
+            double expectedChunks = (double)localSize / chunkSize;
+            long expectedBytes = (long)(expectedChunks * chunkSize);
+            long actualBytes = totalObjects * chunkSize;
+            long savedBytes = expectedBytes - actualBytes;
 
             CommandLine.WriteLine($"Using vault '{vault.Name}' ({vault.Id}):");
             CommandLine.WriteLine($"Service Type:   {vault.FileSystem.Service}");
@@ -56,15 +62,14 @@ namespace Parallel.Cli.Commands
             CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
             CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles:N0}");
             CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
-            CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(remoteSize)}");
-            CommandLine.WriteLine($"Space Saved:    {Math.Round((localSize - remoteSize) / (double)localSize * 100, 2)}%");
+            CommandLine.WriteLine($"Total Objects:  {totalObjects:N0}");
+            CommandLine.WriteLine($"Space Saved:    {Formatter.FromBytes(savedBytes)} ({Math.Round(savedBytes / (double)expectedBytes * 100, 1)}%)");
 
             if (vault.FileSystem.Service.Equals(FileService.Local))
             {
                 DriveInfo drive = new(vault.FileSystem.RootDirectory);
                 long diskUsage = drive.TotalSize - drive.TotalFreeSpace;
                 CommandLine.WriteLine($"Total Usage:    {Formatter.FromBytes(diskUsage)} ({Math.Round(diskUsage / (double)drive.TotalSize * 100, 1)}%)");
-                CommandLine.WriteLine($"Disk Usage:     {Formatter.FromBytes(diskUsage - remoteSize)} ({Math.Round((diskUsage - remoteSize) / (double)drive.TotalSize * 100, 1)}%)");
                 CommandLine.WriteLine($"Disk Free:      {Formatter.FromBytes(drive.TotalFreeSpace)} ({Math.Round(drive.TotalFreeSpace / (double)drive.TotalSize * 100, 1)}%)");
                 CommandLine.WriteLine($"Disk Total:     {Formatter.FromBytes(drive.TotalSize)}");
             }

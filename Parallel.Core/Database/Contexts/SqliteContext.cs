@@ -157,6 +157,14 @@ namespace Parallel.Core.Database
         }
 
         /// <inheritdoc />
+        public async Task<long> GetTotalObjectsAsync()
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT COUNT(*) FROM objects;";
+            return await connection.QuerySingleOrDefaultAsync<long>(sql);
+        }
+
+        /// <inheritdoc />
         public async Task<bool> RemapObjectsAsync(string oldId, string newId)
         {
             using IDbConnection connection = CreateConnection();

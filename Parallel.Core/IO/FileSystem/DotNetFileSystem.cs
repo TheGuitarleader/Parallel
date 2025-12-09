@@ -110,7 +110,6 @@ namespace Parallel.Core.IO.FileSystem
                     string? parent = Path.GetDirectoryName(file.RemotePath);
                     if (parent != null && !Directory.Exists(parent)) Directory.CreateDirectory(parent);
 
-                    progress.Report(ProgressOperation.Uploading, file);
                     await using FileStream openStream = File.OpenRead(file.LocalPath);
                     await using FileStream createStream = File.Create(file.RemotePath);
                     await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);

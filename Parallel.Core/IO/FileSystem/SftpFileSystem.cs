@@ -119,7 +119,6 @@ namespace Parallel.Core.IO.FileSystem
                 try
                 {
                     Stopwatch sw = new Stopwatch();
-                    progress.Report(ProgressOperation.Uploading, file);
                     if (await _client.ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
 
                     string[] subDirs = file.RemotePath.Split('/');
