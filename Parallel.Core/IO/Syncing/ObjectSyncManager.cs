@@ -63,10 +63,10 @@ namespace Parallel.Core.IO.Syncing
                             string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
                             string parentDir = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
                             string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
-                            if (!await FileSystem.ExistsAsync(remotePath))
+                            if (!await Storage.ExistsAsync(remotePath))
                             {
-                                if (!await FileSystem.ExistsAsync(parentDir)) await FileSystem.CreateDirectoryAsync(parentDir);
-                                await FileSystem.UploadStreamAsync(ms, remotePath);
+                                if (!await Storage.ExistsAsync(parentDir)) await Storage.CreateDirectoryAsync(parentDir);
+                                await Storage.UploadStreamAsync(ms, remotePath);
                             }
                         }
 
@@ -97,9 +97,9 @@ namespace Parallel.Core.IO.Syncing
                     {
                         string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
                         string remotePath = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2), hash[4..]);
-                        if (await FileSystem.ExistsAsync(remotePath))
+                        if (await Storage.ExistsAsync(remotePath))
                         {
-                            await FileSystem.DownloadStreamAsync(fs, remotePath);
+                            await Storage.DownloadStreamAsync(fs, remotePath);
                         }
                     }
 

@@ -12,11 +12,11 @@ namespace Parallel.Core.Utils
         /// </summary>
         /// <param name="bytes">The bytes to convert.</param>
         /// <returns>The bytes formatted as a string.</returns>
-        public static string FromBytes(long bytes)
+        public static string FromBytes(double bytes)
         {
             string[] sizeSuffixes = { "Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
             int sizeIndex = 0;
-            double size = bytes;
+            double size = Math.Abs(bytes); // use absolute for scaling
 
             while (size >= 1000 && sizeIndex < sizeSuffixes.Length - 1)
             {
@@ -24,8 +24,11 @@ namespace Parallel.Core.Utils
                 size /= 1000;
             }
 
-            return $"{size:N2} {sizeSuffixes[sizeIndex]}";
+            // add the sign back
+            string sign = bytes < 0 ? "-" : "";
+            return $"{sign}{size:N2} {sizeSuffixes[sizeIndex]}";
         }
+
 
         /// <summary>
         /// Formats a <see cref="DateTime"/> with the corresponding data volume.

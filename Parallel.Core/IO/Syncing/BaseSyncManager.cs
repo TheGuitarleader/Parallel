@@ -27,7 +27,7 @@ namespace Parallel.Core.IO.Syncing
         public IDatabase Database { get; set; }
 
         /// <inheritdoc />
-        public IFileSystem FileSystem { get; set; }
+        public IStorageProvider Storage { get; set; }
 
         /// <summary>
         ///
@@ -35,7 +35,7 @@ namespace Parallel.Core.IO.Syncing
         /// <param name="localVault"></param>
         public BaseSyncManager(LocalVaultConfig localVault)
         {
-            FileSystem = FileSystemManager.CreateNew(localVault);
+            Storage = StorageProvider.CreateNew(localVault);
             LocalVault = localVault;
         }
 
@@ -43,13 +43,13 @@ namespace Parallel.Core.IO.Syncing
         public async Task<bool> ConnectAsync()
         {
             string root = PathBuilder.GetRootDirectory(LocalVault);
-            if (!await FileSystem.ExistsAsync(root))
+            if (!await Storage.ExistsAsync(root))
             {
-                await FileSystem.CreateDirectoryAsync(root);
+                await Storage.CreateDirectoryAsync(root);
                 Log.Debug($"Created root directory: {root}");
             }
 
-            if (!await FileSystem.ExistsAsync(PathBuilder.GetConfigurationFile(LocalVault)))
+            if (!await Storage.ExistsAsync(PathBuilder.GetConfigurationFile(LocalVault)))
             {
                 RemoteVault = new RemoteVaultConfig(LocalVault);
                 RemoteVault.IgnoreDirectories.Add(PathBuilder.GetRootDirectory(LocalVault));
@@ -59,7 +59,7 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await FileSystem.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new NullProgressReporter());
+                await Storage.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new NullProgressReporter());
                 RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
                 if(config == null) return false;
                 RemoteVault = config;
@@ -67,7 +67,7 @@ namespace Parallel.Core.IO.Syncing
                 Log.Debug($"Downloaded config file: {TempConfigFile}");
             }
 
-            if (!await FileSystem.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
+            if (!await Storage.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
             {
                 Database = new SqliteContext(TempDbFile);
                 await Database.InitializeAsync();
@@ -76,7 +76,7 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await FileSystem.DownloadFilesAsync([new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new NullProgressReporter());
+                await Storage.DownloadFilesAsync([new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new NullProgressReporter());
                 Database = new SqliteContext(TempDbFile);
 
                 Log.Debug($"Downloaded db file: {TempDbFile}");
@@ -92,8 +92,8 @@ namespace Parallel.Core.IO.Syncing
             Log.Debug($"Uploaded db file: {TempDbFile}");
 
             SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
-            await FileSystem.UploadFilesAsync(tempFiles, new NullProgressReporter());
-            FileSystem.Dispose();
+            await Storage.UploadFilesAsync(tempFiles, new NullProgressReporter());
+            Storage.Dispose();
         }
 
         /// <inheritdoc />

@@ -23,7 +23,7 @@ namespace Parallel.Core.IO.Blobs
         /// <param name="tempObjDir">The temp directory to send chunked objects to.</param>
         /// <param name="progress"></param>
         /// <returns></returns>
-        public static async Task<FileManifest> CreateManifestAsync(IFileSystem fileSystem, string sourcePath, string tempObjDir, IProgressReporter progress)
+        public static async Task<FileManifest> CreateManifestAsync(IStorageProvider fileSystem, string sourcePath, string tempObjDir, IProgressReporter progress)
         {
             List<string> chunkHashes = new List<string>();
             await using FileStream fs = File.OpenRead(sourcePath);

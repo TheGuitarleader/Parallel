@@ -49,21 +49,14 @@ namespace Parallel.Cli.Commands
             long totalDeletedFiles = await db.GetTotalFilesAsync(true);
             long totalObjects = await db.GetTotalObjectsAsync();
 
-            int chunkSize = ((ObjectSyncManager)syncManager).ChunkSize;
-            double expectedChunks = (double)localSize / chunkSize;
-            long expectedBytes = (long)(expectedChunks * chunkSize);
-            long actualBytes = totalObjects * chunkSize;
-            long savedBytes = expectedBytes - actualBytes;
-
             CommandLine.WriteLine($"Using vault '{vault.Name}' ({vault.Id}):");
             CommandLine.WriteLine($"Service Type:   {vault.FileSystem.Service}");
             CommandLine.WriteLine($"Root Directory: {vault.FileSystem.RootDirectory}");
             CommandLine.WriteLine($"Managed Files:  {(totalLocalFiles + totalDeletedFiles):N0}");
             CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
             CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles:N0}");
-            CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
             CommandLine.WriteLine($"Total Objects:  {totalObjects:N0}");
-            CommandLine.WriteLine($"Space Saved:    {Formatter.FromBytes(savedBytes)} ({Math.Round(savedBytes / (double)expectedBytes * 100, 1)}%)");
+            CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
 
             if (vault.FileSystem.Service.Equals(FileService.Local))
             {

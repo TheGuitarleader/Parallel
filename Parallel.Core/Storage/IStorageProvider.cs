@@ -14,7 +14,7 @@ namespace Parallel.Core.IO.FileSystem
     /// <summary>
     /// Defines the way for communicating with a file system.
     /// </summary>
-    public interface IFileSystem : IDisposable
+    public interface IStorageProvider : IDisposable
     {
         /// <summary>
         /// Creates all directories and subdirectories in the specified path unless they already exist.
@@ -67,6 +67,7 @@ namespace Parallel.Core.IO.FileSystem
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
+        /// <returns>The size, in bytes, of the uploaded stream.</returns>
         Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <summary>
