@@ -24,7 +24,7 @@ namespace Parallel.Core.IO.Syncing
             if (!files.Any()) return;
             SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();
             Log.Information($"Backing up {backupFiles.Length} files...");
-            await FileSystem.UploadFilesAsync(backupFiles, progress);
+            await Storage.UploadFilesAsync(backupFiles, progress);
 
             progress.Reset();
             await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
@@ -38,7 +38,7 @@ namespace Parallel.Core.IO.Syncing
                 else
                 {
                     progress.Report(ProgressOperation.Syncing, file);
-                    SystemFile? remote = await FileSystem.GetFileAsync(file.RemotePath);
+                    SystemFile? remote = await Storage.GetFileAsync(file.RemotePath);
                     if (remote is not null)
                     {
                         file.RemoteSize = remote.RemoteSize;
@@ -52,7 +52,7 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc/>
         public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            await FileSystem.DownloadFilesAsync(files, progress);
+            await Storage.DownloadFilesAsync(files, progress);
         }
     }
 }

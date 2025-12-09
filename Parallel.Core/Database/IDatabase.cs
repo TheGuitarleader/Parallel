@@ -109,8 +109,8 @@ namespace Parallel.Core.Database
 
         Task<long> GetTotalObjectsAsync();
 
-        #endregion
-
         Task<bool> RemapObjectsAsync(string oldId, string newId);
+
+        #endregion
     }
 }

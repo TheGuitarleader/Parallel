@@ -31,10 +31,10 @@ namespace Parallel.Core.IO.Syncing
         /// <summary>
         /// The associated file system connection.
         /// </summary>
-        IFileSystem FileSystem { get; set; }
+        public IStorageProvider Storage { get; set; }
 
         /// <summary>
-        /// Establishes a connection to the associated <see cref="IFileSystem"/> and downloads the needed files.
+        /// Establishes a connection to the associated <see cref="IStorageProvider"/> and downloads the needed files.
         /// </summary>
         Task<bool> ConnectAsync();
 

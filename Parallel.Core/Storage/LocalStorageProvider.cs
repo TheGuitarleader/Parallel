@@ -16,15 +16,15 @@ namespace Parallel.Core.IO.FileSystem
     /// <summary>
     /// Represents the wrapper for a default dotnet file system.
     /// </summary>
-    public class DotNetFileSystem : IFileSystem
+    public class LocalStorageProvider : IStorageProvider
     {
         private readonly LocalVaultConfig _vaultConfig;
 
         /// <summary>
-        /// Represents an <see cref="IFileSystem"/> for interacting with physical machine hardware.
+        /// Represents an <see cref="IStorageProvider"/> for interacting with physical machine hardware.
         /// </summary>
         /// <param name="vaultConfig">The vault to use.</param>
-        public DotNetFileSystem(LocalVaultConfig vaultConfig)
+        public LocalStorageProvider(LocalVaultConfig vaultConfig)
         {
             _vaultConfig = vaultConfig;
         }
@@ -49,12 +49,9 @@ namespace Parallel.Core.IO.FileSystem
         /// <inheritdoc/>
         public Task DeleteFileAsync(string path)
         {
-            if (File.Exists(path))
-            {
-                File.SetAttributes(path, ~FileAttributes.ReadOnly & File.GetAttributes(path));
-                Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
-            }
-
+            if (!File.Exists(path)) return Task.CompletedTask;
+            File.SetAttributes(path, ~FileAttributes.ReadOnly & File.GetAttributes(path));
+            File.Delete(path);
             return Task.CompletedTask;
         }
 
@@ -131,7 +128,7 @@ namespace Parallel.Core.IO.FileSystem
             await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
             await input.CopyToAsync(gzipStream);
 
-            //File.SetAttributes(remotePath, File.GetAttributes(remotePath) | FileAttributes.ReadOnly);
+            File.SetAttributes(remotePath, File.GetAttributes(remotePath) | FileAttributes.ReadOnly);
         }
     }
 }

@@ -7,7 +7,7 @@ using Parallel.Core.IO.FileSystem;
 namespace Parallel.Core.Settings
 {
     /// <summary>
-    /// Represents credentials used to gain access to various <see cref="IFileSystem"/>s.
+    /// Represents credentials used to gain access to various <see cref="IStorageProvider"/>s.
     /// </summary>
     public class FileSystemCredentials
     {

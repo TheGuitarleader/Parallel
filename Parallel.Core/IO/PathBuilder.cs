@@ -142,7 +142,7 @@ namespace Parallel.Core.IO
         }
 
         /// <summary>
-        /// Builds the path on the remote <see cref="IFileSystem"/>.
+        /// Builds the path on the remote <see cref="IStorageProvider"/>.
         /// </summary>
         /// <param name="path"></param>
         /// <param name="credentials"></param>
