@@ -59,6 +59,14 @@ namespace Parallel.Core.Database
             return await connection.ExecuteAsync(sql, new { file.Id, file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
         }
 
+        /// <inheritdoc />
+        public async Task RemoveFileAsync(SystemFile file)
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = $"DELETE FROM files WHERE id = @Id;";
+            await connection.ExecuteAsync(sql, new { file.Id });
+        }
+
         public async Task<long> GetLocalSizeAsync()
         {
             using IDbConnection connection = CreateConnection();
@@ -146,6 +154,14 @@ namespace Parallel.Core.Database
             using IDbConnection connection = CreateConnection();
             string sql = "SELECT (hash) FROM objects WHERE id = @id ORDER BY orderIndex ASC;";
             return await connection.QueryAsync<string>(sql, new { id });
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> RemapObjectsAsync(string oldId, string newId)
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = "UPDATE objects SET id = @newId WHERE id = @oldId;";
+            return await connection.ExecuteAsync(sql, new { oldId, newId }) > 0;
         }
 
         #endregion

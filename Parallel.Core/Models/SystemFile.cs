@@ -16,7 +16,7 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The unique identifier of the file.
         /// </summary>
-        public string Id { get; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
 
         /// <summary>
         /// The name of the file.
