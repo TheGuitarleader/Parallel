@@ -54,6 +54,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
+            CommandLine.WriteLine(vault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
             IEnumerable<SystemFile> files = await syncManager.Database.GetFilesAsync(fullPath);
             if (!files.Any())
             {
@@ -69,7 +70,7 @@ namespace Parallel.Cli.Commands
             });
 
             Log.Debug($"Pulling {pullFiles.Count} files...");
-            await syncManager.PullFilesAsync(pullFiles.ToArray(), new ProgressLogger());
+            await syncManager.PullFilesAsync(pullFiles.ToArray(), new ProgressReport(vault, files.Count()));
             CommandLine.WriteLine(vault, $"Successfully pulled {pullFiles.Count:N0} files from '{vault.FileSystem.RootDirectory}'.", ConsoleColor.Green);
         }
 

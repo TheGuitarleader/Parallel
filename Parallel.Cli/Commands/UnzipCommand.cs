@@ -58,7 +58,7 @@ namespace Parallel.Cli.Commands
                 }
             }
 
-            CommandLine.ProgressBar(_tasks.Count(t => t.IsCompleted), _totalTasks, _sw?.Elapsed ?? TimeSpan.Zero, ConsoleColor.DarkGray);
+            CommandLine.ProgressBar(_tasks.Count(t => t.IsCompleted), _totalTasks, _sw?.Elapsed ?? TimeSpan.Zero);
         }
     }
 }

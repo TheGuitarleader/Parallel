@@ -55,7 +55,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            CommandLine.WriteLine($"Locating files for remapping...", ConsoleColor.DarkGray);
+            CommandLine.WriteLine(vault, $"Scanning for files in {source}...", ConsoleColor.DarkGray);
             IEnumerable<SystemFile> files = await syncManager.Database.GetFilesAsync(source);
             if (!files.Any())
             {
@@ -65,15 +65,15 @@ namespace Parallel.Cli.Commands
 
             int progress = 0;
             int total = files.Count();
+
+            CommandLine.WriteLine(vault, $"Remapping '{source}' to '{target}'...");
             await System.Threading.Tasks.Parallel.ForEachAsync(files, async (file, ct) =>
             {
-                CommandLine.ProgressBar(progress++, total, _sw.Elapsed, ConsoleColor.DarkGray);
+                CommandLine.ProgressBar(progress++, total, _sw.Elapsed);
 
                 string newPath = file.LocalPath.Replace(source, target);
                 string newId = HashGenerator.CreateSHA1(newPath);
                 await syncManager.Database.RemapObjectsAsync(file.Id, newId);
-
-                //CommandLine.WriteLine(vault, $"Remapping '{file.LocalPath}' to '{newPath}'");
                 await syncManager.Database.RemoveFileAsync(file);
 
                 file.Id = newId;
@@ -81,6 +81,7 @@ namespace Parallel.Cli.Commands
                 await syncManager.Database.AddFileAsync(file);
             });
 
+            await syncManager.DisconnectAsync();
             CommandLine.WriteLine(vault, $"Successfully remapped {files.Count():N0} files to '{target}'.", ConsoleColor.Green);
         }
     }

@@ -127,17 +127,15 @@ namespace Parallel.Cli.Utils
             }
         }
 
-        public static void ProgressBar(double part, double total, TimeSpan elapsed, ConsoleColor color = ConsoleColor.Gray)
+        public static void ProgressBar(double part, double total, TimeSpan elapsed)
         {
             double percent = part / total;
             string percentStr = $"> Progress: {Convert.ToInt32(percent * 100).ToString("D2")}%";
 
             TimeSpan remaining;
             double remainingMs = elapsed.TotalMilliseconds * (total - part) / part;
-            if (remainingMs <= TimeSpan.MaxValue.TotalMilliseconds)
-                remaining = TimeSpan.FromMilliseconds(remainingMs);
-            else
-                remaining = TimeSpan.MaxValue;
+            if (remainingMs <= TimeSpan.MaxValue.TotalMilliseconds) remaining = TimeSpan.FromMilliseconds(remainingMs);
+            else remaining = TimeSpan.MaxValue;
 
             string remainingStr = $"{remaining.Hours:00}:{remaining.Minutes:00}:{remaining.Seconds:00} remaining";
             int barWidth = Console.WindowWidth - percentStr.Length - remainingStr.Length - 4;
