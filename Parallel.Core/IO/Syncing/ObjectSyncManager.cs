@@ -77,6 +77,24 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            {
+                progress.Report(ProgressOperation.Downloading, file);
+                await using FileStream fs = File.Create(file.LocalPath);
+                foreach (string hash in await Database.GetObjectsAsync(file.Id))
+                {
+                    string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
+                    string remotePath = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2), hash[4..]);
+
+                    if (await FileSystem.ExistsAsync(remotePath))
+                    {
+                        Log.Debug($"Downloading object: {hash}");
+                        await FileSystem.DownloadStreamAsync(fs, remotePath);
+                    }
+                }
+
+                await fs.FlushAsync(ct);
+            });
         }
     }
 }

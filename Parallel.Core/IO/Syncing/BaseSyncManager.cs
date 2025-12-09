@@ -59,7 +59,7 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await FileSystem.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new ProgressLogger());
+                await FileSystem.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new NullProgressReporter());
                 RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
                 if(config == null) return false;
                 RemoteVault = config;
@@ -76,7 +76,7 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await FileSystem.DownloadFilesAsync([new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new ProgressLogger());
+                await FileSystem.DownloadFilesAsync([new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new NullProgressReporter());
                 Database = new SqliteContext(TempDbFile);
 
                 Log.Debug($"Downloaded db file: {TempDbFile}");
@@ -92,7 +92,7 @@ namespace Parallel.Core.IO.Syncing
             Log.Debug($"Uploaded db file: {TempDbFile}");
 
             SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
-            await FileSystem.UploadFilesAsync(tempFiles, new ProgressLogger());
+            await FileSystem.UploadFilesAsync(tempFiles, new NullProgressReporter());
             FileSystem.Dispose();
         }
 

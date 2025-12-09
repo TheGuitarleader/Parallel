@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using System.Data;
 using System.Diagnostics;
 using Dapper;
+using Newtonsoft.Json.Linq;
 using Parallel.Core.IO;
 using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
@@ -83,8 +84,8 @@ namespace Parallel.Core.Database
         public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT * FROM files WHERE localpath LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
-            return await connection.QueryAsync<SystemFile>(sql, new { path });
+            string sql = "SELECT * FROM files WHERE localpath LIKE @Path OR remotepath LIKE @Path ORDER BY lastupdate DESC";
+            return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%" });
         }
 
         /// <inheritdoc />
@@ -99,8 +100,8 @@ namespace Parallel.Core.Database
         public async Task<SystemFile?> GetFileAsync(string path)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%{path}%\" OR remotepath LIKE \"%{path}%\" ORDER BY lastupdate DESC";
-            return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql);
+            string sql = $"SELECT (id, name, localpath, remotepath, lastwrite, lastupdate, localsize, remotesize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
+            return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql, new { path });
         }
 
         #endregion
