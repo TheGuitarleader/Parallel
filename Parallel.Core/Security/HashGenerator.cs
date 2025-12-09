@@ -71,6 +71,11 @@ namespace Parallel.Core.Security
             return Convert.ToHexString(SHA1.HashData(Encoding.ASCII.GetBytes(value))).ToLower();
         }
 
+        public static string CreateSHA256(Span<byte> value)
+        {
+            return Convert.ToHexString(SHA256.HashData(value)).ToLower();
+        }
+
         /// <summary>
         /// Computes a SHA256 hash from bytes.
         /// </summary>
@@ -97,12 +102,12 @@ namespace Parallel.Core.Security
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        public static string? CheckSum(string path)
+        public static byte[]? CheckSum(string path)
         {
             if (!File.Exists(path)) return null;
             using FileStream fs = File.OpenRead(path);
             using SHA256 sha256 = SHA256.Create();
-            return Convert.ToHexString(sha256.ComputeHash(fs)).ToLowerInvariant();
+            return sha256.ComputeHash(fs);
         }
     }
 }

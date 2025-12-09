@@ -30,6 +30,7 @@ namespace Parallel.Cli.Commands
             {
                 ParallelConfig config = ParallelConfig.Load();
                 if (days <= config.RetentionPeriod) days = config.RetentionPeriod;
+                CommandLine.WriteLine($"Scanning for cleanable files older than {days:N0} days old...", ConsoleColor.DarkGray);
 
                 if (string.IsNullOrEmpty(path))
                 {
@@ -54,71 +55,70 @@ namespace Parallel.Cli.Commands
 
         private async Task CleanDirectoryAsync(ParallelConfig config, string path, int days, bool recursive, bool verbose)
         {
-            CommandLine.WriteLine($"Scanning for cleanable files older than {days:N0} days old in {path}...", ConsoleColor.DarkGray);
             if (!Directory.Exists(path))
             {
-                CommandLine.WriteLine($"The provided path was not found!", ConsoleColor.Yellow);
+                CommandLine.WriteLine($"Unable to find path: '{path}'", ConsoleColor.Yellow);
                 return;
             }
 
             UnixTime minTime = UnixTime.FromMilliseconds(UnixTime.Now.TotalMilliseconds - (days * UnixTime.Day));
             IEnumerable<FileInfo> cleanableFiles = FileScanner.GetCleanableFiles(path, minTime, recursive);
-            if (!cleanableFiles.Any()) CommandLine.WriteLine($"No cleanable files were found in the provided path.", ConsoleColor.Green);
-
-            await System.Threading.Tasks.Parallel.ForEachAsync(cleanableFiles, ParallelConfig.Options, (fi, ct) =>
+            if (cleanableFiles.Any())
             {
-                if (fi.Exists)
+                await System.Threading.Tasks.Parallel.ForEachAsync(cleanableFiles, ParallelConfig.Options, (fi, ct) =>
                 {
-                    try
+                    if (fi.Exists)
                     {
-                        _freedBytes += fi.Length;
-                        _filesCount++;
-                        fi.Delete();
+                        try
+                        {
+                            _freedBytes += fi.Length;
+                            _filesCount++;
+                            fi.Delete();
+                        }
+                        catch (Exception ex)
+                        {
+                            CommandLine.WriteLine($"Unable to remove file: {fi.FullName}", ConsoleColor.Yellow);
+                            Log.Warning($"{ex.GetBaseException().Message}");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        CommandLine.WriteLine($"Unable to remove file: {fi.FullName}", ConsoleColor.Yellow);
-                        Log.Warning($"{ex.GetBaseException().Message}");
-                    }
-                }
 
-                return ValueTask.CompletedTask;
-            });
+                    return ValueTask.CompletedTask;
+                });
+            }
 
             IEnumerable<DirectoryInfo> directories = FileScanner.GetEmptyDirectories(path, recursive);
-            if (!directories.Any()) CommandLine.WriteLine($"No empty directories were found in the provided path.", ConsoleColor.Green);
-
-            await System.Threading.Tasks.Parallel.ForEachAsync(directories, ParallelConfig.Options, (di, ct) =>
+            if (!directories.Any())
             {
-                if (di.Exists && !di.EnumerateFiles().Any())
+                System.Threading.Tasks.Parallel.ForEach(directories, ParallelConfig.Options, (di) =>
+                {
+                    if (di.Exists && !di.EnumerateFiles().Any())
+                    {
+                        try
+                        {
+                            Log.Debug($"Removing empty directory: {di?.FullName}");
+                            di?.Delete(true);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"{ex.GetBaseException().Message}");
+                        }
+                    }
+                });
+
+                DirectoryInfo currentDir = new DirectoryInfo(path);
+                SearchOption option = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+                if (!currentDir.EnumerateFiles("*", option).Any())
                 {
                     try
                     {
-                        Log.Debug($"Removing empty directory: {di?.FullName}");
-                        di?.Delete(true);
+                        Log.Debug($"Removing empty directory: {currentDir.FullName}");
+                        currentDir.Delete(true);
+                        _dirsCount++;
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"{ex.GetBaseException().Message}");
+                        Log.Warning($"{ex.GetBaseException().Message}");
                     }
-                }
-
-                return ValueTask.CompletedTask;
-            });
-
-            DirectoryInfo currentDir = new DirectoryInfo(path);
-            SearchOption option = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-            if (!currentDir.EnumerateFiles("*", option).Any())
-            {
-                try
-                {
-                    Log.Debug($"Removing empty directory: {currentDir.FullName}");
-                    currentDir.Delete(true);
-                    _dirsCount++;
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning($"{ex.GetBaseException().Message}");
                 }
             }
         }

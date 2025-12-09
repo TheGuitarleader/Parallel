@@ -1,8 +1,10 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Collections.Concurrent;
 using System.Data;
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.IO.Syncing;
@@ -18,6 +20,7 @@ namespace Parallel.Core.IO.Scanning
     /// </summary>
     public class FileScanner
     {
+        private static readonly Dictionary<string, Regex> _cache = new();
         private readonly RemoteVaultConfig _config;
         private readonly IDatabase _db;
 
@@ -54,51 +57,54 @@ namespace Parallel.Core.IO.Scanning
         {
             if (!Directory.Exists(path)) return Array.Empty<SystemFile>();
 
-            List<SystemFile> scannedFiles = new List<SystemFile>();
+            ConcurrentBag<string> scannedFiles = new();
+            ConcurrentBag<SystemFile> changedFiles = new();
+
             HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
             IEnumerable<SystemFile> remoteFiles = await _db.GetFilesAsync(path, false);
-            await System.Threading.Tasks.Parallel.ForEachAsync(remoteFiles, ParallelConfig.Options, async (remoteFile, ct) =>
+            System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile, ct) =>
             {
                 if (File.Exists(remoteFile.LocalPath))
                 {
                     SystemFile localFile = new SystemFile(remoteFile.LocalPath);
                     if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
-                        Log.Debug($"Ignored -> {localFile.LocalPath}");
+                        //Log.Debug($"Ignored -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;
                         localFile.Deleted = true;
-                        scannedFiles.Add(localFile);
+                        changedFiles.Add(localFile);
                     }
                     else if (HasChanged(localFile, remoteFile))
                     {
-                        Log.Debug($"Changed -> {localFile.LocalPath}");
+                        //Log.Debug($"Changed -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;
-                        scannedFiles.Add(localFile);
+                        changedFiles.Add(localFile);
                     }
 
-                    localFiles.Remove(localFile.LocalPath);
+                    scannedFiles.Add(localFile.LocalPath);
                 }
                 else
                 {
-                    Log.Debug($"Deleted -> {remoteFile.LocalPath}");
+                    //Log.Debug($"Deleted -> {remoteFile.LocalPath}");
                     remoteFile.Deleted = true;
-                    scannedFiles.Add(remoteFile);
+                    changedFiles.Add(remoteFile);
                 }
             });
 
-            Log.Debug($"{localFiles.Count} files are untracked! Adding...");
-            await System.Threading.Tasks.Parallel.ForEachAsync(localFiles, ParallelConfig.Options, async (file, ct) =>
+            HashSet<string> remainingFiles = localFiles.Except(new HashSet<string>(scannedFiles)).ToHashSet();
+            Log.Debug($"{remainingFiles.Count} files are untracked! Adding...");
+            System.Threading.Tasks.Parallel.ForEach(remainingFiles, ParallelConfig.Options, (file, ct) =>
             {
-                if (File.Exists(file) && !IsIgnored(file, ignoreFolders))
+                if (!IsIgnored(file, ignoreFolders))
                 {
-                    Log.Debug($"Created -> {file}");
-                    scannedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
+                    //Log.Debug($"Created -> {file}");
+                    changedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
                 }
             });
 
             Log.Debug($"{localFiles.Count} files remaining.");
-            Log.Information($"Found {scannedFiles.Count:N0} changes in '{path}'");
-            return scannedFiles.ToArray();
+            Log.Information($"Found {changedFiles.Count:N0} changes in '{path}'");
+            return changedFiles.ToArray();
         }
 
         /// <summary>
@@ -109,8 +115,6 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>True is success, otherwise false.</returns>
         public static bool HasChanged(SystemFile sourcePath, SystemFile? targetPath)
         {
-            Console.WriteLine($"{sourcePath.Name}: {targetPath} == null || ({sourcePath.LastWrite.TotalMilliseconds} > {targetPath.LastWrite.TotalMilliseconds} && {!sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum)}");
-
             return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && !sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum));
         }
 
@@ -223,7 +227,6 @@ namespace Parallel.Core.IO.Scanning
             while (pending.Count > 0)
             {
                 string current = pending.Pop();
-
                 if (IsIgnored(current, exempt))
                 {
                     Log.Debug($"Ignored -> {current}");
@@ -231,31 +234,31 @@ namespace Parallel.Core.IO.Scanning
                 }
 
                 // Get files in current directory
-                string[] files = [];
+                IEnumerable<string> files;
                 try
                 {
-                    files = Directory.GetFiles(current, searchPattern);
+                    files = Directory.EnumerateFiles(current, searchPattern);
                 }
                 catch
                 {
                     Log.Debug($"No file access -> {current}");
+                    continue;
                 }
 
-                foreach (var file in files) yield return file;
-                if (recursive)
+                foreach (string file in files) yield return file;
+                if (!recursive) continue;
+                IEnumerable<string> subDirs;
+                try
                 {
-                    string[] subdirs = [];
-                    try
-                    {
-                        subdirs = Directory.GetDirectories(current);
-                    }
-                    catch
-                    {
-                        Log.Debug($"No folder access -> {current}");
-                    }
-
-                    foreach (var dir in subdirs) pending.Push(dir);
+                    subDirs = Directory.EnumerateDirectories(current);
                 }
+                catch
+                {
+                    Log.Debug($"No directory access -> {current}");
+                    continue;
+                }
+
+                foreach (string dir in subDirs) pending.Push(dir);
             }
         }
 
@@ -274,8 +277,8 @@ namespace Parallel.Core.IO.Scanning
                 SystemFile entry = new(file);
                 if (dict.TryGetValue(entry.Name, out List<SystemFile> value))
                 {
-                    SystemFile key = value.FirstOrDefault();
-                    if (entry.LocalSize.Equals(key.LocalSize))
+                    SystemFile? key = value.FirstOrDefault();
+                    if (entry.LocalSize.Equals(key?.LocalSize))
                     {
                         value.Add(entry);
                     }
@@ -319,33 +322,44 @@ namespace Parallel.Core.IO.Scanning
         {
             foreach (string entry in exempt)
             {
-                if (path.StartsWith(entry))
+                if (!_cache.TryGetValue(entry, out Regex? regex))
                 {
+                    regex = BuildRegexCache(entry);
+                    _cache[entry] = regex;
+                }
+
+                if (regex.IsMatch(path))
                     return true;
-                }
-
-                if (entry.EndsWith('/'))
-                {
-                    string[] folders = path.Split('\\');
-                    foreach (string dir in folders)
-                    {
-                        if (dir.ToLower() == entry.Remove(entry.Length - 1, 1).ToLower())
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                if (entry.StartsWith('*'))
-                {
-                    if (path.EndsWith(entry.Replace("*", string.Empty)))
-                    {
-                        return true;
-                    }
-                }
             }
 
             return false;
+        }
+
+        private static Regex BuildRegexCache(string entry)
+        {
+            string pattern;
+            if (!entry.Contains('*') && !entry.EndsWith("/") && !entry.EndsWith("\\"))
+            {
+                pattern = "^" + Regex.Escape(entry);
+                return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            }
+
+            if (entry.EndsWith("/") || entry.EndsWith("\\"))
+            {
+                string folder = entry.TrimEnd('/', '\\');
+                pattern = @"(^|\\)" + Regex.Escape(folder) + @"(\\|$)";
+                return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            }
+
+            if (entry.StartsWith("*"))
+            {
+                string ext = Regex.Escape(entry.TrimStart('*'));
+                pattern = ".*" + ext + "$";
+                return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            }
+
+            pattern = "^" + Regex.Escape(entry) + "$";
+            return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
     }
 }

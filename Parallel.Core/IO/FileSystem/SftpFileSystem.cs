@@ -7,6 +7,7 @@ using Renci.SshNet.Sftp;
 using System.IO.Compression;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
+using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
 using Parallel.Core.Security;
 using Parallel.Core.Utils;
@@ -88,9 +89,11 @@ namespace Parallel.Core.IO.FileSystem
         }
 
         /// <inheritdoc />
-        public Task DownloadFileAsync(string sourcePath, string destinationPath)
+        public async Task DownloadStreamAsync(Stream output, string remotePath)
         {
-            throw new NotImplementedException();
+            await using SftpFileStream openStream = _client.OpenRead(remotePath);
+            await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
+            await gzipStream.CopyToAsync(output);
         }
 
         /// <inheritdoc />
@@ -136,6 +139,15 @@ namespace Parallel.Core.IO.FileSystem
                     Log.Error(ex.GetBaseException().ToString());
                 }
             }
+        }
+
+        /// <inheritdoc />
+        public async Task UploadStreamAsync(Stream input, string remotePath)
+        {
+            await using SftpFileStream createStream = _client.Create(remotePath);
+            await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+            await input.CopyToAsync(gzipStream);
+            //_client.ChangePermissions(remotePath, 444);
         }
 
         /// <inheritdoc />

@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Parallel.Cli.Utils
 {
-    public class TextWriter
+    public abstract class TextWriter
     {
         public static string CreateTxtFile(string text)
         {

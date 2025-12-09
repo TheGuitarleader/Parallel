@@ -4,7 +4,9 @@ using Microsoft.Data.Sqlite;
 using System.Data;
 using System.Diagnostics;
 using Dapper;
+using Newtonsoft.Json.Linq;
 using Parallel.Core.IO;
+using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
@@ -26,11 +28,6 @@ namespace Parallel.Core.Database
             FilePath = filePath;
         }
 
-        public void Dispose()
-        {
-            // TODO release managed resources here
-        }
-
         #region Base
 
         /// <inheritdoc />
@@ -45,7 +42,8 @@ namespace Parallel.Core.Database
             Log.Information("Creating index database...");
 
             using IDbConnection connection = CreateConnection();
-            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, PRIMARY KEY(`id`));");
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`id` TEXT NOT NULL, `hash` TEXT NOT NULL, orderIndex INTEGER NOT NULL, UNIQUE (id, orderIndex));");
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` BLOB, PRIMARY KEY(`id`));");
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
         }
 
@@ -86,24 +84,24 @@ namespace Parallel.Core.Database
         public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT * FROM files WHERE localpath LIKE \"%{path}%\" OR remotepath LIKE \"%{path}%\" ORDER BY lastupdate DESC";
-            return await connection.QueryAsync<SystemFile>(sql);
+            string sql = "SELECT * FROM files WHERE localpath LIKE @Path OR remotepath LIKE @Path ORDER BY lastupdate DESC";
+            return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%" });
         }
 
         /// <inheritdoc />
         public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT * FROM files WHERE deleted = {deleted} ORDER BY lastupdate DESC";
-            return await connection.QueryAsync<SystemFile>(sql);
+            string sql = $"SELECT * FROM files WHERE deleted = @deleted ORDER BY lastupdate DESC";
+            return await connection.QueryAsync<SystemFile>(sql,new { deleted });
         }
 
         /// <inheritdoc />
         public async Task<SystemFile?> GetFileAsync(string path)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%{path}%\" OR remotepath LIKE \"%{path}%\" ORDER BY lastupdate DESC";
-            return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql);
+            string sql = $"SELECT (id, name, localpath, remotepath, lastwrite, lastupdate, localsize, remotesize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
+            return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql, new { path });
         }
 
         #endregion
@@ -113,11 +111,9 @@ namespace Parallel.Core.Database
         /// <inheritdoc />
         public async Task<bool> AddHistoryAsync(string path, HistoryType type)
         {
-            using (IDbConnection connection = CreateConnection())
-            {
-                string sql = @"INSERT OR REPLACE INTO history (timestamp, name, path, type) VALUES(@Timestamp, @Name, @Path, @Type);";
-                return await connection.ExecuteAsync(sql, new { Timestamp = UnixTime.Now.TotalMilliseconds, Name = Path.GetFileName(path), Path = path, Type = type }) > 0;
-            }
+            using IDbConnection connection = CreateConnection();
+            string sql = @"INSERT OR REPLACE INTO history (timestamp, name, path, type) VALUES(@Timestamp, @Name, @Path, @Type);";
+            return await connection.ExecuteAsync(sql, new { Timestamp = UnixTime.Now.TotalMilliseconds, Name = Path.GetFileName(path), Path = path, Type = type }) > 0;
         }
 
         /// <inheritdoc />
@@ -130,6 +126,26 @@ namespace Parallel.Core.Database
         public IEnumerable<HistoryEvent>? GetHistory(string path, HistoryType type, int limit)
         {
             throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region Objects
+
+        /// <inheritdoc />
+        public async Task<bool> AddObjectAsync(string id, string hash, int index)
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = "INSERT OR REPLACE INTO objects (id, hash, orderIndex) VALUES (@id, @hash, @index);";
+            return await connection.ExecuteAsync(sql, new { id, hash, index }) > 0;
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<string>> GetObjectsAsync(string id)
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = "SELECT (hash) FROM objects WHERE id = @id ORDER BY orderIndex ASC;";
+            return await connection.QueryAsync<string>(sql, new { id });
         }
 
         #endregion

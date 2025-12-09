@@ -170,8 +170,9 @@ namespace Parallel.Core.IO
 
         public static string GetObjectPath(string basePath, string hash)
         {
-            if (hash.Length < 8) throw new ArgumentException("Hash too short for sharding", nameof(hash));
-            return Path.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2), hash.Substring(4, 2), hash.Substring(6, 2), hash);
+            string parentDir = Path.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
+            if (!Directory.Exists(parentDir))  Directory.CreateDirectory(parentDir);
+            return Path.Combine(parentDir, hash[4..]);
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Parallel.Core.Diagnostics;
+using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
 
 namespace Parallel.Core.IO.FileSystem
@@ -43,9 +44,9 @@ namespace Parallel.Core.IO.FileSystem
         /// <summary>
         /// Downloads a file from the associated file system.
         /// </summary>
-        /// <param name="sourcePath"></param>
-        /// <param name="destinationPath"></param>
-        Task DownloadFileAsync(string sourcePath, string destinationPath);
+        /// <param name="output"></param>
+        /// <param name="remotePath"></param>
+        Task DownloadStreamAsync(Stream output, string remotePath);
 
         /// <summary>
         /// Checks if a path exists on the associated file system.
@@ -69,10 +70,10 @@ namespace Parallel.Core.IO.FileSystem
         Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <summary>
-        /// Uploads a file to the associated file system.
+        /// Uploads a stream to the associated file system.
         /// </summary>
-        /// <param name="sourcePath"></param>
-        /// <param name="destinationPath"></param>
-        Task UploadFileAsync(string sourcePath, string destinationPath);
+        /// <param name="input"></param>
+        /// <param name="remotePath"></param>
+        Task UploadStreamAsync(Stream input, string remotePath);
     }
 }
