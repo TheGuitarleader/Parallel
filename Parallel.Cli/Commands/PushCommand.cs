@@ -47,6 +47,7 @@ namespace Parallel.Cli.Commands
 
         private async Task SyncPathAsync(string path)
         {
+            CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
             await Program.Settings.ForEachVaultAsync(async vault =>
             {
                 ISyncManager syncManager = SyncManager.CreateNew(vault);
@@ -65,12 +66,14 @@ namespace Parallel.Cli.Commands
                 if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)))
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is not set to be backed up!", ConsoleColor.Yellow);
+                    await syncManager.DisconnectAsync();
                     return;
                 }
 
                 if (FileScanner.IsIgnored(fullPath, ignoredFolders))
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is set to be ignored!", ConsoleColor.Yellow);
+                    await syncManager.DisconnectAsync();
                     return;
                 }
 

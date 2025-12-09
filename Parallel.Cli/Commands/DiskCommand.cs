@@ -14,27 +14,28 @@ namespace Parallel.Cli.Commands
 {
     public class DiskCommand : Command
     {
-        private readonly Argument<string> configArg = new("config", "The vault configuration to use.");
+        private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
         public DiskCommand() : base("disk", "Shows the current disk usage.")
         {
-            this.AddArgument(configArg);
-            this.SetHandler(async (vault) =>
+            this.AddOption(_configOpt);
+            this.SetHandler(async (config) =>
             {
-                CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
-                LocalVaultConfig? config = ParallelConfig.GetVault(vault);
-                if (config == null)
+                LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault();
+                if (!string.IsNullOrEmpty(config)) vault = ParallelConfig.GetVault(config);
+                if (vault == null)
                 {
                     CommandLine.WriteLine($"Unable to find vault with name: '{vault}'", ConsoleColor.Yellow);
                     return;
                 }
 
-                await DisplayDiskInformationAsync(config);
-            }, configArg);
+                await DisplayDiskInformationAsync(vault);
+            }, _configOpt);
         }
 
         private async Task DisplayDiskInformationAsync(LocalVaultConfig vault)
         {
+            CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
             ISyncManager syncManager = SyncManager.CreateNew(vault);
             if (!await syncManager.ConnectAsync())
             {

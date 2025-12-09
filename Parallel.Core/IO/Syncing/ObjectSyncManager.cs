@@ -61,13 +61,8 @@ namespace Parallel.Core.IO.Syncing
                         string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
                         if (!await FileSystem.ExistsAsync(remotePath))
                         {
-                            Log.Debug($"Uploading object: {hash}");
                             if (!await FileSystem.ExistsAsync(parentDir)) await FileSystem.CreateDirectoryAsync(parentDir);
                             await FileSystem.UploadStreamAsync(ms, remotePath);
-                        }
-                        else
-                        {
-                            Log.Debug($"Skipping object: {hash}");
                         }
                     }
                 }
@@ -80,6 +75,9 @@ namespace Parallel.Core.IO.Syncing
             await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
                 progress.Report(ProgressOperation.Downloading, file);
+                string? parentDir = Path.GetDirectoryName(file.LocalPath);
+                if (!Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
+
                 await using FileStream fs = File.Create(file.LocalPath);
                 foreach (string hash in await Database.GetObjectsAsync(file.Id))
                 {

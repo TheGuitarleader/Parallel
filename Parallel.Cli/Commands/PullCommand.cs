@@ -39,6 +39,7 @@ namespace Parallel.Cli.Commands
 
         private async Task PullPathAsync(LocalVaultConfig vault, string path, bool force)
         {
+            CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
             ISyncManager syncManager = SyncManager.CreateNew(vault);
             if (!await syncManager.ConnectAsync())
             {
@@ -62,7 +63,7 @@ namespace Parallel.Cli.Commands
             }
 
             List<SystemFile> pullFiles = new List<SystemFile>();
-            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, (file) =>
             {
                 if (!File.Exists(file.LocalPath) || FileScanner.HasChanged(file, new SystemFile(file.LocalPath)) || force) pullFiles.Add(file);
             });
@@ -77,7 +78,7 @@ namespace Parallel.Cli.Commands
             SystemFile? remoteFile = await syncManager.Database.GetFileAsync(fullPath);
             if (remoteFile == null)
             {
-                CommandLine.WriteLine("The provided file has not been pushed!", ConsoleColor.Yellow);
+                CommandLine.WriteLine("The provided file was not found!", ConsoleColor.Yellow);
                 await syncManager.DisconnectAsync();
                 return;
             }
