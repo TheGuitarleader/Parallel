@@ -14,7 +14,7 @@ namespace Parallel.Core.IO.Syncing
     /// <summary>
     /// Represents the way to sync files with content assigned binary objects.
     /// </summary>
-    public class BlobSyncManager : BaseSyncManager
+    public class ObjectSyncManager : BaseSyncManager
     {
         /// <summary>
         /// The size, in bytes, to use for chunks of a file.
@@ -23,10 +23,10 @@ namespace Parallel.Core.IO.Syncing
 
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BlobSyncManager"/> class.
+        /// Initializes a new instance of the <see cref="ObjectSyncManager"/> class.
         /// </summary>
         /// <param name="localVault"></param>
-        public BlobSyncManager(LocalVaultConfig localVault) : base(localVault) { }
+        public ObjectSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc />
         public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
@@ -35,7 +35,9 @@ namespace Parallel.Core.IO.Syncing
             {
                 if (file.Deleted)
                 {
-
+                    progress.Report(ProgressOperation.Archiving, file);
+                    await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
+                    await Database.AddFileAsync(file);
                 }
                 else
                 {
@@ -45,12 +47,13 @@ namespace Parallel.Core.IO.Syncing
 
                     int index = 0;
                     progress.Report(ProgressOperation.Uploading, file);
-                    int row = await Database.AddManifestAsync(file);
+                    await Database.AddFileAsync(file);
+
                     while ((bytesRead = await fs.ReadAsync(buffer, ct)) > 0)
                     {
                         await using MemoryStream ms = new MemoryStream(buffer, 0, bytesRead);
                         string hash = HashGenerator.CreateSHA256(buffer.AsSpan(0, bytesRead));
-                        await Database.AddChunkAsync(row, hash, index);
+                        await Database.AddObjectAsync(file.Id, hash, index);
                         index++;
 
                         string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
@@ -58,8 +61,13 @@ namespace Parallel.Core.IO.Syncing
                         string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
                         if (!await FileSystem.ExistsAsync(remotePath))
                         {
+                            Log.Debug($"Uploading object: {hash}");
                             if (!await FileSystem.ExistsAsync(parentDir)) await FileSystem.CreateDirectoryAsync(parentDir);
                             await FileSystem.UploadStreamAsync(ms, remotePath);
+                        }
+                        else
+                        {
+                            Log.Debug($"Skipping object: {hash}");
                         }
                     }
                 }

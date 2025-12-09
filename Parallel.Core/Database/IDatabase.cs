@@ -3,6 +3,7 @@
 using Parallel.Core.IO;
 using System;
 using System.Data;
+using Parallel.Core.IO.Blobs;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 
@@ -47,7 +48,7 @@ namespace Parallel.Core.Database
     /// <summary>
     /// An interface for interacting with client data storage.
     /// </summary>
-    public interface IDatabase : IDisposable
+    public interface IDatabase
     {
         #region Base
 
@@ -72,7 +73,11 @@ namespace Parallel.Core.Database
         /// </summary>
         /// <param name="file"></param>
         /// <returns>True if successful, false otherwise</returns>
-        Task<int> AddFileAsync(SystemFile file);
+        Task<bool> AddFileAsync(SystemFile file);
+
+        Task<IEnumerable<SystemFile>> GetFilesAsync(string path);
+        Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted);
+        Task<SystemFile?> GetFileAsync(string path);
 
         Task<long> GetLocalSizeAsync();
         Task<long> GetRemoteSizeAsync();
@@ -88,7 +93,7 @@ namespace Parallel.Core.Database
         /// <param name="path"></param>
         /// <param name="type"></param>
         /// <returns>True if successful, false otherwise</returns>
-        Task<int> AddHistoryAsync(string path, HistoryType type);
+        Task<bool> AddHistoryAsync(string path, HistoryType type);
 
         IEnumerable<HistoryEvent>? GetHistory(string path, int limit);
 
@@ -96,10 +101,12 @@ namespace Parallel.Core.Database
 
         #endregion
 
-        Task<IEnumerable<SystemFile>> GetFilesAsync(string path);
-        Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted);
-        Task<SystemFile?> GetFileAsync(string path);
-        Task<int> AddManifestAsync(SystemFile file);
-        Task<int> AddChunkAsync(int manifestId, string hash, int length);
+        #region Objects
+
+        Task<bool> AddObjectAsync(string id, string hash, int index);
+        Task<IEnumerable<string>> GetObjectsAsync(string id);
+
+        #endregion
+
     }
 }

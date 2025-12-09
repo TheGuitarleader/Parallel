@@ -56,17 +56,17 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The category of the file.
         /// </summary>
-        public FileCategory Type { get; set; } = FileCategory.Other;
+        public FileCategory Type { get; } = FileCategory.Other;
 
         /// <summary>
         /// If the file is currently hidden on the local machine.
         /// </summary>
-        public bool Hidden { get; set; } = false;
+        public bool Hidden { get; } = false;
 
         /// <summary>
         /// If the file is currently read-only on the local machine.
         /// </summary>
-        public bool ReadOnly { get; set; } = false;
+        public bool ReadOnly { get; } = false;
 
         /// <summary>
         /// If the file is currently deleted on the local machine.
@@ -76,7 +76,7 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The checksum used to check if the file has changed.
         /// </summary>
-        public byte[]? CheckSum { get; set; }
+        public byte[]? CheckSum { get; }
 
 
         /// <summary>
@@ -97,6 +97,8 @@ namespace Parallel.Core.Models
             ReadOnly = fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly);
             Deleted = !fileInfo.Exists;
             CheckSum = HashGenerator.CheckSum(path);
+            // Salt = HashGenerator.RandomBytes(32);
+            // IV =  HashGenerator.RandomBytes(32);
         }
 
         public SystemFile(string localPath, string remotePath)
