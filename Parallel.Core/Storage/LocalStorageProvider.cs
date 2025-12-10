@@ -124,11 +124,11 @@ namespace Parallel.Core.IO.FileSystem
         /// <inheritdoc />
         public async Task UploadStreamAsync(Stream input, string remotePath)
         {
-            await using FileStream createStream = File.Create(remotePath);
+            await using FileStream createStream = File.OpenWrite(remotePath);
             await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
             await input.CopyToAsync(gzipStream);
 
-            File.SetAttributes(remotePath, File.GetAttributes(remotePath) | FileAttributes.ReadOnly);
+            //File.SetAttributes(remotePath, File.GetAttributes(remotePath) | FileAttributes.ReadOnly);
         }
     }
 }

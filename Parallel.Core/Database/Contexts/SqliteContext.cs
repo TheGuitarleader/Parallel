@@ -67,6 +67,7 @@ namespace Parallel.Core.Database
             await connection.ExecuteAsync(sql, new { file.Id });
         }
 
+        /// <inheritdoc />
         public async Task<long> GetLocalSizeAsync()
         {
             using IDbConnection connection = CreateConnection();
@@ -81,6 +82,7 @@ namespace Parallel.Core.Database
             return await connection.QuerySingleOrDefaultAsync<long>(sql);
         }
 
+        /// <inheritdoc />
         public async Task<long> GetTotalFilesAsync(bool deleted)
         {
             using IDbConnection connection = CreateConnection();
@@ -100,8 +102,8 @@ namespace Parallel.Core.Database
         public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT * FROM files WHERE deleted = @deleted ORDER BY lastupdate DESC";
-            return await connection.QueryAsync<SystemFile>(sql,new { deleted });
+            string sql = $"SELECT * FROM files WHERE localpath LIKE @Path AND deleted = @deleted ORDER BY lastupdate DESC";
+            return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", deleted });
         }
 
         /// <inheritdoc />

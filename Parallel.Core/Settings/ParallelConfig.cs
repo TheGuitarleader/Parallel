@@ -26,7 +26,7 @@ namespace Parallel.Core.Settings
             MaxDegreeOfParallelism = Load().MaxConcurrentProcesses
         };
 
-        public static int MaxUploads { get; } = Load().MaxConcurrentUploads;
+        public static int MaxTransfers { get; } = Load().MaxConcurrentTransfers;
 
         // /// <summary>
         // /// The address that will accept incoming commands.
@@ -42,9 +42,9 @@ namespace Parallel.Core.Settings
 
         /// <summary>
         /// Gets or sets the maximum number of concurrent vaults that can run.
-        /// <para>Default: 2</para>
+        /// <para>Default: 1</para>
         /// </summary>
-        public int MaxConcurrentVaults { get; set; } = 2;
+        public int MaxConcurrentVaults { get; set; } = 1;
 
         /// <summary>
         /// Gets or sets the maximum number of concurrent processes that can run.
@@ -53,10 +53,10 @@ namespace Parallel.Core.Settings
         public int MaxConcurrentProcesses { get; set; } = Environment.ProcessorCount;
 
         /// <summary>
-        /// Gets or sets the maximum number of concurrent processes that can run.
+        /// Gets or sets the maximum number of concurrent transfers that can run.
         /// <para>Default: 4</para>
         /// </summary>
-        public int MaxConcurrentUploads { get; set; } = 4;
+        public int MaxConcurrentTransfers { get; set; } = 4;
 
         /// <summary>
         /// The amount of time, in days, to hold a file before it can be cleaned.

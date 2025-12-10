@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.CommandLine;
+using System.Runtime.InteropServices;
 using Parallel.Cli.Utils;
 using Parallel.Core.IO.Scanning;
 using Parallel.Core.IO.Syncing;

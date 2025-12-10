@@ -60,7 +60,10 @@ namespace Parallel.Core.IO.Scanning
             ConcurrentBag<string> scannedFiles = new();
             ConcurrentBag<SystemFile> changedFiles = new();
 
+            Log.Debug("Getting system files...");
             HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
+
+            Log.Debug("Getting database files...");
             IEnumerable<SystemFile> remoteFiles = await _db.GetFilesAsync(path, false);
             System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile, ct) =>
             {
@@ -69,14 +72,14 @@ namespace Parallel.Core.IO.Scanning
                     SystemFile localFile = new SystemFile(remoteFile.LocalPath);
                     if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
-                        //Log.Debug($"Ignored -> {localFile.LocalPath}");
+                        Log.Debug($"Ignored -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;
                         localFile.Deleted = true;
                         changedFiles.Add(localFile);
                     }
                     else if (HasChanged(localFile, remoteFile))
                     {
-                        //Log.Debug($"Changed -> {localFile.LocalPath}");
+                        Log.Debug($"Changed -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;
                         changedFiles.Add(localFile);
                     }
@@ -85,7 +88,7 @@ namespace Parallel.Core.IO.Scanning
                 }
                 else
                 {
-                    //Log.Debug($"Deleted -> {remoteFile.LocalPath}");
+                    Log.Debug($"Deleted -> {remoteFile.LocalPath}");
                     remoteFile.Deleted = true;
                     changedFiles.Add(remoteFile);
                 }
@@ -93,16 +96,24 @@ namespace Parallel.Core.IO.Scanning
 
             HashSet<string> remainingFiles = localFiles.Except(new HashSet<string>(scannedFiles)).ToHashSet();
             Log.Debug($"{remainingFiles.Count} files are untracked! Adding...");
-            System.Threading.Tasks.Parallel.ForEach(remainingFiles, ParallelConfig.Options, (file, ct) =>
+
+            remainingFiles.AsParallel().WithDegreeOfParallelism(Environment.ProcessorCount).Where(f => !IsIgnored(f, ignoreFolders)).ForAll(file =>
             {
-                if (!IsIgnored(file, ignoreFolders))
-                {
-                    //Log.Debug($"Created -> {file}");
-                    changedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
-                }
+                Log.Debug($"Created -> {file}");
+                changedFiles.Add(new SystemFile(file));
             });
 
-            Log.Debug($"{localFiles.Count} files remaining.");
+            // System.Threading.Tasks.Parallel.ForEach(remainingFiles, ParallelConfig.Options, (file, ct) =>
+            // {
+            //     if (!IsIgnored(file, ignoreFolders))
+            //     {
+            //         Log.Debug($"Created -> {file}");
+            //         changedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
+            //     }
+            //
+            //     Log.Debug($"Done");
+            // });
+
             Log.Information($"Found {changedFiles.Count:N0} changes in '{path}'");
             return changedFiles.ToArray();
         }
@@ -322,44 +333,33 @@ namespace Parallel.Core.IO.Scanning
         {
             foreach (string entry in exempt)
             {
-                if (!_cache.TryGetValue(entry, out Regex? regex))
+                if (path.StartsWith(entry))
                 {
-                    regex = BuildRegexCache(entry);
-                    _cache[entry] = regex;
+                    return true;
                 }
 
-                if (regex.IsMatch(path))
-                    return true;
+                if (entry.EndsWith('/'))
+                {
+                    string[] folders = path.Split('\\');
+                    foreach (string dir in folders)
+                    {
+                        if (dir.ToLower() == entry.Remove(entry.Length - 1, 1).ToLower())
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                if (entry.StartsWith('*'))
+                {
+                    if (path.EndsWith(entry.Replace("*", string.Empty)))
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;
-        }
-
-        private static Regex BuildRegexCache(string entry)
-        {
-            string pattern;
-            if (!entry.Contains('*') && !entry.EndsWith("/") && !entry.EndsWith("\\"))
-            {
-                pattern = "^" + Regex.Escape(entry);
-                return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            }
-
-            if (entry.EndsWith("/") || entry.EndsWith("\\"))
-            {
-                string folder = entry.TrimEnd('/', '\\');
-                pattern = @"(^|\\)" + Regex.Escape(folder) + @"(\\|$)";
-                return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            }
-
-            if (entry.StartsWith("*"))
-            {
-                string ext = Regex.Escape(entry.TrimStart('*'));
-                pattern = ".*" + ext + "$";
-                return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            }
-
-            pattern = "^" + Regex.Escape(entry) + "$";
-            return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.CommandLine;
+using System.Diagnostics;
 using Parallel.Cli.Utils;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.IO;
@@ -13,6 +14,8 @@ namespace Parallel.Cli.Commands
 {
     public class PushCommand : Command
     {
+        private Stopwatch _sw = new Stopwatch();
+
         private Command addCmd = new("add", "Adds a new directory to the sync list.");
         private Command listCmd = new("list", "Shows all directories in the sync list.");
         private Command removeCmd = new("remove", "Removes a directory from the sync list.");
@@ -28,6 +31,7 @@ namespace Parallel.Cli.Commands
             this.AddOption(_verboseOpt);
             this.SetHandler(async (path, config, verbose) =>
             {
+                _sw = Stopwatch.StartNew();
                 if (string.IsNullOrEmpty(path))
                 {
                     await SyncSystemAsync();
@@ -90,9 +94,10 @@ namespace Parallel.Cli.Commands
 
                 CommandLine.WriteLine(vault, $"Backing up {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
                 await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles));
-                await syncManager.DisconnectAsync();
+                //await syncManager.PushFilesAsync(files, new ProgressBarReporter());
+                //await syncManager.DisconnectAsync();
 
-                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files to '{vault.FileSystem.RootDirectory}'.", ConsoleColor.Green);
+                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files in {_sw.Elapsed}.", ConsoleColor.Green);
             });
         }
     }

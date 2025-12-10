@@ -1,7 +1,10 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Buffers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection.Metadata;
+using System.Threading.Channels;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
@@ -9,6 +12,7 @@ using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
 using Parallel.Core.Security;
 using Parallel.Core.Settings;
+using Parallel.Core.Utils;
 
 namespace Parallel.Core.IO.Syncing
 {
@@ -33,52 +37,155 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            TimeSpan uploadTimeout = TimeSpan.FromSeconds(30);
+            TimeSpan writeBlockWarn = TimeSpan.FromSeconds(5);
+            long enqueued = 0, dequeued = 0, uploadStarted = 0, uploadDone = 0;
+            Channel<TransferWorker> channel = Channel.CreateBounded<TransferWorker>(new BoundedChannelOptions(256)
             {
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = false,
+                SingleWriter = false
+            });
+
+            // WORKERS
+            Task[] workerTasks = Enumerable.Range(0, ParallelConfig.MaxTransfers).Select(workerId => Task.Run(async () =>
+            {
+                Log.Debug($"[WORKER {workerId}] START");
                 try
                 {
-                    if (file.Deleted)
+                    await foreach (TransferWorker job in channel.Reader.ReadAllAsync())
                     {
-                        progress.Report(ProgressOperation.Archiving, file);
-                        await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
-                        await Database.AddFileAsync(file);
-                    }
-                    else
-                    {
-                        int bytesRead = 0;
-                        byte[] buffer = new byte[ChunkSize];
-                        await using FileStream fs = File.OpenRead(file.LocalPath);
+                        Interlocked.Increment(ref dequeued);
+                        Log.Debug($"[WORKER {workerId}] DEQUEUE -> {job.RemotePath} dequeued={dequeued}");
 
-                        int index = 0;
-                        progress.Report(ProgressOperation.Pushing, file);
-                        await Database.AddFileAsync(file);
-
-                        while ((bytesRead = await fs.ReadAsync(buffer, ct)) > 0)
+                        try
                         {
-                            await using MemoryStream ms = new MemoryStream(buffer, 0, bytesRead);
-                            string hash = HashGenerator.CreateSHA256(buffer.AsSpan(0, bytesRead));
-                            await Database.AddObjectAsync(file.Id, hash, index);
-                            index++;
+                            Interlocked.Increment(ref uploadStarted);
+                            Log.Debug($"[WORKER {workerId}] UPLOAD START -> {job.RemotePath} started={uploadStarted}");
 
-                            string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
-                            string parentDir = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
-                            string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
-                            if (!await Storage.ExistsAsync(remotePath))
+                            string fullPath = PathBuilder.Combine(job.RemotePath, job.Filename);
+                            if (await Storage.ExistsAsync(fullPath))
                             {
-                                if (!await Storage.ExistsAsync(parentDir)) await Storage.CreateDirectoryAsync(parentDir);
-                                await Storage.UploadStreamAsync(ms, remotePath);
+                                Log.Debug($"[WORKER {workerId}] UPLOAD SKIPPED -> {job.RemotePath} done={uploadDone}");
+                                continue;
                             }
-                        }
 
-                        await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
+                            if (!await Storage.ExistsAsync(job.RemotePath))
+                                await Storage.CreateDirectoryAsync(job.RemotePath);
+
+                            await using MemoryStream ms = new MemoryStream(job.Data, writable: false);
+
+                            using CancellationTokenSource cts = new CancellationTokenSource(uploadTimeout);
+                            Task uploadTask = Storage.UploadStreamAsync(ms, fullPath);
+                            await uploadTask;
+
+                            Interlocked.Increment(ref uploadDone);
+                            Log.Debug($"[WORKER {workerId}] UPLOAD DONE -> {job.RemotePath} done={uploadDone}");
+                        }
+                        catch (Exception wex)
+                        {
+                            Log.Error($"[WORKER {workerId}] UPLOAD EX -> {job.RemotePath} : {wex}");
+                            job.OnError?.Invoke(wex);
+                        }
                     }
+
+                    Log.Debug($"[WORKER {workerId}] READER COMPLETED");
                 }
-                catch (Exception ex)
+                finally
                 {
-                    Log.Error(ex.GetBaseException().ToString());
-                    progress.Failed(ex, file);
+                    Log.Debug($"[WORKER {workerId}] EXIT");
+                }
+            })).ToArray();
+
+            // PRODUCER
+            var producer = Task.Run(async () =>
+            {
+                Log.Debug("PRODUCER START");
+                try
+                {
+                    await System.Threading.Tasks.Parallel.ForEachAsync(files, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async (file, token) =>
+                    {
+                        try
+                        {
+                            if (file.Deleted)
+                            {
+                                progress.Report(ProgressOperation.Archiving, file);
+                                await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
+                                await Database.AddFileAsync(file);
+                                return;
+                            }
+
+                            progress.Report(ProgressOperation.Pushing, file);
+                            await Database.AddFileAsync(file);
+
+                            await using FileStream fs = new FileStream(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: ChunkSize, useAsync: true);
+
+                            byte[] buffer = ArrayPool<byte>.Shared.Rent(ChunkSize);
+                            try
+                            {
+                                int index = 0;
+                                int bytesRead;
+                                while ((bytesRead = await fs.ReadAsync(buffer.AsMemory(0, ChunkSize), token)) > 0)
+                                {
+                                    byte[] chunk = new byte[bytesRead];
+                                    Buffer.BlockCopy(buffer, 0, chunk, 0, bytesRead);
+
+                                    string hash = HashGenerator.CreateSHA256(chunk);
+                                    await Database.AddObjectAsync(file.Id, hash, index++);
+
+                                    string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
+                                    string parentDir = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
+                                    string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
+
+                                    TransferWorker job = new TransferWorker(chunk, parentDir, hash[4..], ex => progress.Failed(ex, file));
+
+                                    Task writeTask = channel.Writer.WriteAsync(job, token).AsTask();
+                                    Task winner = await Task.WhenAny(writeTask, Task.Delay(writeBlockWarn, token));
+                                    if (winner != writeTask)
+                                    {
+                                        Log.Warning($"PRODUCER: channel.Writer.WriteAsync is blocked > {writeBlockWarn} (remote={remotePath}, enq={enqueued}, deq={dequeued})");
+                                        await writeTask;
+                                    }
+
+                                    Interlocked.Increment(ref enqueued);
+                                    Log.Debug($"ENQUEUE -> {remotePath}. enqueued={enqueued}");
+                                }
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(buffer);
+                            }
+
+                            await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
+                        }
+                        catch (Exception pex)
+                        {
+                            Log.Error($"PRODUCER EX processing {file.LocalPath}: {pex}");
+                            progress.Failed(pex, file);
+                        }
+                    });
+                }
+                finally
+                {
+                    Log.Debug("PRODUCER COMPLETE -> Completing writer");
+                    channel.Writer.Complete();
                 }
             });
+
+            // MONITOR
+            Task monitor = Task.Run(async () =>
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                while (!Task.WhenAll(workerTasks).IsCompleted)
+                {
+                    Log.Debug($"PIPELINE STATS @ {sw.Elapsed}: enq={enqueued}, deq={dequeued}, upStarted={uploadStarted}, upDone={uploadDone}");
+                    await Task.Delay(1000);
+                }
+            });
+
+            await Task.WhenAll(producer, monitor).ConfigureAwait(false);
+            await Task.WhenAll(workerTasks).ConfigureAwait(false);
+            Log.Debug("PUSHFILES FINISHED");
         }
 
         /// <inheritdoc />
