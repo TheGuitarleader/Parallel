@@ -7,8 +7,8 @@ namespace Parallel.Core.Diagnostics
     public enum ProgressOperation
     {
         Archiving,
-        Downloading,
-        Uploading,
+        Pulling,
+        Pushing,
         Compressing,
         Decompressing,
         Syncing

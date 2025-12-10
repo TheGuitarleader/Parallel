@@ -18,6 +18,7 @@ namespace Parallel.Cli.Commands
 
         private Command addCmd = new("add", "Adds a new vault configuration.");
         private Command editCmd = new("edit", "Edits a vault configuration.");
+        private readonly Command findCmd = new("find", "Finds vault configurations in a location.");
         private Command viewCmd = new("view", "Shows the vault configuration.");
         private Command setCmd = new("set", "Sets a new vault configuration.");
         private Command delCmd = new("delete", "Deletes a vault configuration.");
@@ -67,6 +68,12 @@ namespace Parallel.Cli.Commands
                 Program.Settings.Save();
 
                 CommandLine.WriteLine($"Saved new storage vault: '{localVault.Name}' ({localVault.Id})");
+            });
+
+            this.AddCommand(findCmd);
+            findCmd.SetHandler(() =>
+            {
+
             });
 
             this.AddCommand(viewCmd);

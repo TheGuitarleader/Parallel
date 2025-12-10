@@ -17,16 +17,16 @@ namespace Parallel.Core.IO.FileSystem
     /// <summary>
     /// Represents the wrapper for an SFTP file system through SSH.
     /// </summary>
-    public class SftpFileSystem : IFileSystem
+    public class SshStorageProvider : IStorageProvider
     {
         private readonly ConnectionInfo _connectionInfo;
         private readonly SftpClient _client;
 
         /// <summary>
-        /// Represents an <see cref="IFileSystem"/> for interacting with an SSH server.
+        /// Represents an <see cref="IStorageProvider"/> for interacting with an SSH server.
         /// </summary>
         /// <param name="localVault">The credentials to log in with.</param>
-        public SftpFileSystem(LocalVaultConfig localVault)
+        public SshStorageProvider(LocalVaultConfig localVault)
         {
             _connectionInfo = new ConnectionInfo(localVault.FileSystem.Address, localVault.FileSystem.Username, new PasswordAuthenticationMethod(localVault.FileSystem.Username, Encryption.Decode(localVault.FileSystem.Password)));
             _client = new SftpClient(_connectionInfo);
@@ -119,7 +119,6 @@ namespace Parallel.Core.IO.FileSystem
                 try
                 {
                     Stopwatch sw = new Stopwatch();
-                    progress.Report(ProgressOperation.Uploading, file);
                     if (await _client.ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
 
                     string[] subDirs = file.RemotePath.Split('/');
@@ -145,31 +144,10 @@ namespace Parallel.Core.IO.FileSystem
         public async Task UploadStreamAsync(Stream input, string remotePath)
         {
             await using SftpFileStream createStream = _client.Create(remotePath);
-            await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+            await using GZipStream gzipStream = new(createStream, CompressionLevel.SmallestSize);
             await input.CopyToAsync(gzipStream);
-            //_client.ChangePermissions(remotePath, 444);
-        }
 
-        /// <inheritdoc />
-        public async Task UploadFileAsync(string sourcePath, string destinationPath)
-        {
-            if (await ExistsAsync(destinationPath)) _client.ChangePermissions(destinationPath, 644);
-
-            string parentDir = string.Empty;
-            foreach (string subPath in destinationPath.Split('/'))
-            {
-                parentDir += $"/{subPath}";
-                if (!await _client.ExistsAsync(parentDir))
-                {
-                    await _client.CreateDirectoryAsync(parentDir);
-                }
-            }
-
-            await using SftpFileStream createStream = _client.Create(destinationPath);
-            await using FileStream openStream = File.OpenRead(sourcePath);
-            await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-            await openStream.CopyToAsync(gzipStream);
-            _client.ChangePermissions(destinationPath, 444);
+            _client.ChangePermissions(remotePath, 444);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
@@ -16,11 +17,12 @@ namespace Parallel.Core.IO.Syncing
     /// </summary>
     public class ObjectSyncManager : BaseSyncManager
     {
+        private static readonly ConcurrentDictionary<string, object> _locks = new();
+
         /// <summary>
         /// The size, in bytes, to use for chunks of a file.
         /// </summary>
-        private static readonly int ChunkSize = 4194304;
-
+        public readonly int ChunkSize = 4194304;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectSyncManager"/> class.
@@ -33,38 +35,48 @@ namespace Parallel.Core.IO.Syncing
         {
             await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
-                if (file.Deleted)
+                try
                 {
-                    progress.Report(ProgressOperation.Archiving, file);
-                    await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
-                    await Database.AddFileAsync(file);
-                }
-                else
-                {
-                    int bytesRead = 0;
-                    byte[] buffer = new byte[ChunkSize];
-                    await using FileStream fs = File.OpenRead(file.LocalPath);
-
-                    int index = 0;
-                    progress.Report(ProgressOperation.Uploading, file);
-                    await Database.AddFileAsync(file);
-
-                    while ((bytesRead = await fs.ReadAsync(buffer, ct)) > 0)
+                    if (file.Deleted)
                     {
-                        await using MemoryStream ms = new MemoryStream(buffer, 0, bytesRead);
-                        string hash = HashGenerator.CreateSHA256(buffer.AsSpan(0, bytesRead));
-                        await Database.AddObjectAsync(file.Id, hash, index);
-                        index++;
-
-                        string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
-                        string parentDir = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
-                        string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
-                        if (!await FileSystem.ExistsAsync(remotePath))
-                        {
-                            if (!await FileSystem.ExistsAsync(parentDir)) await FileSystem.CreateDirectoryAsync(parentDir);
-                            await FileSystem.UploadStreamAsync(ms, remotePath);
-                        }
+                        progress.Report(ProgressOperation.Archiving, file);
+                        await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
+                        await Database.AddFileAsync(file);
                     }
+                    else
+                    {
+                        int bytesRead = 0;
+                        byte[] buffer = new byte[ChunkSize];
+                        await using FileStream fs = File.OpenRead(file.LocalPath);
+
+                        int index = 0;
+                        progress.Report(ProgressOperation.Pushing, file);
+                        await Database.AddFileAsync(file);
+
+                        while ((bytesRead = await fs.ReadAsync(buffer, ct)) > 0)
+                        {
+                            await using MemoryStream ms = new MemoryStream(buffer, 0, bytesRead);
+                            string hash = HashGenerator.CreateSHA256(buffer.AsSpan(0, bytesRead));
+                            await Database.AddObjectAsync(file.Id, hash, index);
+                            index++;
+
+                            string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
+                            string parentDir = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
+                            string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
+                            if (!await Storage.ExistsAsync(remotePath))
+                            {
+                                if (!await Storage.ExistsAsync(parentDir)) await Storage.CreateDirectoryAsync(parentDir);
+                                await Storage.UploadStreamAsync(ms, remotePath);
+                            }
+                        }
+
+                        await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.GetBaseException().ToString());
+                    progress.Failed(ex, file);
                 }
             });
         }
@@ -74,24 +86,31 @@ namespace Parallel.Core.IO.Syncing
         {
             await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
-                progress.Report(ProgressOperation.Downloading, file);
-                string? parentDir = Path.GetDirectoryName(file.LocalPath);
-                if (!Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
-
-                await using FileStream fs = File.Create(file.LocalPath);
-                foreach (string hash in await Database.GetObjectsAsync(file.Id))
+                try
                 {
-                    string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
-                    string remotePath = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2), hash[4..]);
+                    progress.Report(ProgressOperation.Pulling, file);
+                    string? parentDir = Path.GetDirectoryName(file.LocalPath);
+                    if (!Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
 
-                    if (await FileSystem.ExistsAsync(remotePath))
+                    await using FileStream fs = File.Create(file.LocalPath);
+                    foreach (string hash in await Database.GetObjectsAsync(file.Id))
                     {
-                        Log.Debug($"Downloading object: {hash}");
-                        await FileSystem.DownloadStreamAsync(fs, remotePath);
+                        string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
+                        string remotePath = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2), hash[4..]);
+                        if (await Storage.ExistsAsync(remotePath))
+                        {
+                            await Storage.DownloadStreamAsync(fs, remotePath);
+                        }
                     }
-                }
 
-                await fs.FlushAsync(ct);
+                    await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pulled);
+                    await fs.FlushAsync(ct);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.GetBaseException().ToString());
+                    progress.Failed(ex, file);
+                }
             });
         }
     }

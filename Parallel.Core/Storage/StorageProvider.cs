@@ -28,18 +28,18 @@ namespace Parallel.Core.IO.FileSystem
     /// <summary>
     /// Represents the way to connect to different file system associations. This class cannot be inherited.
     /// </summary>
-    public static class FileSystemManager
+    public static class StorageProvider
     {
         /// <summary>
         /// Creates a new file system association.
         /// </summary>
         /// <param name="vaultConfig">The vault needed for the associated file system.</param>
-        public static IFileSystem CreateNew(LocalVaultConfig vaultConfig)
+        public static IStorageProvider CreateNew(LocalVaultConfig vaultConfig)
         {
             return vaultConfig.FileSystem.Service switch
             {
-                FileService.Local => new DotNetFileSystem(vaultConfig),
-                FileService.Remote => new SftpFileSystem(vaultConfig),
+                FileService.Local => new LocalStorageProvider(vaultConfig),
+                FileService.Remote => new SshStorageProvider(vaultConfig),
                 //FileService.Cloud => new AmazonS3FileSystem(credentials),
                 _ => null
             };

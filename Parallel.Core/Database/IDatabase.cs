@@ -75,12 +75,13 @@ namespace Parallel.Core.Database
         /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddFileAsync(SystemFile file);
 
+        Task RemoveFileAsync(SystemFile file);
+
         Task<IEnumerable<SystemFile>> GetFilesAsync(string path);
         Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted);
         Task<SystemFile?> GetFileAsync(string path);
 
         Task<long> GetLocalSizeAsync();
-        Task<long> GetRemoteSizeAsync();
         Task<long> GetTotalFilesAsync(bool deleted);
 
         #endregion
@@ -106,7 +107,10 @@ namespace Parallel.Core.Database
         Task<bool> AddObjectAsync(string id, string hash, int index);
         Task<IEnumerable<string>> GetObjectsAsync(string id);
 
-        #endregion
+        Task<long> GetTotalObjectsAsync();
 
+        Task<bool> RemapObjectsAsync(string oldId, string newId);
+
+        #endregion
     }
 }

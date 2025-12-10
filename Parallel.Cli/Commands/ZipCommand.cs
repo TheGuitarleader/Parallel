@@ -33,12 +33,12 @@ namespace Parallel.Cli.Commands
                     return;
                 }
 
-                CommandLine.WriteLine($"Zipping {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
+                CommandLine.WriteLine($"Zipping {files.Length:N0} files...", ConsoleColor.DarkGray);
                 _totalTasks = files.Length;
                 _tasks.AddRange(files.Select(file => Task.Run(() => CompressFile(file, keep))));
                 await Task.WhenAll(_tasks);
 
-                CommandLine.WriteLine($"Successfully zipped {files.Length.ToString("N0")} files in {_sw.Elapsed}.", ConsoleColor.Green);
+                CommandLine.WriteLine($"Successfully zipped {files.Length:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
             }, sourceArg, keepOpt);
         }
 
@@ -60,7 +60,7 @@ namespace Parallel.Cli.Commands
                 }
             }
 
-            CommandLine.ProgressBar(_tasks.Count(t => t.IsCompleted), _totalTasks, _sw.Elapsed, ConsoleColor.DarkGray);
+            CommandLine.ProgressBar(_tasks.Count(t => t.IsCompleted), _totalTasks, _sw.Elapsed);
         }
     }
 }
