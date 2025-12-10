@@ -21,6 +21,11 @@ namespace Parallel.Core.Settings
         public string Name { get; set; }
 
         /// <summary>
+        /// If the current vault config is enabled.
+        /// </summary>
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>
         /// The credentials needed to log in to the associated <see cref="IStorageProvider"/>.
         /// </summary>
         public FileSystemCredentials FileSystem { get; }

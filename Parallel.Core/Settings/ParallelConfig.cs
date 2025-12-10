@@ -26,6 +26,8 @@ namespace Parallel.Core.Settings
             MaxDegreeOfParallelism = Load().MaxConcurrentProcesses
         };
 
+        public static int MaxUploads { get; } = Load().MaxConcurrentUploads;
+
         // /// <summary>
         // /// The address that will accept incoming commands.
         // /// <para>Default: 127.0.0.1</para>
@@ -46,9 +48,15 @@ namespace Parallel.Core.Settings
 
         /// <summary>
         /// Gets or sets the maximum number of concurrent processes that can run.
-        /// <para>Default: Half the processor count.</para>
+        /// <para>Default: The processor count.</para>
         /// </summary>
-        public int MaxConcurrentProcesses { get; set; } = Math.Clamp(Environment.ProcessorCount / 2, 1, Environment.ProcessorCount);
+        public int MaxConcurrentProcesses { get; set; } = Environment.ProcessorCount;
+
+        /// <summary>
+        /// Gets or sets the maximum number of concurrent processes that can run.
+        /// <para>Default: 4</para>
+        /// </summary>
+        public int MaxConcurrentUploads { get; set; } = 4;
 
         /// <summary>
         /// The amount of time, in days, to hold a file before it can be cleaned.
@@ -118,7 +126,7 @@ namespace Parallel.Core.Settings
                 CancellationToken = cancellationToken
             };
 
-            await System.Threading.Tasks.Parallel.ForEachAsync(Vaults, options, async (vault, ct) =>
+            await System.Threading.Tasks.Parallel.ForEachAsync(Vaults.Where(v => v.Enabled), options, async (vault, ct) =>
             {
                 await actionAsync(vault);
             });
