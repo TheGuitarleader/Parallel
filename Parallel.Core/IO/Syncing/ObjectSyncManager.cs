@@ -48,7 +48,7 @@ namespace Parallel.Core.IO.Syncing
                 SingleWriter = false
             });
 
-            Task[] workerTasks = Enumerable.Range(0, ParallelConfig.MaxTransfers).Select(workerId => Task.Run(async () =>
+            Task[] workerTasks = Enumerable.Range(0, ParallelConfig.MaxStaticTransfers).Select(workerId => Task.Run(async () =>
             {
                 await foreach (TransferWorker job in channel.Reader.ReadAllAsync())
                 {

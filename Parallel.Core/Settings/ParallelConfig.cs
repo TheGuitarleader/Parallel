@@ -21,12 +21,18 @@ namespace Parallel.Core.Settings
         /// </summary>
         public static string VaultsDir { get; } = Path.Combine(PathBuilder.ProgramData, "Vaults");
 
+        /// <summary>
+        /// Gets a set of static options for <see cref="ParallelOptions"/>.
+        /// </summary>
         public static ParallelOptions Options { get; } = new ParallelOptions
         {
-            MaxDegreeOfParallelism = Load().MaxConcurrentProcesses
+            MaxDegreeOfParallelism = Math.Max(1, Load().MaxConcurrentProcesses)
         };
 
-        public static int MaxTransfers { get; } = Load().MaxConcurrentTransfers;
+        /// <summary>
+        /// Gets the static value for <see cref="MaxConcurrentTransfers"/>.
+        /// </summary>
+        public static int MaxStaticTransfers { get; } = Math.Max(1, Load().MaxConcurrentTransfers);
 
         // /// <summary>
         // /// The address that will accept incoming commands.
