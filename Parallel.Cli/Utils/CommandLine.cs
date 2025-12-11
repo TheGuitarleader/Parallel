@@ -104,7 +104,7 @@ namespace Parallel.Cli.Utils
         public static void WriteLine(object value, ConsoleColor color = ConsoleColor.Gray)
         {
             string baseLog = $"{value}";
-            switch(color)
+            /*switch(color)
             {
                 default:
                     Log.Information(baseLog);
@@ -117,7 +117,7 @@ namespace Parallel.Cli.Utils
                 case ConsoleColor.Red:
                     Log.Error(baseLog);
                     break;
-            }
+            }*/
 
             lock (_consoleLock)
             {

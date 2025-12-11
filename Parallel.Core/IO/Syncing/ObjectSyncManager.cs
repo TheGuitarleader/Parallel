@@ -37,9 +37,10 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
+            long queued = 0, completed = 0, total = 0;
             TimeSpan uploadTimeout = TimeSpan.FromSeconds(30);
             TimeSpan writeBlockWarn = TimeSpan.FromSeconds(5);
-            long enqueued = 0, dequeued = 0, uploadStarted = 0, uploadDone = 0;
+
             Channel<TransferWorker> channel = Channel.CreateBounded<TransferWorker>(new BoundedChannelOptions(256)
             {
                 FullMode = BoundedChannelFullMode.Wait,
@@ -47,63 +48,53 @@ namespace Parallel.Core.IO.Syncing
                 SingleWriter = false
             });
 
-            // WORKERS
             Task[] workerTasks = Enumerable.Range(0, ParallelConfig.MaxTransfers).Select(workerId => Task.Run(async () =>
             {
-                Log.Debug($"[WORKER {workerId}] START");
-                try
+                await foreach (TransferWorker job in channel.Reader.ReadAllAsync())
                 {
-                    await foreach (TransferWorker job in channel.Reader.ReadAllAsync())
+                    Interlocked.Decrement(ref queued);
+
+                    try
                     {
-                        Interlocked.Increment(ref dequeued);
-                        Log.Debug($"[WORKER {workerId}] DEQUEUE -> {job.RemotePath} dequeued={dequeued}");
-
-                        try
+                        Interlocked.Increment(ref total);
+                        string fullPath = PathBuilder.Combine(job.RemotePath, job.Filename);
+                        if (await Storage.ExistsAsync(fullPath))
                         {
-                            Interlocked.Increment(ref uploadStarted);
-                            Log.Debug($"[WORKER {workerId}] UPLOAD START -> {job.RemotePath} started={uploadStarted}");
-
-                            string fullPath = PathBuilder.Combine(job.RemotePath, job.Filename);
-                            if (await Storage.ExistsAsync(fullPath))
-                            {
-                                Log.Debug($"[WORKER {workerId}] UPLOAD SKIPPED -> {job.RemotePath} done={uploadDone}");
-                                continue;
-                            }
-
-                            if (!await Storage.ExistsAsync(job.RemotePath))
-                                await Storage.CreateDirectoryAsync(job.RemotePath);
-
-                            await using MemoryStream ms = new MemoryStream(job.Data, writable: false);
-
-                            using CancellationTokenSource cts = new CancellationTokenSource(uploadTimeout);
-                            Task uploadTask = Storage.UploadStreamAsync(ms, fullPath);
-                            await uploadTask;
-
-                            Interlocked.Increment(ref uploadDone);
-                            Log.Debug($"[WORKER {workerId}] UPLOAD DONE -> {job.RemotePath} done={uploadDone}");
+                            Log.Debug($"[WORKER {workerId}] UPLOAD SKIPPED: {fullPath}");
+                            continue;
                         }
-                        catch (Exception wex)
+
+                        if (!await Storage.ExistsAsync(job.RemotePath)) await Storage.CreateDirectoryAsync(job.RemotePath);
+                        await using MemoryStream ms = new MemoryStream(job.Data, false);
+
+                        using CancellationTokenSource cts = new CancellationTokenSource(uploadTimeout);
+                        Task uploadTask = Storage.UploadStreamAsync(ms, fullPath);
+
+                        Task timeoutTask = await Task.WhenAny(uploadTask, Task.Delay(uploadTimeout, cts.Token));
+                        if (timeoutTask != uploadTask)
                         {
-                            Log.Error($"[WORKER {workerId}] UPLOAD EX -> {job.RemotePath} : {wex}");
-                            job.OnError?.Invoke(wex);
+                            Log.Error($"[WORKER {workerId}] UPLOAD TIMEOUT: {fullPath}");
+                            job.OnError?.Invoke(new TimeoutException($"Upload timed out after {uploadTimeout}"));
+                            continue;
                         }
+
+                        await uploadTask;
+                        Interlocked.Increment(ref completed);
+                        Log.Debug($"[WORKER {workerId}] UPLOAD COMPLETE: {fullPath} complete={completed}");
                     }
-
-                    Log.Debug($"[WORKER {workerId}] READER COMPLETED");
-                }
-                finally
-                {
-                    Log.Debug($"[WORKER {workerId}] EXIT");
+                    catch (Exception ex)
+                    {
+                        Log.Error($"[WORKER {workerId}] UPLOAD ERROR: {job.Filename} : {ex}");
+                        job.OnError?.Invoke(ex);
+                    }
                 }
             })).ToArray();
 
-            // PRODUCER
-            var producer = Task.Run(async () =>
+            Task producer = Task.Run(async () =>
             {
-                Log.Debug("PRODUCER START");
                 try
                 {
-                    await System.Threading.Tasks.Parallel.ForEachAsync(files, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async (file, token) =>
+                    await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
                     {
                         try
                         {
@@ -119,13 +110,12 @@ namespace Parallel.Core.IO.Syncing
                             await Database.AddFileAsync(file);
 
                             await using FileStream fs = new FileStream(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: ChunkSize, useAsync: true);
-
                             byte[] buffer = ArrayPool<byte>.Shared.Rent(ChunkSize);
+
                             try
                             {
-                                int index = 0;
-                                int bytesRead;
-                                while ((bytesRead = await fs.ReadAsync(buffer.AsMemory(0, ChunkSize), token)) > 0)
+                                int index = 0, bytesRead;
+                                while ((bytesRead = await fs.ReadAsync(buffer.AsMemory(0, ChunkSize), ct)) > 0)
                                 {
                                     byte[] chunk = new byte[bytesRead];
                                     Buffer.BlockCopy(buffer, 0, chunk, 0, bytesRead);
@@ -137,18 +127,17 @@ namespace Parallel.Core.IO.Syncing
                                     string parentDir = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
                                     string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
 
-                                    TransferWorker job = new TransferWorker(chunk, parentDir, hash[4..], ex => progress.Failed(ex, file));
+                                    TransferWorker job = new(chunk, parentDir, hash[4..], ex => progress.Failed(ex, file));
 
-                                    Task writeTask = channel.Writer.WriteAsync(job, token).AsTask();
-                                    Task winner = await Task.WhenAny(writeTask, Task.Delay(writeBlockWarn, token));
-                                    if (winner != writeTask)
+                                    Task writeTask = channel.Writer.WriteAsync(job, ct).AsTask();
+                                    Task timeoutTask = await Task.WhenAny(writeTask, Task.Delay(writeBlockWarn, ct));
+                                    if (timeoutTask != writeTask)
                                     {
-                                        Log.Warning($"PRODUCER: channel.Writer.WriteAsync is blocked > {writeBlockWarn} (remote={remotePath}, enq={enqueued}, deq={dequeued})");
+                                        Log.Warning($"[PRODUCER] channel.Writer.WriteAsync is blocked > {writeBlockWarn} (remote={remotePath})");
                                         await writeTask;
                                     }
 
-                                    Interlocked.Increment(ref enqueued);
-                                    Log.Debug($"ENQUEUE -> {remotePath}. enqueued={enqueued}");
+                                    Interlocked.Increment(ref queued);
                                 }
                             }
                             finally
@@ -158,34 +147,33 @@ namespace Parallel.Core.IO.Syncing
 
                             await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
                         }
-                        catch (Exception pex)
+                        catch (Exception ex)
                         {
-                            Log.Error($"PRODUCER EX processing {file.LocalPath}: {pex}");
-                            progress.Failed(pex, file);
+                            Log.Error($"[PRODUCER] ERROR: {file.LocalPath}: {ex}");
+                            progress.Failed(ex, file);
                         }
                     });
                 }
                 finally
                 {
-                    Log.Debug("PRODUCER COMPLETE -> Completing writer");
+                    Log.Debug("[PRODUCER] COMPLETE");
                     channel.Writer.Complete();
                 }
             });
 
-            // MONITOR
             Task monitor = Task.Run(async () =>
             {
                 Stopwatch sw = Stopwatch.StartNew();
                 while (!Task.WhenAll(workerTasks).IsCompleted)
                 {
-                    Log.Debug($"PIPELINE STATS @ {sw.Elapsed}: enq={enqueued}, deq={dequeued}, upStarted={uploadStarted}, upDone={uploadDone}");
+                    Log.Debug($"PIPELINE STATS @ {sw.Elapsed}: queued={queued}, completed={completed}, total={total}");
                     await Task.Delay(1000);
                 }
             });
 
+            Log.Debug($"PIPELINE COMPLETED: queued={queued}, completed={completed}, total={total}");
             await Task.WhenAll(producer, monitor).ConfigureAwait(false);
             await Task.WhenAll(workerTasks).ConfigureAwait(false);
-            Log.Debug("PUSHFILES FINISHED");
         }
 
         /// <inheritdoc />

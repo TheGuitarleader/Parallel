@@ -95,7 +95,7 @@ namespace Parallel.Cli.Commands
                 CommandLine.WriteLine(vault, $"Backing up {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
                 await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles));
                 //await syncManager.PushFilesAsync(files, new ProgressBarReporter());
-                //await syncManager.DisconnectAsync();
+                await syncManager.DisconnectAsync();
 
                 CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files in {_sw.Elapsed}.", ConsoleColor.Green);
             });
