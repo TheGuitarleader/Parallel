@@ -1,0 +1,144 @@
+name: Release .NET Project
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - 'release/*'
+
+jobs:
+
+  build:
+    name: Build Executables
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [windows, macos, ubuntu]
+        arch: [x64, arm64]
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ vars.DOTNET_VERSION }}
+
+      - name: Extract version
+        id: extract_version
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF -replace '^refs/heads/release/', ''
+          Add-Content $env:GITHUB_OUTPUT "version=$version"
+
+      - name: Update project versions
+        shell: pwsh
+        run: |
+          $version = "${{ steps.extract_version.outputs.version }}"
+          Write-Host "Updating all projects to version $version"
+          Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object {
+            $proj = $_.FullName
+            $content = Get-Content $proj
+
+            if ($content -match "<AssemblyVersion>.*</AssemblyVersion>") {
+              $content -replace '<AssemblyVersion>.*</AssemblyVersion>', "<AssemblyVersion>$version</AssemblyVersion>" | Set-Content $proj
+            } else {
+              $content -replace '<PropertyGroup>', "<PropertyGroup>`n    <AssemblyVersion>$version</AssemblyVersion>" | Set-Content $proj
+            }
+          }
+
+      - name: Build Executable
+        shell: pwsh
+        run: |
+          $version = "${{ steps.extract_version.outputs.version }}"
+          $repo = "${{ github.repository }}" -split "/" | Select-Object -Last 1
+          $os = "${{ matrix.os }}"
+          $arch = "${{ matrix.arch }}"
+
+          $rid = switch ($os) {
+              "windows" { "win-$arch" }
+              "macos"   { "osx-$arch" }
+              "ubuntu"  { "linux-$arch" }
+          }
+
+          $outputDir = Join-Path $env:GITHUB_WORKSPACE "dist/$os/$arch"
+          New-Item -ItemType Directory -Force -Path $outputDir
+
+          dotnet publish "./Parallel.Cli/Parallel.Cli.csproj" -c Release -r $rid /p:PublishSingleFile=true /p:DebugType=None /p:DebugSymbols=false /p:PublishDir=$outputDir
+
+          if ($os -eq "windows") {
+              Rename-Item "$outputDir/$repo.exe" "$repo-$version-$os-$arch.exe"
+          } else {
+              Rename-Item "$outputDir/$repo" "$repo-$version-$os-$arch"
+          }
+
+      - name: Upload Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            dist/${{ matrix.os }}/${{ matrix.arch }}/*.exe
+            dist/${{ matrix.os }}/${{ matrix.arch }}/*${{ steps.extract_version.outputs.version }}*
+          if-no-files-found: error
+
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect binaries into release folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release
+
+          $files = Get-ChildItem artifacts -Recurse -File | Where-Object {
+              $_.Name -match "${{ needs.build.outputs.version }}"
+          }
+
+          foreach ($file in $files) {
+              Copy-Item $file.FullName -Destination "release/$($file.Name)" -Force
+          }
+
+          Write-Host "Release files:"
+          Get-ChildItem release
+
+      - name: Generate Release Notes
+        id: release_notes
+        shell: pwsh
+        run: |
+          $version = "${{ needs.build.outputs.version }}"
+          $notes = ""
+
+          if (Test-Path "CHANGELOG.md") {
+              $content = Get-Content "CHANGELOG.md" -Raw
+              if ($content -match "## \[$version\](.*?)(## \[|$)") {
+                  $notes = $matches[1].Trim()
+              }
+          }
+
+          $escaped = $notes.Replace('%','%25').Replace("`n",'%0A').Replace("`r",'%0D')
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "notes=$escaped"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.build.outputs.version }}
+          name: "${{ github.event.repository.name }} ${{ needs.build.outputs.version }}"
+          body: ${{ steps.release_notes.outputs.notes }}
+          files: release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
