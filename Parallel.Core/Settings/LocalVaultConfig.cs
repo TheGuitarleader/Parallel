@@ -2,6 +2,7 @@
 
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Security;
+using Parallel.Core.Storage;
 
 namespace Parallel.Core.Settings
 {
@@ -28,27 +29,20 @@ namespace Parallel.Core.Settings
         /// <summary>
         /// The credentials needed to log in to the associated <see cref="IStorageProvider"/>.
         /// </summary>
-        public FileSystemCredentials FileSystem { get; }
+        public StorageCredentials Credentials { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LocalVaultConfig"/> class.
         /// </summary>
         /// <param name="id"></param>
         /// <param name="name"></param>
-        /// <param name="fileSystem"></param>
+        /// <param name="credentials"></param>
         [JsonConstructor]
-        public LocalVaultConfig(string id, string name, FileSystemCredentials fileSystem)
+        public LocalVaultConfig(string id, string name, StorageCredentials credentials)
         {
             Id = id;
             Name = name;
-            FileSystem = fileSystem;
-        }
-
-        public LocalVaultConfig(string name, FileSystemCredentials fileSystem)
-        {
-            Id = HashGenerator.GenerateHash(8, true);
-            Name = name;
-            FileSystem = fileSystem;
+            Credentials = credentials;
         }
 
         /// <summary>

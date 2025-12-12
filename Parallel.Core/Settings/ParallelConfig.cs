@@ -21,12 +21,18 @@ namespace Parallel.Core.Settings
         /// </summary>
         public static string VaultsDir { get; } = Path.Combine(PathBuilder.ProgramData, "Vaults");
 
+        /// <summary>
+        /// Gets a set of static options for <see cref="ParallelOptions"/>.
+        /// </summary>
         public static ParallelOptions Options { get; } = new ParallelOptions
         {
-            MaxDegreeOfParallelism = Load().MaxConcurrentProcesses
+            MaxDegreeOfParallelism = Math.Max(1, Load().MaxConcurrentProcesses)
         };
 
-        public static int MaxUploads { get; } = Load().MaxConcurrentUploads;
+        /// <summary>
+        /// Gets the static value for <see cref="MaxConcurrentTransfers"/>.
+        /// </summary>
+        public static int MaxStaticTransfers { get; } = Math.Max(1, Load().MaxConcurrentTransfers);
 
         // /// <summary>
         // /// The address that will accept incoming commands.
@@ -42,9 +48,9 @@ namespace Parallel.Core.Settings
 
         /// <summary>
         /// Gets or sets the maximum number of concurrent vaults that can run.
-        /// <para>Default: 2</para>
+        /// <para>Default: 1</para>
         /// </summary>
-        public int MaxConcurrentVaults { get; set; } = 2;
+        public int MaxConcurrentVaults { get; set; } = 1;
 
         /// <summary>
         /// Gets or sets the maximum number of concurrent processes that can run.
@@ -53,10 +59,10 @@ namespace Parallel.Core.Settings
         public int MaxConcurrentProcesses { get; set; } = Environment.ProcessorCount;
 
         /// <summary>
-        /// Gets or sets the maximum number of concurrent processes that can run.
+        /// Gets or sets the maximum number of concurrent transfers that can run.
         /// <para>Default: 4</para>
         /// </summary>
-        public int MaxConcurrentUploads { get; set; } = 4;
+        public int MaxConcurrentTransfers { get; set; } = 4;
 
         /// <summary>
         /// The amount of time, in days, to hold a file before it can be cleaned.
@@ -75,7 +81,7 @@ namespace Parallel.Core.Settings
         /// The profiles to use.
         /// <para>When pulling, the CLI defaults to the first in the list.</para>
         /// </summary>
-        public HashSet<LocalVaultConfig> Vaults { get; } = [];
+        public HashSet<LocalVaultConfig> Vaults { get; set; } = [];
 
 
         /// <summary>

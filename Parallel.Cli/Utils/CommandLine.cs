@@ -7,16 +7,19 @@ using Parallel.Core.Utils;
 
 namespace Parallel.Cli.Utils
 {
-    public class CommandLine
+    /// <summary>
+    /// Represents a series of methods for printing to the console. This class can not be inherited.
+    /// </summary>
+    public abstract class CommandLine
     {
         private static readonly object _consoleLock = new();
 
-        public static string ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
+        public static string? ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
         {
             Console.ForegroundColor = color;
             Console.Write($"> {value}: ");
             Console.ResetColor();
-            return Console.ReadLine() ?? string.Empty;
+            return Console.ReadLine();
         }
 
         public static bool ReadBool(object value, bool defaultValue, ConsoleColor color = ConsoleColor.Gray)
@@ -78,7 +81,7 @@ namespace Parallel.Cli.Utils
         public static void WriteLine(LocalVaultConfig localVault, object value, ConsoleColor color = ConsoleColor.Gray)
         {
             string baseLog = $"[{localVault.Id}] {value}";
-            switch(color)
+            switch (color)
             {
                 default:
                     Log.Information(baseLog);
@@ -104,7 +107,7 @@ namespace Parallel.Cli.Utils
         public static void WriteLine(object value, ConsoleColor color = ConsoleColor.Gray)
         {
             string baseLog = $"{value}";
-            switch(color)
+            /*switch(color)
             {
                 default:
                     Log.Information(baseLog);
@@ -117,7 +120,7 @@ namespace Parallel.Cli.Utils
                 case ConsoleColor.Red:
                     Log.Error(baseLog);
                     break;
-            }
+            }*/
 
             lock (_consoleLock)
             {

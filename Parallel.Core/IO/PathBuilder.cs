@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
+using Parallel.Core.Storage;
 using Parallel.Core.Utils;
 
 namespace Parallel.Core.IO
@@ -98,7 +99,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetRootDirectory(LocalVaultConfig localVault)
         {
-            return Combine(localVault.FileSystem.RootDirectory, "Parallel", localVault.Id);
+            return Combine(localVault.Credentials.RootDirectory, "Parallel", localVault.Id);
         }
 
         /// <summary>
@@ -149,8 +150,8 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string Remote(string path, RemoteVaultConfig remoteVaultConfig)
         {
-            string root = Path.Combine(remoteVaultConfig.FileSystem.RootDirectory, "Parallel", remoteVaultConfig.Id, "Files", path.Replace(":", string.Empty)) + ".gz";
-            return remoteVaultConfig.FileSystem.Service switch
+            string root = Path.Combine(remoteVaultConfig.Credentials.RootDirectory, "Parallel", remoteVaultConfig.Id, "Files", path.Replace(":", string.Empty)) + ".gz";
+            return remoteVaultConfig.Credentials.Service switch
             {
                 FileService.Local => root,
                 FileService.Remote => root.Replace('\\', '/'),
@@ -171,7 +172,7 @@ namespace Parallel.Core.IO
         public static string GetObjectPath(string basePath, string hash)
         {
             string parentDir = Path.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
-            if (!Directory.Exists(parentDir))  Directory.CreateDirectory(parentDir);
+            if (!Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
             return Path.Combine(parentDir, hash[4..]);
         }
     }

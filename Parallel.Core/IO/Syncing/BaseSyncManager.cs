@@ -5,6 +5,7 @@ using Parallel.Core.Diagnostics;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
+using Parallel.Core.Storage;
 
 namespace Parallel.Core.IO.Syncing
 {
@@ -27,7 +28,7 @@ namespace Parallel.Core.IO.Syncing
         public IDatabase Database { get; set; }
 
         /// <inheritdoc />
-        public IStorageProvider Storage { get; set; }
+        public IStorageProvider StorageProvider { get; set; }
 
         /// <summary>
         ///
@@ -35,7 +36,7 @@ namespace Parallel.Core.IO.Syncing
         /// <param name="localVault"></param>
         public BaseSyncManager(LocalVaultConfig localVault)
         {
-            Storage = StorageProvider.CreateNew(localVault);
+            StorageProvider = StorageConnection.CreateNew(localVault);
             LocalVault = localVault;
         }
 
@@ -43,13 +44,13 @@ namespace Parallel.Core.IO.Syncing
         public async Task<bool> ConnectAsync()
         {
             string root = PathBuilder.GetRootDirectory(LocalVault);
-            if (!await Storage.ExistsAsync(root))
+            if (!await StorageProvider.ExistsAsync(root))
             {
-                await Storage.CreateDirectoryAsync(root);
+                await StorageProvider.CreateDirectoryAsync(root);
                 Log.Debug($"Created root directory: {root}");
             }
 
-            if (!await Storage.ExistsAsync(PathBuilder.GetConfigurationFile(LocalVault)))
+            if (!await StorageProvider.ExistsAsync(PathBuilder.GetConfigurationFile(LocalVault)))
             {
                 RemoteVault = new RemoteVaultConfig(LocalVault);
                 RemoteVault.IgnoreDirectories.Add(PathBuilder.GetRootDirectory(LocalVault));
@@ -59,15 +60,15 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await Storage.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new NullProgressReporter());
+                await StorageProvider.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new NullProgressReporter());
                 RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
-                if(config == null) return false;
+                if (config == null) return false;
                 RemoteVault = config;
 
                 Log.Debug($"Downloaded config file: {TempConfigFile}");
             }
 
-            if (!await Storage.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
+            if (!await StorageProvider.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
             {
                 Database = new SqliteContext(TempDbFile);
                 await Database.InitializeAsync();
@@ -76,7 +77,7 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await Storage.DownloadFilesAsync([new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new NullProgressReporter());
+                await StorageProvider.DownloadFilesAsync([new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new NullProgressReporter());
                 Database = new SqliteContext(TempDbFile);
 
                 Log.Debug($"Downloaded db file: {TempDbFile}");
@@ -92,12 +93,12 @@ namespace Parallel.Core.IO.Syncing
             Log.Debug($"Uploaded db file: {TempDbFile}");
 
             SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
-            await Storage.UploadFilesAsync(tempFiles, new NullProgressReporter());
-            Storage.Dispose();
+            await StorageProvider.UploadFilesAsync(tempFiles, new NullProgressReporter());
+            StorageProvider.Dispose();
         }
 
         /// <inheritdoc />
-        public abstract Task PushFilesAsync(SystemFile[] files, IProgressReporter progress);
+        public abstract Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress);
 
         /// <inheritdoc />
         public abstract Task PullFilesAsync(SystemFile[] files, IProgressReporter progress);

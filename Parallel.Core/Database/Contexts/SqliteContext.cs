@@ -6,7 +6,6 @@ using System.Diagnostics;
 using Dapper;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.IO;
-using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
@@ -43,7 +42,9 @@ namespace Parallel.Core.Database
 
             using IDbConnection connection = CreateConnection();
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`id` TEXT NOT NULL, `hash` TEXT NOT NULL, orderIndex INTEGER NOT NULL, UNIQUE (id, orderIndex));");
-            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` BLOB, PRIMARY KEY(`id`));");
+            await connection.ExecuteAsync(
+                "CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` BLOB, PRIMARY KEY(`id`));");
+
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
         }
 
@@ -67,6 +68,7 @@ namespace Parallel.Core.Database
             await connection.ExecuteAsync(sql, new { file.Id });
         }
 
+        /// <inheritdoc />
         public async Task<long> GetLocalSizeAsync()
         {
             using IDbConnection connection = CreateConnection();
@@ -81,6 +83,7 @@ namespace Parallel.Core.Database
             return await connection.QuerySingleOrDefaultAsync<long>(sql);
         }
 
+        /// <inheritdoc />
         public async Task<long> GetTotalFilesAsync(bool deleted)
         {
             using IDbConnection connection = CreateConnection();
@@ -100,8 +103,8 @@ namespace Parallel.Core.Database
         public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT * FROM files WHERE deleted = @deleted ORDER BY lastupdate DESC";
-            return await connection.QueryAsync<SystemFile>(sql,new { deleted });
+            string sql = $"SELECT * FROM files WHERE localpath LIKE @Path AND deleted = @deleted ORDER BY lastupdate DESC";
+            return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", deleted });
         }
 
         /// <inheritdoc />

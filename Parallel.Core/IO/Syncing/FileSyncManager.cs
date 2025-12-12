@@ -19,32 +19,33 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress)
         {
             if (!files.Any()) return;
             SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();
             Log.Information($"Backing up {backupFiles.Length} files...");
-            await Storage.UploadFilesAsync(backupFiles, progress);
+            await StorageProvider.UploadFilesAsync(backupFiles, progress);
 
             progress.Reset();
             await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
                 if (file.Deleted)
                 {
-                    progress.Report(ProgressOperation.Archiving, file);
                     await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
                     await Database.AddFileAsync(file);
+                    progress.Report(ProgressOperation.Archived, file);
                 }
                 else
                 {
-                    progress.Report(ProgressOperation.Syncing, file);
-                    SystemFile? remote = await Storage.GetFileAsync(file.RemotePath);
+                    SystemFile? remote = await StorageProvider.GetFileAsync(file.RemotePath);
                     if (remote is not null)
                     {
                         file.RemoteSize = remote.RemoteSize;
                         await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
                         await Database.AddFileAsync(file);
                     }
+
+                    progress.Report(ProgressOperation.Synced, file);
                 }
             });
         }
@@ -52,7 +53,7 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc/>
         public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            await Storage.DownloadFilesAsync(files, progress);
+            await StorageProvider.DownloadFilesAsync(files, progress);
         }
     }
 }

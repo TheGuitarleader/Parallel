@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.CommandLine;
+using System.Diagnostics;
 using Parallel.Cli.Utils;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.IO;
@@ -13,31 +14,34 @@ namespace Parallel.Cli.Commands
 {
     public class PushCommand : Command
     {
+        private Stopwatch _sw = new Stopwatch();
+
         private Command addCmd = new("add", "Adds a new directory to the sync list.");
         private Command listCmd = new("list", "Shows all directories in the sync list.");
         private Command removeCmd = new("remove", "Removes a directory from the sync list.");
 
         private readonly Option<string> _sourceArg = new(["--path", "-p"], "The source path to sync.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
-        private readonly Option<bool> _verboseOpt = new(["--verbose", "-v"], "Shows verbose output.");
+        private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces the pull overwriting any files.");
 
         public PushCommand() : base("push", "Pushes changed files to vaults.")
         {
             this.AddOption(_sourceArg);
             this.AddOption(_configOpt);
-            this.AddOption(_verboseOpt);
-            this.SetHandler(async (path, config, verbose) =>
+            this.AddOption(_forceOpt);
+            this.SetHandler(async (path, config, force) =>
             {
+                _sw = Stopwatch.StartNew();
                 if (string.IsNullOrEmpty(path))
                 {
                     await SyncSystemAsync();
                 }
                 else
                 {
-                    await SyncPathAsync(path);
+                    await SyncPathAsync(path, force);
                 }
 
-            }, _sourceArg, _configOpt, _verboseOpt);
+            }, _sourceArg, _configOpt, _forceOpt);
         }
 
         private Task SyncSystemAsync()
@@ -45,13 +49,13 @@ namespace Parallel.Cli.Commands
             throw new NotImplementedException();
         }
 
-        private async Task SyncPathAsync(string path)
+        private async Task SyncPathAsync(string path, bool force)
         {
             CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
             await Program.Settings.ForEachVaultAsync(async vault =>
             {
-                ISyncManager syncManager = SyncManager.CreateNew(vault);
-                if (!await syncManager.ConnectAsync())
+                ISyncManager? syncManager = SyncManager.CreateNew(vault);
+                if (syncManager == null || !await syncManager.ConnectAsync())
                 {
                     CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);
                     return;
@@ -79,7 +83,7 @@ namespace Parallel.Cli.Commands
 
                 CommandLine.WriteLine(vault, $"Scanning for file changes in {path}...", ConsoleColor.DarkGray);
                 FileScanner scanner = new FileScanner(syncManager);
-                SystemFile[] files = await scanner.GetFileChangesAsync(path, ignoredFolders);
+                SystemFile[] files = await scanner.GetFileChangesAsync(path, ignoredFolders, force);
                 int successFiles = files.Length;
                 if (successFiles == 0)
                 {
@@ -89,10 +93,11 @@ namespace Parallel.Cli.Commands
                 }
 
                 CommandLine.WriteLine(vault, $"Backing up {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
-                await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles));
+                await syncManager.PushFilesAsync(files, force, new ProgressReport(vault, successFiles));
+                //await syncManager.PushFilesAsync(files, new ProgressBarReporter());
                 await syncManager.DisconnectAsync();
 
-                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files to '{vault.FileSystem.RootDirectory}'.", ConsoleColor.Green);
+                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files in {_sw.Elapsed}.", ConsoleColor.Green);
             });
         }
     }

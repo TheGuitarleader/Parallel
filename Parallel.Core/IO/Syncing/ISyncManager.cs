@@ -5,6 +5,7 @@ using Parallel.Core.Diagnostics;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
+using Parallel.Core.Storage;
 
 namespace Parallel.Core.IO.Syncing
 {
@@ -31,7 +32,7 @@ namespace Parallel.Core.IO.Syncing
         /// <summary>
         /// The associated file system connection.
         /// </summary>
-        public IStorageProvider Storage { get; set; }
+        public IStorageProvider StorageProvider { get; set; }
 
         /// <summary>
         /// Establishes a connection to the associated <see cref="IStorageProvider"/> and downloads the needed files.
@@ -47,8 +48,9 @@ namespace Parallel.Core.IO.Syncing
         /// Pushes an array of files to a vault.
         /// </summary>
         /// <param name="files"></param>
+        /// <param name="force"></param>
         /// <param name="progress"></param>
-        Task PushFilesAsync(SystemFile[] files, IProgressReporter progress);
+        Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress);
 
         /// <summary>
         /// Pulls an array of files from a vault.

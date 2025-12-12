@@ -3,13 +3,14 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.IO.FileSystem;
+using Parallel.Core.Storage;
 
 namespace Parallel.Core.Settings
 {
     /// <summary>
     /// Represents credentials used to gain access to various <see cref="IStorageProvider"/>s.
     /// </summary>
-    public class FileSystemCredentials
+    public class StorageCredentials
     {
         public FileService Service { get; set; } = FileService.Local;
         public string RootDirectory { get; set; } = string.Empty;
@@ -27,9 +28,9 @@ namespace Parallel.Core.Settings
         /// </summary>
         public string? EncryptionKey { get; set; } = null;
 
-        public FileSystemCredentials() { }
+        public StorageCredentials() { }
 
-        public FileSystemCredentials(string root)
+        public StorageCredentials(string root)
         {
             RootDirectory = root;
         }

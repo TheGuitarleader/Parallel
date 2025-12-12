@@ -1,17 +1,11 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
-using System.Diagnostics;
 using System.IO.Compression;
-using Microsoft.VisualBasic.FileIO;
-using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
-using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
-using Parallel.Core.Utils;
-using SearchOption = System.IO.SearchOption;
 
-namespace Parallel.Core.IO.FileSystem
+namespace Parallel.Core.Storage
 {
     /// <summary>
     /// Represents the wrapper for a default dotnet file system.
@@ -84,7 +78,7 @@ namespace Parallel.Core.IO.FileSystem
         /// <inheritdoc/>
         public Task<SystemFile?> GetFileAsync(string path)
         {
-            if(!File.Exists(path)) return Task.FromResult<SystemFile?>(null);
+            if (!File.Exists(path)) return Task.FromResult<SystemFile?>(null);
 
             FileInfo fi = new(path);
             SystemFile file = new SystemFile(path)
@@ -93,6 +87,7 @@ namespace Parallel.Core.IO.FileSystem
                 RemotePath = fi.FullName,
                 RemoteSize = fi.Length
             };
+
             return Task.FromResult<SystemFile?>(file);
         }
 
@@ -124,7 +119,7 @@ namespace Parallel.Core.IO.FileSystem
         /// <inheritdoc />
         public async Task UploadStreamAsync(Stream input, string remotePath)
         {
-            await using FileStream createStream = File.Create(remotePath);
+            await using FileStream createStream = File.OpenWrite(remotePath);
             await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
             await input.CopyToAsync(gzipStream);
 
