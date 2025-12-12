@@ -1,15 +1,9 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Parallel.Core.Diagnostics;
-using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
 
-namespace Parallel.Core.IO.FileSystem
+namespace Parallel.Core.Storage
 {
     /// <summary>
     /// Defines the way for communicating with a file system.

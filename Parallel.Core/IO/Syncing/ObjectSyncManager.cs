@@ -13,6 +13,7 @@ using Parallel.Core.Models;
 using Parallel.Core.Security;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
+using Parallel.Core.Workers;
 
 namespace Parallel.Core.IO.Syncing
 {
@@ -41,7 +42,7 @@ namespace Parallel.Core.IO.Syncing
             TimeSpan uploadTimeout = TimeSpan.FromSeconds(30);
             TimeSpan writeBlockWarn = TimeSpan.FromSeconds(5);
 
-            Channel<TransferWorker> channel = Channel.CreateBounded<TransferWorker>(new BoundedChannelOptions(256)
+            Channel<UploadWorker> channel = Channel.CreateBounded<UploadWorker>(new BoundedChannelOptions(256)
             {
                 FullMode = BoundedChannelFullMode.Wait,
                 SingleReader = false,
@@ -50,7 +51,7 @@ namespace Parallel.Core.IO.Syncing
 
             Task[] workerTasks = Enumerable.Range(0, ParallelConfig.MaxStaticTransfers).Select(workerId => Task.Run(async () =>
             {
-                await foreach (TransferWorker job in channel.Reader.ReadAllAsync())
+                await foreach (UploadWorker job in channel.Reader.ReadAllAsync())
                 {
                     Interlocked.Decrement(ref queued);
 
@@ -58,23 +59,23 @@ namespace Parallel.Core.IO.Syncing
                     {
                         Interlocked.Increment(ref total);
                         string fullPath = PathBuilder.Combine(job.RemotePath, job.Filename);
-                        if (await Storage.ExistsAsync(fullPath))
+                        if (await StorageProvider.ExistsAsync(fullPath))
                         {
                             Log.Debug($"[WORKER {workerId}] UPLOAD SKIPPED: {fullPath}");
                             continue;
                         }
 
-                        if (!await Storage.ExistsAsync(job.RemotePath)) await Storage.CreateDirectoryAsync(job.RemotePath);
+                        if (!await StorageProvider.ExistsAsync(job.RemotePath)) await StorageProvider.CreateDirectoryAsync(job.RemotePath);
                         await using MemoryStream ms = new MemoryStream(job.Data, false);
 
                         using CancellationTokenSource cts = new CancellationTokenSource(uploadTimeout);
-                        Task uploadTask = Storage.UploadStreamAsync(ms, fullPath);
+                        Task uploadTask = StorageProvider.UploadStreamAsync(ms, fullPath);
 
                         Task timeoutTask = await Task.WhenAny(uploadTask, Task.Delay(uploadTimeout, cts.Token));
                         if (timeoutTask != uploadTask)
                         {
                             Log.Error($"[WORKER {workerId}] UPLOAD TIMEOUT: {fullPath}");
-                            job.OnError?.Invoke(new TimeoutException($"Upload timed out after {uploadTimeout}"));
+                            job.OnException?.Invoke(new TimeoutException($"Upload timed out after {uploadTimeout}"));
                             continue;
                         }
 
@@ -85,7 +86,7 @@ namespace Parallel.Core.IO.Syncing
                     catch (Exception ex)
                     {
                         Log.Error($"[WORKER {workerId}] UPLOAD ERROR: {job.Filename} : {ex}");
-                        job.OnError?.Invoke(ex);
+                        job.OnException?.Invoke(ex);
                     }
                 }
             })).ToArray();
@@ -100,15 +101,13 @@ namespace Parallel.Core.IO.Syncing
                         {
                             if (file.Deleted)
                             {
-                                progress.Report(ProgressOperation.Archiving, file);
                                 await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
                                 await Database.AddFileAsync(file);
+                                progress.Report(ProgressOperation.Archived, file);
                                 return;
                             }
 
-                            progress.Report(ProgressOperation.Pushing, file);
                             await Database.AddFileAsync(file);
-
                             await using FileStream fs = new FileStream(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: ChunkSize, useAsync: true);
                             byte[] buffer = ArrayPool<byte>.Shared.Rent(ChunkSize);
 
@@ -123,13 +122,13 @@ namespace Parallel.Core.IO.Syncing
                                     string hash = HashGenerator.CreateSHA256(chunk);
                                     await Database.AddObjectAsync(file.Id, hash, index++);
 
-                                    string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
+                                    string basePath = PathBuilder.Combine(RemoteVault.Credentials.RootDirectory, "Parallel", RemoteVault.Id, "objects");
                                     string parentDir = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
                                     string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
 
-                                    TransferWorker job = new(chunk, parentDir, hash[4..], ex => progress.Failed(ex, file));
+                                    UploadWorker worker = new(chunk, parentDir, hash[4..], ex => progress.Failed(ex, file));
 
-                                    Task writeTask = channel.Writer.WriteAsync(job, ct).AsTask();
+                                    Task writeTask = channel.Writer.WriteAsync(worker, ct).AsTask();
                                     Task timeoutTask = await Task.WhenAny(writeTask, Task.Delay(writeBlockWarn, ct));
                                     if (timeoutTask != writeTask)
                                     {
@@ -138,6 +137,7 @@ namespace Parallel.Core.IO.Syncing
                                     }
 
                                     Interlocked.Increment(ref queued);
+                                    progress.Report(ProgressOperation.Pushed, file);
                                 }
                             }
                             finally
@@ -179,34 +179,32 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            long queued = 0, completed = 0, total = 0;
+            TimeSpan downloadTimeout = TimeSpan.FromSeconds(30);
+            TimeSpan writeBlockWarn = TimeSpan.FromSeconds(5);
+
+            Channel<DownloadWorker> channel = Channel.CreateBounded<DownloadWorker>(new BoundedChannelOptions(256)
+            {
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = false,
+                SingleWriter = false
+            });
+
+            /*Task[] workerTasks = Enumerable.Range(0, ParallelConfig.MaxStaticTransfers).Select(workerId -> Task.Run(async () =>
             {
                 try
                 {
-                    progress.Report(ProgressOperation.Pulling, file);
-                    string? parentDir = Path.GetDirectoryName(file.LocalPath);
-                    if (!Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
-
-                    await using FileStream fs = File.Create(file.LocalPath);
-                    foreach (string hash in await Database.GetObjectsAsync(file.Id))
+                    await foreach (DownloadWorker job in channel.Reader.ReadAllAsync())
                     {
-                        string basePath = PathBuilder.Combine(RemoteVault.FileSystem.RootDirectory, "Parallel", RemoteVault.Id, "objects");
-                        string remotePath = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2), hash[4..]);
-                        if (await Storage.ExistsAsync(remotePath))
+                        Interlocked.Decrement(ref queued);
+
+                        try
                         {
-                            await Storage.DownloadStreamAsync(fs, remotePath);
+                            Interlocked.Increment(ref total);
                         }
                     }
-
-                    await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pulled);
-                    await fs.FlushAsync(ct);
                 }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.GetBaseException().ToString());
-                    progress.Failed(ex, file);
-                }
-            });
+            }));*/
         }
     }
 }

@@ -71,7 +71,7 @@ namespace Parallel.Cli.Commands
 
             Log.Debug($"Pulling {pullFiles.Count} files...");
             await syncManager.PullFilesAsync(pullFiles.ToArray(), new ProgressReport(vault, files.Count()));
-            CommandLine.WriteLine(vault, $"Successfully pulled {pullFiles.Count:N0} files from '{vault.FileSystem.RootDirectory}'.", ConsoleColor.Green);
+            CommandLine.WriteLine(vault, $"Successfully pulled {pullFiles.Count:N0} files from '{vault.Credentials.RootDirectory}'.", ConsoleColor.Green);
         }
 
         private async Task PullFileAsync(ISyncManager syncManager, string fullPath, bool force)
@@ -95,7 +95,7 @@ namespace Parallel.Cli.Commands
             await syncManager.PullFilesAsync([remoteFile], new ProgressLogger());
             await syncManager.DisconnectAsync();
 
-            CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pulled file from '{syncManager.RemoteVault.FileSystem.RootDirectory}'.", ConsoleColor.Green);
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pulled file from '{syncManager.RemoteVault.Credentials.RootDirectory}'.", ConsoleColor.Green);
         }
     }
 }

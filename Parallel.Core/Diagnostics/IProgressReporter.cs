@@ -6,12 +6,10 @@ namespace Parallel.Core.Diagnostics
 {
     public enum ProgressOperation
     {
-        Archiving,
-        Pulling,
-        Pushing,
-        Compressing,
-        Decompressing,
-        Syncing
+        Archived,
+        Pulled,
+        Pushed,
+        Synced
     }
 
     /// <summary>

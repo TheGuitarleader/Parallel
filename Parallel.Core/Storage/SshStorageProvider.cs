@@ -1,18 +1,15 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.Diagnostics;
+using System.IO.Compression;
+using Parallel.Core.Diagnostics;
+using Parallel.Core.Models;
+using Parallel.Core.Security;
 using Parallel.Core.Settings;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
-using System.IO.Compression;
-using Newtonsoft.Json.Linq;
-using Parallel.Core.Diagnostics;
-using Parallel.Core.IO.Blobs;
-using Parallel.Core.Models;
-using Parallel.Core.Security;
-using Parallel.Core.Utils;
 
-namespace Parallel.Core.IO.FileSystem
+namespace Parallel.Core.Storage
 {
     /// <summary>
     /// Represents the wrapper for an SFTP file system through SSH.
@@ -28,7 +25,7 @@ namespace Parallel.Core.IO.FileSystem
         /// <param name="localVault">The credentials to log in with.</param>
         public SshStorageProvider(LocalVaultConfig localVault)
         {
-            _connectionInfo = new ConnectionInfo(localVault.FileSystem.Address, localVault.FileSystem.Username, new PasswordAuthenticationMethod(localVault.FileSystem.Username, Encryption.Decode(localVault.FileSystem.Password)));
+            _connectionInfo = new ConnectionInfo(localVault.Credentials.Address, localVault.Credentials.Username, new PasswordAuthenticationMethod(localVault.Credentials.Username, Encryption.Decode(localVault.Credentials.Password)));
             _client = new SftpClient(_connectionInfo);
             _client.Connect();
         }

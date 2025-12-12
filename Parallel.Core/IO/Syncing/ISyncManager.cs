@@ -5,6 +5,7 @@ using Parallel.Core.Diagnostics;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
+using Parallel.Core.Storage;
 
 namespace Parallel.Core.IO.Syncing
 {
@@ -31,7 +32,7 @@ namespace Parallel.Core.IO.Syncing
         /// <summary>
         /// The associated file system connection.
         /// </summary>
-        public IStorageProvider Storage { get; set; }
+        public IStorageProvider StorageProvider { get; set; }
 
         /// <summary>
         /// Establishes a connection to the associated <see cref="IStorageProvider"/> and downloads the needed files.

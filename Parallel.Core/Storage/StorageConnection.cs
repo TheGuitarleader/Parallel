@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using Parallel.Core.Settings;
+using Parallel.Core.Storage;
 
 namespace Parallel.Core.IO.FileSystem
 {
@@ -28,7 +29,7 @@ namespace Parallel.Core.IO.FileSystem
     /// <summary>
     /// Represents the way to connect to different file system associations. This class cannot be inherited.
     /// </summary>
-    public static class StorageProvider
+    public static class StorageConnection
     {
         /// <summary>
         /// Creates a new file system association.
@@ -36,7 +37,7 @@ namespace Parallel.Core.IO.FileSystem
         /// <param name="vaultConfig">The vault needed for the associated file system.</param>
         public static IStorageProvider CreateNew(LocalVaultConfig vaultConfig)
         {
-            return vaultConfig.FileSystem.Service switch
+            return vaultConfig.Credentials.Service switch
             {
                 FileService.Local => new LocalStorageProvider(vaultConfig),
                 FileService.Remote => new SshStorageProvider(vaultConfig),

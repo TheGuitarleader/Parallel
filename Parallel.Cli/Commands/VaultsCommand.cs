@@ -39,7 +39,7 @@ namespace Parallel.Cli.Commands
             addCmd.SetHandler(() =>
             {
                 CommandLine.WriteLine("Creating new storage vault...", ConsoleColor.DarkGray);
-                FileSystemCredentials fsc = new FileSystemCredentials();
+                StorageCredentials fsc = new StorageCredentials();
                 fsc.Service = Enum.Parse<FileService>(CommandLine.ReadString($"Service ({string.Join(", ", Enum.GetNames(typeof(FileService)))})"), true);
                 if (fsc.Service == FileService.Local)
                 {

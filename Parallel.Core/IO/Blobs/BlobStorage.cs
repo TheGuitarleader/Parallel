@@ -3,6 +3,7 @@
 using Parallel.Core.Diagnostics;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Security;
+using Parallel.Core.Storage;
 
 namespace Parallel.Core.IO.Blobs
 {

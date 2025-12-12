@@ -1,17 +1,11 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
-using System.Diagnostics;
 using System.IO.Compression;
-using Microsoft.VisualBasic.FileIO;
-using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
-using Parallel.Core.IO.Blobs;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
-using Parallel.Core.Utils;
-using SearchOption = System.IO.SearchOption;
 
-namespace Parallel.Core.IO.FileSystem
+namespace Parallel.Core.Storage
 {
     /// <summary>
     /// Represents the wrapper for a default dotnet file system.

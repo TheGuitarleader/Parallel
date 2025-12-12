@@ -48,12 +48,12 @@ namespace Parallel.Core.Settings
         public HashSet<string> PruneDirectories { get; } = [];
 
 
-        public RemoteVaultConfig(LocalVaultConfig localVault) : base(localVault.Id, localVault.Name, localVault.FileSystem) { }
+        public RemoteVaultConfig(LocalVaultConfig localVault) : base(localVault.Id, localVault.Name, localVault.Credentials) { }
 
-        public RemoteVaultConfig(string profileName, FileSystemCredentials fsc) : base(profileName, fsc) { }
+        public RemoteVaultConfig(string profileName, StorageCredentials fsc) : base(profileName, fsc) { }
 
         [JsonConstructor]
-        public RemoteVaultConfig(string id, string name, FileSystemCredentials fileSystem, int backupInterval, int prunePeriod, IEnumerable<string> backupDirectories, IEnumerable<string> ignoreDirectories, IEnumerable<string> pruneDirectories) : base(id, name, fileSystem)
+        public RemoteVaultConfig(string id, string name, StorageCredentials credentials, int backupInterval, int prunePeriod, IEnumerable<string> backupDirectories, IEnumerable<string> ignoreDirectories, IEnumerable<string> pruneDirectories) : base(id, name, credentials)
         {
             BackupInterval = backupInterval;
             PrunePeriod = prunePeriod;
