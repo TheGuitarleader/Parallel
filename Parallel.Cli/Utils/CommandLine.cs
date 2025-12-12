@@ -81,7 +81,7 @@ namespace Parallel.Cli.Utils
         public static void WriteLine(LocalVaultConfig localVault, object value, ConsoleColor color = ConsoleColor.Gray)
         {
             string baseLog = $"[{localVault.Id}] {value}";
-            switch(color)
+            switch (color)
             {
                 default:
                     Log.Information(baseLog);
