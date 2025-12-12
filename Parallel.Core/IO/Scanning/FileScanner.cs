@@ -52,8 +52,9 @@ namespace Parallel.Core.IO.Scanning
         /// </summary>
         /// <param name="path"></param>
         /// <param name="ignoreFolders"></param>
+        /// <param name="force"></param>
         /// <returns>A list of files that have changed since the last backup.</returns>
-        public async Task<SystemFile[]> GetFileChangesAsync(string path, string[] ignoreFolders)
+        public async Task<SystemFile[]> GetFileChangesAsync(string path, string[] ignoreFolders, bool force)
         {
             if (!Directory.Exists(path)) return Array.Empty<SystemFile>();
 
@@ -77,7 +78,7 @@ namespace Parallel.Core.IO.Scanning
                         localFile.Deleted = true;
                         changedFiles.Add(localFile);
                     }
-                    else if (HasChanged(localFile, remoteFile))
+                    else if (HasChanged(localFile, remoteFile) || force)
                     {
                         Log.Debug($"Changed -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;

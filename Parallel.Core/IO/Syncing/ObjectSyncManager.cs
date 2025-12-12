@@ -57,7 +57,7 @@ namespace Parallel.Core.IO.Syncing
                         Interlocked.Increment(ref total);
                         string fullPath = PathBuilder.Combine(job.RemotePath, job.Filename);
 
-                        if (await StorageProvider.ExistsAsync(fullPath))
+                        if (await StorageProvider.ExistsAsync(fullPath) && !force)
                         {
                             Log.Debug($"[WORKER {workerId}] UPLOAD SKIPPED: {fullPath}");
                             Interlocked.Increment(ref completed);
