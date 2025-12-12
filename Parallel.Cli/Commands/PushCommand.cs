@@ -22,14 +22,14 @@ namespace Parallel.Cli.Commands
 
         private readonly Option<string> _sourceArg = new(["--path", "-p"], "The source path to sync.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
-        private readonly Option<bool> _verboseOpt = new(["--verbose", "-v"], "Shows verbose output.");
+        private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces the pull overwriting any files.");
 
         public PushCommand() : base("push", "Pushes changed files to vaults.")
         {
             this.AddOption(_sourceArg);
             this.AddOption(_configOpt);
-            this.AddOption(_verboseOpt);
-            this.SetHandler(async (path, config, verbose) =>
+            this.AddOption(_forceOpt);
+            this.SetHandler(async (path, config, force) =>
             {
                 _sw = Stopwatch.StartNew();
                 if (string.IsNullOrEmpty(path))
@@ -38,10 +38,10 @@ namespace Parallel.Cli.Commands
                 }
                 else
                 {
-                    await SyncPathAsync(path);
+                    await SyncPathAsync(path, force);
                 }
 
-            }, _sourceArg, _configOpt, _verboseOpt);
+            }, _sourceArg, _configOpt, _forceOpt);
         }
 
         private Task SyncSystemAsync()
@@ -49,7 +49,7 @@ namespace Parallel.Cli.Commands
             throw new NotImplementedException();
         }
 
-        private async Task SyncPathAsync(string path)
+        private async Task SyncPathAsync(string path, bool force)
         {
             CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
             await Program.Settings.ForEachVaultAsync(async vault =>
@@ -93,7 +93,7 @@ namespace Parallel.Cli.Commands
                 }
 
                 CommandLine.WriteLine(vault, $"Backing up {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
-                await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles));
+                await syncManager.PushFilesAsync(files, force, new ProgressReport(vault, successFiles));
                 //await syncManager.PushFilesAsync(files, new ProgressBarReporter());
                 await syncManager.DisconnectAsync();
 

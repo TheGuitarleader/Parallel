@@ -19,7 +19,7 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress)
         {
             if (!files.Any()) return;
             SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();

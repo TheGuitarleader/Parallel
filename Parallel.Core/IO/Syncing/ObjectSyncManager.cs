@@ -3,7 +3,6 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Threading.Channels;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
@@ -11,7 +10,6 @@ using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
 using Parallel.Core.Security;
 using Parallel.Core.Settings;
-using Parallel.Core.Utils;
 using Parallel.Core.Workers;
 
 namespace Parallel.Core.IO.Syncing
@@ -35,7 +33,7 @@ namespace Parallel.Core.IO.Syncing
         public ObjectSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc />
-        public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress)
         {
             long queued = 0, completed = 0, total = 0;
             TimeSpan uploadTimeout = TimeSpan.FromSeconds(30);
@@ -58,9 +56,11 @@ namespace Parallel.Core.IO.Syncing
                     {
                         Interlocked.Increment(ref total);
                         string fullPath = PathBuilder.Combine(job.RemotePath, job.Filename);
+
                         if (await StorageProvider.ExistsAsync(fullPath))
                         {
                             Log.Debug($"[WORKER {workerId}] UPLOAD SKIPPED: {fullPath}");
+                            Interlocked.Increment(ref completed);
                             continue;
                         }
 
@@ -106,7 +106,6 @@ namespace Parallel.Core.IO.Syncing
                                 return;
                             }
 
-                            await Database.AddFileAsync(file);
                             await using FileStream fs = new FileStream(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: ChunkSize, useAsync: true);
                             byte[] buffer = ArrayPool<byte>.Shared.Rent(ChunkSize);
 
@@ -123,10 +122,9 @@ namespace Parallel.Core.IO.Syncing
 
                                     string basePath = PathBuilder.Combine(RemoteVault.Credentials.RootDirectory, "Parallel", RemoteVault.Id, "objects");
                                     string parentDir = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
-                                    string remotePath = PathBuilder.Combine(parentDir, hash[4..]);
+                                    string remotePath = PathBuilder.Combine(parentDir, hash);
 
-                                    UploadWorker worker = new(chunk, parentDir, hash[4..], ex => progress.Failed(ex, file));
-
+                                    UploadWorker worker = new(chunk, hash, parentDir, ex => progress.Failed(ex, file));
                                     Task writeTask = channel.Writer.WriteAsync(worker, ct).AsTask();
                                     Task timeoutTask = await Task.WhenAny(writeTask, Task.Delay(writeBlockWarn, ct));
                                     if (timeoutTask != writeTask)
@@ -136,7 +134,6 @@ namespace Parallel.Core.IO.Syncing
                                     }
 
                                     Interlocked.Increment(ref queued);
-                                    progress.Report(ProgressOperation.Pushed, file);
                                 }
                             }
                             finally
@@ -144,7 +141,9 @@ namespace Parallel.Core.IO.Syncing
                                 ArrayPool<byte>.Shared.Return(buffer);
                             }
 
+                            progress.Report(ProgressOperation.Pushed, file);
                             await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
+                            await Database.AddFileAsync(file);
                         }
                         catch (Exception ex)
                         {

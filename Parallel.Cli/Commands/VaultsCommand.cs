@@ -17,11 +17,11 @@ namespace Parallel.Cli.Commands
         private readonly Option<string> configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
         private readonly Command addCmd = new("add", "Adds a new vault configuration.");
-        private Command editCmd = new("edit", "Edits a vault configuration.");
+        private readonly Command editCmd = new("edit", "Edits a vault configuration.");
         private readonly Command findCmd = new("find", "Finds vault configurations in a location.");
         private readonly Command viewCmd = new("view", "Shows the vault configuration.");
         private readonly Command setCmd = new("set", "Sets a new vault configuration.");
-        private Command delCmd = new("delete", "Deletes a vault configuration.");
+        private readonly Command delCmd = new("delete", "Deletes a vault configuration.");
 
         public VaultsCommand() : base("vaults", "View or edit the vaults.")
         {
@@ -44,10 +44,9 @@ namespace Parallel.Cli.Commands
                     Service = Enum.Parse<FileService>(CommandLine.ReadString($"Service ({string.Join(", ", Enum.GetNames(typeof(FileService)))})") ?? string.Empty, true)
                 };
 
-                string profileId = CommandLine.ReadString("Id") ?? HashGenerator.GenerateHash(8, true);
-                string profileName = CommandLine.ReadString("Name") ?? "Default";
                 if (spc.Service == FileService.Local)
                 {
+                    CommandLine.WriteLine("It is NOT RECOMMENDED to use a network drive!", ConsoleColor.Yellow);
                     spc.RootDirectory = CommandLine.ReadString("Root") ?? string.Empty;
                 }
                 else if (spc.Service == FileService.Cloud)
@@ -64,8 +63,11 @@ namespace Parallel.Cli.Commands
                     spc.Password = CommandLine.ReadPassword("Password");
                 }
 
-                //spc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
-                //spc.EncryptionKey = HashGenerator.GenerateHash(32, true);
+                string profileId = CommandLine.ReadString("Id") ?? HashGenerator.GenerateHash(8, true);
+                string profileName = CommandLine.ReadString("Name") ?? "Default";
+
+                spc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
+                spc.EncryptionKey = spc.Encrypt ? HashGenerator.GenerateHash(32, true) : null;
 
                 LocalVaultConfig localVault = new(profileId, profileName, spc);
                 Program.Settings.Vaults.Add(localVault);

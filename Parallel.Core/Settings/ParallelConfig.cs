@@ -81,7 +81,7 @@ namespace Parallel.Core.Settings
         /// The profiles to use.
         /// <para>When pulling, the CLI defaults to the first in the list.</para>
         /// </summary>
-        public HashSet<LocalVaultConfig> Vaults { get; } = [];
+        public HashSet<LocalVaultConfig> Vaults { get; set; } = [];
 
 
         /// <summary>
