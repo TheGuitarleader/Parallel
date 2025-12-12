@@ -14,8 +14,9 @@ namespace Parallel.Core.IO.Syncing
         /// </summary>
         /// <param name="localVault"></param>
         /// <returns></returns>
-        public static ISyncManager CreateNew(LocalVaultConfig localVault)
+        public static ISyncManager? CreateNew(LocalVaultConfig? localVault)
         {
+            if (localVault?.Credentials is null) return null;
             return new ObjectSyncManager(localVault);
         }
     }

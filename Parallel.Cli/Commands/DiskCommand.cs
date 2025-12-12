@@ -36,8 +36,8 @@ namespace Parallel.Cli.Commands
         private async Task DisplayDiskInformationAsync(LocalVaultConfig vault)
         {
             CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
-            ISyncManager syncManager = SyncManager.CreateNew(vault);
-            if (!await syncManager.ConnectAsync())
+            ISyncManager? syncManager = SyncManager.CreateNew(vault);
+            if (syncManager == null || !await syncManager.ConnectAsync())
             {
                 CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);
                 return;

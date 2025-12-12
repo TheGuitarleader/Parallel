@@ -78,20 +78,20 @@ namespace Parallel.Cli.Commands
 
             this.AddCommand(viewCmd);
             viewCmd.AddArgument(configArg);
-            viewCmd.SetHandler(async (vault) =>
+            viewCmd.SetHandler(async (config) =>
             {
                 CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
-                LocalVaultConfig? config = ParallelConfig.GetVault(vault);
-                if (config == null)
+                LocalVaultConfig? vault = ParallelConfig.GetVault(config);
+                if (vault == null)
                 {
                     CommandLine.WriteLine($"Unable to find vault with name: '{vault}'", ConsoleColor.Yellow);
                     return;
                 }
 
-                ISyncManager syncManager = SyncManager.CreateNew(config);
-                if (!await syncManager.ConnectAsync())
+                ISyncManager? syncManager = SyncManager.CreateNew(vault);
+                if (syncManager == null || !await syncManager.ConnectAsync())
                 {
-                    CommandLine.WriteLine(config, $"Failed to connect to vault '{config.Name}'!", ConsoleColor.Red);
+                    CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);
                     return;
                 }
 

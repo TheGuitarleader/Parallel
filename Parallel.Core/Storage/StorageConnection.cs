@@ -37,12 +37,12 @@ namespace Parallel.Core.IO.FileSystem
         /// <param name="vaultConfig">The vault needed for the associated file system.</param>
         public static IStorageProvider CreateNew(LocalVaultConfig vaultConfig)
         {
-            return vaultConfig.Credentials.Service switch
+            return vaultConfig?.Credentials.Service switch
             {
                 FileService.Local => new LocalStorageProvider(vaultConfig),
                 FileService.Remote => new SshStorageProvider(vaultConfig),
                 //FileService.Cloud => new AmazonS3FileSystem(credentials),
-                _ => null
+                _ => throw new ArgumentOutOfRangeException()
             };
         }
     }
