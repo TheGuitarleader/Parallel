@@ -123,7 +123,7 @@ namespace Parallel.Core.Storage
             await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
             await input.CopyToAsync(gzipStream);
 
-            //File.SetAttributes(remotePath, File.GetAttributes(remotePath) | FileAttributes.ReadOnly);
+            File.SetAttributes(remotePath, File.GetAttributes(remotePath) | FileAttributes.ReadOnly);
         }
     }
 }
