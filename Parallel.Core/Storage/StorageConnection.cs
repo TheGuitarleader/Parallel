@@ -29,11 +29,7 @@ namespace Parallel.Core.IO.FileSystem
     /// <summary>
     /// Represents the way to connect to different file system associations. This class cannot be inherited.
     /// </summary>
-<<<<<<<< HEAD:Parallel.Core/Storage/StorageConnection.cs
     public static class StorageConnection
-========
-    public static class StorageProvider
->>>>>>>> 69571e55dfea132b09b376c68487350de8bb3589:Parallel.Core/Storage/StorageProvider.cs
     {
         /// <summary>
         /// Creates a new file system association.
