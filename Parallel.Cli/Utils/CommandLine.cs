@@ -7,7 +7,10 @@ using Parallel.Core.Utils;
 
 namespace Parallel.Cli.Utils
 {
-    public class CommandLine
+    /// <summary>
+    /// Represents a series of methods for printing to the console. This class can not be inherited.
+    /// </summary>
+    public abstract class CommandLine
     {
         private static readonly object _consoleLock = new();
 
