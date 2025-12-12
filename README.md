@@ -1,6 +1,7 @@
 # [<img src="https://raw.githubusercontent.com/TheGuitarleader/Parallel/master/Parallel.Cli/parallel-red.ico" alt="Parallel Icon" width="38" height="38">](https://github.com/TheGuitarleader/Parallel) Parallel
 
-[![.NET](https://img.shields.io/github/actions/workflow/status/TheGuitarleader/Parallel/dotnet.yml?label=Main%20build&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/actions/workflows/dotnet.yml) [![latest version](https://img.shields.io/github/v/release/TheGuitarleader/Parallel?label=Latest%20release&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest) [![GitHub Downloads](https://img.shields.io/github/downloads/TheGuitarleader/Parallel/total?style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest)
+[![.NET](https://img.shields.io/github/actions/workflow/status/TheGuitarleader/Parallel/dotnet.yml?label=Main%20build&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/actions/workflows/dotnet-build.yml) [![latest version](https://img.shields.io/github/v/release/TheGuitarleader/Parallel?label=Latest%20release&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest) [![GitHub Downloads](https://img.shields.io/github/downloads/TheGuitarleader/Parallel/total?style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest)
+
 
 
 Your files under your control.
@@ -41,9 +42,9 @@ dotnet build
 #### 2. Set Up Your Vaults
 Vaults are storage targets where Parallel sends and recieves files. This can be an external drive, NAS share, SSH server, or S3-compatible cloud.
 ```
-parallel vaults create
+parallel vaults add
 ```
-*Note: All vaults are saved as JSON in `%AppData%\Parallel\Vaults` for easy importing and exporting.*
+All vaults are saved as JSON in `%AppData%\Parallel\Configuration.json` for easier importing and exporting. Learn more [here](https://github.com/TheGuitarleader/Parallel/wiki/Configuration#configuration-file).
 #### 3. Push Files to Vaults
 Parallel can push all changed files on the system with:
 ```
