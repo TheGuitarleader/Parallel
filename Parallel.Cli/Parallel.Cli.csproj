@@ -35,19 +35,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0"/>
+        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1"/>
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="Newtonsoft.Json" />
-        <Using Include="Serilog" />
+        <Using Include="Newtonsoft.Json"/>
+        <Using Include="Serilog"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Parallel.Core\Parallel.Core.csproj" />
+        <ProjectReference Include="..\Parallel.Core\Parallel.Core.csproj"/>
     </ItemGroup>
 
 </Project>

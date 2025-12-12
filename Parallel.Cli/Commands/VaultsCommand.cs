@@ -16,11 +16,11 @@ namespace Parallel.Cli.Commands
         private readonly Argument<string> configArg = new("config", "The vault configuration to use.");
         private readonly Option<string> configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
-        private Command addCmd = new("add", "Adds a new vault configuration.");
+        private readonly Command addCmd = new("add", "Adds a new vault configuration.");
         private Command editCmd = new("edit", "Edits a vault configuration.");
         private readonly Command findCmd = new("find", "Finds vault configurations in a location.");
-        private Command viewCmd = new("view", "Shows the vault configuration.");
-        private Command setCmd = new("set", "Sets a new vault configuration.");
+        private readonly Command viewCmd = new("view", "Shows the vault configuration.");
+        private readonly Command setCmd = new("set", "Sets a new vault configuration.");
         private Command delCmd = new("delete", "Deletes a vault configuration.");
 
         public VaultsCommand() : base("vaults", "View or edit the vaults.")
@@ -39,31 +39,35 @@ namespace Parallel.Cli.Commands
             addCmd.SetHandler(() =>
             {
                 CommandLine.WriteLine("Creating new storage vault...", ConsoleColor.DarkGray);
-                StorageCredentials fsc = new StorageCredentials();
-                fsc.Service = Enum.Parse<FileService>(CommandLine.ReadString($"Service ({string.Join(", ", Enum.GetNames(typeof(FileService)))})"), true);
-                if (fsc.Service == FileService.Local)
+                StorageCredentials spc = new StorageCredentials
                 {
-                    fsc.RootDirectory = CommandLine.ReadString("Root");
+                    Service = Enum.Parse<FileService>(CommandLine.ReadString($"Service ({string.Join(", ", Enum.GetNames(typeof(FileService)))})") ?? string.Empty, true)
+                };
+
+                string profileId = CommandLine.ReadString("Id") ?? HashGenerator.GenerateHash(8, true);
+                string profileName = CommandLine.ReadString("Name") ?? "Default";
+                if (spc.Service == FileService.Local)
+                {
+                    spc.RootDirectory = CommandLine.ReadString("Root") ?? string.Empty;
                 }
-                else if (fsc.Service == FileService.Cloud)
+                else if (spc.Service == FileService.Cloud)
                 {
-                    fsc.Address = CommandLine.ReadString("Bucket Name");
-                    fsc.Username = CommandLine.ReadString("Access Key");
-                    fsc.Password = CommandLine.ReadPassword("Secret Key");
+                    spc.Address = CommandLine.ReadString("Bucket Name");
+                    spc.Username = CommandLine.ReadString("Access Key");
+                    spc.Password = CommandLine.ReadPassword("Secret Key");
                 }
                 else
                 {
-                    fsc.RootDirectory = CommandLine.ReadString("Root");
-                    fsc.Address = CommandLine.ReadString("Address");
-                    fsc.Username = CommandLine.ReadString("Username");
-                    fsc.Password = CommandLine.ReadPassword("Password");
+                    spc.RootDirectory = CommandLine.ReadString("Root") ?? string.Empty;
+                    spc.Address = CommandLine.ReadString("Address");
+                    spc.Username = CommandLine.ReadString("Username");
+                    spc.Password = CommandLine.ReadPassword("Password");
                 }
 
-                //fsc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
-                //fsc.EncryptionKey = HashGenerator.GenerateHash(32, true);
+                //spc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
+                //spc.EncryptionKey = HashGenerator.GenerateHash(32, true);
 
-                string? profileName = CommandLine.ReadString("Profile Name");
-                LocalVaultConfig localVault = new LocalVaultConfig(profileName, fsc);
+                LocalVaultConfig localVault = new(profileId, profileName, spc);
                 Program.Settings.Vaults.Add(localVault);
                 Program.Settings.Save();
 
@@ -97,9 +101,9 @@ namespace Parallel.Cli.Commands
 
                 RemoteVaultConfig remoteVault = syncManager.RemoteVault;
                 CommandLine.WriteLine($"'{remoteVault.Name}' ({remoteVault.Id}):");
-                CommandLine.WriteArray($"Backup Directories", remoteVault.BackupDirectories);
-                CommandLine.WriteArray($"Ignore Directories", remoteVault.IgnoreDirectories);
-                CommandLine.WriteArray($"Prune Directories", remoteVault.PruneDirectories);
+                CommandLine.WriteArray("Backup Directories", remoteVault.BackupDirectories);
+                CommandLine.WriteArray("Ignore Directories", remoteVault.IgnoreDirectories);
+                CommandLine.WriteArray("Prune Directories", remoteVault.PruneDirectories);
                 CommandLine.WriteLine($"Prune Period: {remoteVault.PrunePeriod} days");
 
                 await syncManager.DisconnectAsync();

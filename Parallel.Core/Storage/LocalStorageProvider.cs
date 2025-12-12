@@ -78,7 +78,7 @@ namespace Parallel.Core.Storage
         /// <inheritdoc/>
         public Task<SystemFile?> GetFileAsync(string path)
         {
-            if(!File.Exists(path)) return Task.FromResult<SystemFile?>(null);
+            if (!File.Exists(path)) return Task.FromResult<SystemFile?>(null);
 
             FileInfo fi = new(path);
             SystemFile file = new SystemFile(path)
@@ -87,6 +87,7 @@ namespace Parallel.Core.Storage
                 RemotePath = fi.FullName,
                 RemoteSize = fi.Length
             };
+
             return Task.FromResult<SystemFile?>(file);
         }
 

@@ -62,7 +62,7 @@ namespace Parallel.Core.IO.Syncing
             {
                 await StorageProvider.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new NullProgressReporter());
                 RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
-                if(config == null) return false;
+                if (config == null) return false;
                 RemoteVault = config;
 
                 Log.Debug($"Downloaded config file: {TempConfigFile}");

@@ -45,13 +45,6 @@ namespace Parallel.Core.Settings
             Credentials = credentials;
         }
 
-        public LocalVaultConfig(string name, StorageCredentials credentials)
-        {
-            Id = HashGenerator.GenerateHash(8, true);
-            Name = name;
-            Credentials = credentials;
-        }
-
         /// <summary>
         /// Loads settings from a file.
         /// </summary>

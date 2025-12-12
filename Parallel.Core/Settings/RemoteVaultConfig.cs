@@ -50,8 +50,6 @@ namespace Parallel.Core.Settings
 
         public RemoteVaultConfig(LocalVaultConfig localVault) : base(localVault.Id, localVault.Name, localVault.Credentials) { }
 
-        public RemoteVaultConfig(string profileName, StorageCredentials fsc) : base(profileName, fsc) { }
-
         [JsonConstructor]
         public RemoteVaultConfig(string id, string name, StorageCredentials credentials, int backupInterval, int prunePeriod, IEnumerable<string> backupDirectories, IEnumerable<string> ignoreDirectories, IEnumerable<string> pruneDirectories) : base(id, name, credentials)
         {

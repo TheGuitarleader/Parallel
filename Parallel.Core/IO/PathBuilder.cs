@@ -172,7 +172,7 @@ namespace Parallel.Core.IO
         public static string GetObjectPath(string basePath, string hash)
         {
             string parentDir = Path.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
-            if (!Directory.Exists(parentDir))  Directory.CreateDirectory(parentDir);
+            if (!Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
             return Path.Combine(parentDir, hash[4..]);
         }
     }

@@ -10,7 +10,7 @@ namespace Parallel.Cli.Utils
     {
         private readonly LocalVaultConfig _localVault;
         private int _current;
-        private int _total;
+        private readonly int _total;
 
         public ProgressReport(LocalVaultConfig localVault, int totalFiles)
         {

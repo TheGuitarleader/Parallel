@@ -12,7 +12,7 @@ namespace Parallel.Cli.Commands
 {
     public class DuplicatesCommand : Command
     {
-        private Argument<string> sourceArg = new("path", "The directory to scan.");
+        private readonly Argument<string> sourceArg = new("path", "The directory to scan.");
 
         public DuplicatesCommand() : base("duplicates", "Scans a directory for duplicate files.")
         {

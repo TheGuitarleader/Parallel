@@ -11,12 +11,12 @@ namespace Parallel.Cli.Utils
     {
         private static readonly object _consoleLock = new();
 
-        public static string ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
+        public static string? ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
         {
             Console.ForegroundColor = color;
             Console.Write($"> {value}: ");
             Console.ResetColor();
-            return Console.ReadLine() ?? string.Empty;
+            return Console.ReadLine();
         }
 
         public static bool ReadBool(object value, bool defaultValue, ConsoleColor color = ConsoleColor.Gray)

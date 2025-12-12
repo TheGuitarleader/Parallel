@@ -120,7 +120,7 @@ namespace Parallel.Core.Storage
 
                     string[] subDirs = file.RemotePath.Split('/');
                     string parentDir = string.Join("/", subDirs.Take(subDirs.Length - 1));
-                    if(!await _client.ExistsAsync(parentDir)) await CreateDirectoryAsync(parentDir);
+                    if (!await _client.ExistsAsync(parentDir)) await CreateDirectoryAsync(parentDir);
 
                     await using SftpFileStream createStream = _client.Create(file.RemotePath);
                     await using FileStream openStream = File.OpenRead(file.LocalPath);
