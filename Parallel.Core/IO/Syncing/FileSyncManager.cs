@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Diagnostics;
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
@@ -21,13 +22,18 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc/>
         public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
+            long queued = 0, completed = 0;
+
             if (files.Length == 0) return;
             SystemFile[] uploadFiles = files.Where(f => !f.Deleted).ToArray();
             SystemFile[] deleteFiles = files.Where(f => f.Deleted).ToArray();
 
             Log.Information($"Pushing {uploadFiles.Length:N0} files...");
-            await System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
+            Task producer = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
             {
+                Interlocked.Increment(ref queued);
+                Log.Debug($"Pushing -> {file.LocalPath}");
+
                 file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.Id);
                 SystemFile? result = await StorageProvider.UploadFileAsync(file, ct);
                 if (result is null) return;
@@ -35,6 +41,9 @@ namespace Parallel.Core.IO.Syncing
                 await Database.AddFileAsync(result);
                 await Database.AddHistoryAsync(result.LocalPath, HistoryType.Pushed);
                 progress.Report(ProgressOperation.Pushed, file);
+
+                Interlocked.Increment(ref completed);
+                Interlocked.Decrement(ref queued);
             });
 
             Log.Information($"Archiving {deleteFiles.Length:N0} files...");
@@ -44,6 +53,18 @@ namespace Parallel.Core.IO.Syncing
                 await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
                 progress.Report(ProgressOperation.Archived, file);
             }
+
+            Task monitor = Task.Run(async () =>
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                while (!producer.IsCompleted)
+                {
+                    Log.Debug($"UPLOAD STATS @ {sw.Elapsed}: queued={queued}, completed={completed}");
+                    await Task.Delay(1000);
+                }
+            });
+
+            await Task.WhenAll(producer, monitor).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
