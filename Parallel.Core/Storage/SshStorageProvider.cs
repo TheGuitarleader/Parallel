@@ -75,8 +75,9 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
+        public async Task DownloadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default)
         {
+            progress.Report(ProgressOperation.Downloading, file);
             await using SftpFileStream openStream = _client.OpenRead(file.RemotePath);
             await using FileStream createStream = File.Create(file.LocalPath);
             await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
@@ -106,10 +107,11 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task<SystemFile?> UploadFileAsync(SystemFile file, CancellationToken ct = default)
+        public async Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default)
         {
             try
             {
+                progress.Report(ProgressOperation.Uploading, file);
                 _client.ChangePermissions(file.RemotePath, 644);
                 await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
 

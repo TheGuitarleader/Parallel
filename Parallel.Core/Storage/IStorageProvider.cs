@@ -35,8 +35,9 @@ namespace Parallel.Core.Storage
         /// Downloads a file from the associated file system.
         /// </summary>
         /// <param name="file"></param>
+        /// <param name="progress"></param>
         /// <param name="ct"></param>
-        Task DownloadFileAsync(SystemFile file, CancellationToken ct = default);
+        Task DownloadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default);
 
         /// <summary>
         /// Checks if a path exists on the associated file system.
@@ -66,8 +67,9 @@ namespace Parallel.Core.Storage
         /// Uploads a stream to the associated file system.
         /// </summary>
         /// <param name="file"></param>
+        /// <param name="progress"></param>
         /// <param name="ct"></param>
-        Task<SystemFile?> UploadFileAsync(SystemFile file, CancellationToken ct = default);
+        Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default);
 
         Task<long> DownloadStreamAsync(Stream output, string remotePath, CancellationToken ct = default);
         Task<long> UploadStreamAsync(Stream input, string remotePath, CancellationToken ct = default);

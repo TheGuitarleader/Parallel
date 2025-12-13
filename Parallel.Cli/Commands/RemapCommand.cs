@@ -20,7 +20,7 @@ namespace Parallel.Cli.Commands
 
         private Stopwatch _sw = new Stopwatch();
 
-        public RemapCommand() : base("remap", "Remaps paths in the vault.")
+        public RemapCommand() : base("remap", "Remaps the paths in the entire vault.")
         {
             this.AddArgument(_sourceArg);
             this.AddArgument(_targetArg);
