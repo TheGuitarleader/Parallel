@@ -109,7 +109,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetFilesDirectory(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "Files");
+            return Combine(GetRootDirectory(localVault), "files");
         }
 
         /// <summary>
@@ -119,7 +119,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetSnapshotsDirectory(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "Snapshots");
+            return Combine(GetRootDirectory(localVault), "snapshots");
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetConfigurationFile(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "config.json.gz");
+            return Combine(GetRootDirectory(localVault), "config");
         }
 
         /// <summary>
@@ -139,7 +139,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetDatabaseFile(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "index.db.gz");
+            return Combine(GetRootDirectory(localVault), "index");
         }
 
         /// <summary>
@@ -169,11 +169,15 @@ namespace Parallel.Core.IO
             return !Directory.Exists(path) && File.Exists(path);
         }
 
-        public static string GetObjectPath(string basePath, string hash)
+        /// <summary>
+        /// Gets the relative path for the hash.
+        /// </summary>
+        /// <param name="vaultConfig"></param>
+        /// <param name="hash"></param>
+        /// <returns></returns>
+        public static string GetObjectPath(LocalVaultConfig vaultConfig, string hash)
         {
-            string parentDir = Path.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
-            if (!Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
-            return Path.Combine(parentDir, hash[4..]);
+            return Combine(GetFilesDirectory(vaultConfig), hash.Substring(0, 2), hash.Substring(2, 2), hash);
         }
     }
 }

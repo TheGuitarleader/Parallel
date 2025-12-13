@@ -14,61 +14,62 @@ namespace Parallel.Core.Storage
         /// Creates all directories and subdirectories in the specified path unless they already exist.
         /// </summary>
         /// <param name="path"></param>
+        /// <param name="ct"></param>
         Task CreateDirectoryAsync(string path);
 
         /// <summary>
         /// Deletes the specified directory.
         /// </summary>
         /// <param name="path"></param>
+        /// <param name="ct"></param>
         Task DeleteDirectoryAsync(string path);
 
         /// <summary>
         /// Deletes the specified file.
         /// </summary>
         /// <param name="path"></param>
+        /// <param name="ct"></param>
         Task DeleteFileAsync(string path);
-
-        /// <summary>
-        /// Downloads an array of files from the associated file system.
-        /// </summary>
-        /// <param name="files"></param>
-        /// <param name="progress"></param>
-        Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <summary>
         /// Downloads a file from the associated file system.
         /// </summary>
-        /// <param name="output"></param>
-        /// <param name="remotePath"></param>
-        Task DownloadStreamAsync(Stream output, string remotePath);
+        /// <param name="file"></param>
+        /// <param name="ct"></param>
+        Task DownloadFileAsync(SystemFile file, CancellationToken ct = default);
 
         /// <summary>
         /// Checks if a path exists on the associated file system.
         /// </summary>
         /// <param name="path"></param>
+        /// <param name="ct"></param>
         /// <returns>True if path exists, otherwise false.</returns>
         Task<bool> ExistsAsync(string path);
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        Task<string> GetDirectoryName(string path);
 
         /// <summary>
         /// Gets a file on the associated file system.
         /// </summary>
         /// <param name="path"></param>
+        /// <param name="ct"></param>
         /// <returns></returns>
         Task<SystemFile?> GetFileAsync(string path);
 
         /// <summary>
-        /// Uploads an array of files to the associated file system.
-        /// </summary>
-        /// <param name="files"></param>
-        /// <param name="progress"></param>
-        /// <returns>The size, in bytes, of the uploaded stream.</returns>
-        Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress);
-
-        /// <summary>
         /// Uploads a stream to the associated file system.
         /// </summary>
-        /// <param name="input"></param>
-        /// <param name="remotePath"></param>
-        Task UploadStreamAsync(Stream input, string remotePath);
+        /// <param name="file"></param>
+        /// <param name="ct"></param>
+        Task<SystemFile?> UploadFileAsync(SystemFile file, CancellationToken ct = default);
+
+        Task<long> DownloadStreamAsync(Stream output, string remotePath, CancellationToken ct = default);
+        Task<long> UploadStreamAsync(Stream input, string remotePath, CancellationToken ct = default);
     }
 }

@@ -36,6 +36,7 @@ namespace Parallel.Core.Storage
         {
             if (_client.IsConnected) _client.Disconnect();
             _client.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         /// <inheritdoc/>
@@ -74,29 +75,25 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
         {
-            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
-            {
-                await using SftpFileStream openStream = _client.OpenRead(file.RemotePath);
-                await using FileStream createStream = File.Create(file.LocalPath);
-                await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
-                await gzipStream.CopyToAsync(createStream, ct);
-            });
-        }
-
-        /// <inheritdoc />
-        public async Task DownloadStreamAsync(Stream output, string remotePath)
-        {
-            await using SftpFileStream openStream = _client.OpenRead(remotePath);
+            await using SftpFileStream openStream = _client.OpenRead(file.RemotePath);
+            await using FileStream createStream = File.Create(file.LocalPath);
             await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
-            await gzipStream.CopyToAsync(output);
+            await gzipStream.CopyToAsync(createStream, ct);
         }
 
         /// <inheritdoc />
         public async Task<bool> ExistsAsync(string path)
         {
             return _client.IsConnected && await _client.ExistsAsync(path);
+        }
+
+        /// <inheritdoc/>
+        public Task<string> GetDirectoryName(string path)
+        {
+            string[] subDirs = path.Split('/');
+            return Task.FromResult(string.Join("/", subDirs.Take(subDirs.Length - 1)));
         }
 
         /// <inheritdoc/>
@@ -109,42 +106,44 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public async Task<SystemFile?> UploadFileAsync(SystemFile file, CancellationToken ct = default)
         {
-            foreach (SystemFile file in files)
+            try
             {
-                try
-                {
-                    Stopwatch sw = new Stopwatch();
-                    if (await _client.ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
+                _client.ChangePermissions(file.RemotePath, 644);
+                await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
 
-                    string[] subDirs = file.RemotePath.Split('/');
-                    string parentDir = string.Join("/", subDirs.Take(subDirs.Length - 1));
-                    if (!await _client.ExistsAsync(parentDir)) await CreateDirectoryAsync(parentDir);
+                await using SftpFileStream createStream = _client.Create(file.RemotePath);
+                await using FileStream openStream = File.OpenRead(file.LocalPath);
+                await using GZipStream gzipStream = new(createStream, CompressionLevel.SmallestSize);
+                await openStream.CopyToAsync(gzipStream, ct);
 
-                    await using SftpFileStream createStream = _client.Create(file.RemotePath);
-                    await using FileStream openStream = File.OpenRead(file.LocalPath);
-                    await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-                    await openStream.CopyToAsync(gzipStream);
-                    _client.ChangePermissions(file.RemotePath, 444);
-
-                    Log.Debug($"Uploaded '{file.RemotePath}' in {sw.ElapsedMilliseconds}ms");
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.GetBaseException().ToString());
-                }
+                _client.ChangePermissions(file.RemotePath, 444);
+                file.RemoteSize = createStream.Length;
+                return file;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.GetBaseException().ToString());
+                return null;
             }
         }
 
         /// <inheritdoc />
-        public async Task UploadStreamAsync(Stream input, string remotePath)
+        public Task<long> DownloadStreamAsync(Stream output, string remotePath, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public async Task<long> UploadStreamAsync(Stream input, string remotePath, CancellationToken ct = default)
         {
             await using SftpFileStream createStream = _client.Create(remotePath);
             await using GZipStream gzipStream = new(createStream, CompressionLevel.SmallestSize);
-            await input.CopyToAsync(gzipStream);
+            await input.CopyToAsync(gzipStream, ct);
 
             _client.ChangePermissions(remotePath, 444);
+            return createStream.Length;
         }
     }
 }

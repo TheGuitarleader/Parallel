@@ -43,6 +43,7 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public async Task<bool> ConnectAsync()
         {
+            Log.Debug($"[{LocalVault.Id}] Connecting...");
             string root = PathBuilder.GetRootDirectory(LocalVault);
             if (!await StorageProvider.ExistsAsync(root))
             {
@@ -60,7 +61,7 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await StorageProvider.DownloadFilesAsync([new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault))], new NullProgressReporter());
+                await StorageProvider.DownloadFileAsync(new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)));
                 RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
                 if (config == null) return false;
                 RemoteVault = config;
@@ -77,28 +78,29 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await StorageProvider.DownloadFilesAsync([new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))], new NullProgressReporter());
+                await StorageProvider.DownloadFileAsync(new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault)));
                 Database = new SqliteContext(TempDbFile);
 
                 Log.Debug($"Downloaded db file: {TempDbFile}");
             }
 
+            Log.Information($"[{LocalVault.Id}] Connected");
             return true;
         }
 
         /// <inheritdoc />
         public async Task DisconnectAsync()
         {
-            Log.Debug($"Uploaded config file: {TempConfigFile}");
-            Log.Debug($"Uploaded db file: {TempDbFile}");
-
+            Log.Debug($"[{LocalVault.Id}] Disconnecting...");
             SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
-            await StorageProvider.UploadFilesAsync(tempFiles, new NullProgressReporter());
-            StorageProvider.Dispose();
+            foreach (SystemFile file in tempFiles) await StorageProvider.UploadFileAsync(file);
+            StorageProvider?.Dispose();
+
+            Log.Information($"[{LocalVault.Id}] Disconnected");
         }
 
         /// <inheritdoc />
-        public abstract Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress);
+        public abstract Task PushFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <inheritdoc />
         public abstract Task PullFilesAsync(SystemFile[] files, IProgressReporter progress);

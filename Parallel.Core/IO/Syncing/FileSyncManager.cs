@@ -19,41 +19,42 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress)
+        public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            if (!files.Any()) return;
-            SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();
-            Log.Information($"Backing up {backupFiles.Length} files...");
-            await StorageProvider.UploadFilesAsync(backupFiles, progress);
+            if (files.Length == 0) return;
+            SystemFile[] uploadFiles = files.Where(f => !f.Deleted).ToArray();
+            SystemFile[] deleteFiles = files.Where(f => f.Deleted).ToArray();
 
-            progress.Reset();
-            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            Log.Information($"Pushing {uploadFiles.Length:N0} files...");
+            await System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
             {
-                if (file.Deleted)
-                {
-                    await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
-                    await Database.AddFileAsync(file);
-                    progress.Report(ProgressOperation.Archived, file);
-                }
-                else
-                {
-                    SystemFile? remote = await StorageProvider.GetFileAsync(file.RemotePath);
-                    if (remote is not null)
-                    {
-                        file.RemoteSize = remote.RemoteSize;
-                        await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
-                        await Database.AddFileAsync(file);
-                    }
+                file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.Id);
+                SystemFile? result = await StorageProvider.UploadFileAsync(file, ct);
+                if (result is null) return;
 
-                    progress.Report(ProgressOperation.Synced, file);
-                }
+                await Database.AddFileAsync(result);
+                await Database.AddHistoryAsync(result.LocalPath, HistoryType.Pushed);
+                progress.Report(ProgressOperation.Pushed, file);
             });
+
+            Log.Information($"Archiving {deleteFiles.Length:N0} files...");
+            foreach (SystemFile file in deleteFiles)
+            {
+                await Database.AddFileAsync(file);
+                await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
+                progress.Report(ProgressOperation.Archived, file);
+            }
         }
 
         /// <inheritdoc/>
         public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            await StorageProvider.DownloadFilesAsync(files, progress);
+            if (files.Length == 0) return;
+            SystemFile[] downloadFiles = files.Where(f => !f.Deleted).ToArray();
+            await System.Threading.Tasks.Parallel.ForEachAsync(downloadFiles, ParallelConfig.Options, async (file, ct) =>
+            {
+
+            });
         }
     }
 }

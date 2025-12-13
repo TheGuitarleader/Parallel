@@ -33,7 +33,7 @@ namespace Parallel.Core.IO.Syncing
         public ObjectSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc />
-        public override async Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress)
+        public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             long queued = 0, completed = 0, total = 0;
             TimeSpan uploadTimeout = TimeSpan.FromSeconds(30);
@@ -57,7 +57,7 @@ namespace Parallel.Core.IO.Syncing
                         Interlocked.Increment(ref total);
                         string fullPath = PathBuilder.Combine(job.RemotePath, job.Filename);
 
-                        if (await StorageProvider.ExistsAsync(fullPath) && !force)
+                        if (await StorageProvider.ExistsAsync(fullPath))
                         {
                             Log.Debug($"[WORKER {workerId}] UPLOAD SKIPPED: {fullPath}");
                             Interlocked.Increment(ref completed);
@@ -68,7 +68,7 @@ namespace Parallel.Core.IO.Syncing
                         await using MemoryStream ms = new MemoryStream(job.Data, false);
 
                         using CancellationTokenSource cts = new CancellationTokenSource(uploadTimeout);
-                        Task uploadTask = StorageProvider.UploadStreamAsync(ms, fullPath);
+                        Task uploadTask = StorageProvider.UploadStreamAsync(ms, fullPath, cts.Token);
 
                         Task timeoutTask = await Task.WhenAny(uploadTask, Task.Delay(uploadTimeout, cts.Token));
                         if (timeoutTask != uploadTask)
