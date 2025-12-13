@@ -27,7 +27,7 @@ namespace Parallel.Cli.Commands
             this.SetHandler(async (config, source, target) =>
             {
                 _sw = Stopwatch.StartNew();
-                LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault();
+                LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault(v => v.Enabled);
                 if (!string.IsNullOrEmpty(config)) vault = ParallelConfig.GetVault(config);
                 if (vault == null)
                 {
