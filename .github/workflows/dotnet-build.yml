@@ -3,8 +3,6 @@ name: Build .NET Project
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   validate:
