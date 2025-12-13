@@ -66,6 +66,7 @@ namespace Parallel.Cli.Commands
                 DriveInfo drive = new(vault.Credentials.RootDirectory);
                 long diskUsage = drive.TotalSize - drive.TotalFreeSpace;
                 CommandLine.WriteLine($"Total Usage:    {Formatter.FromBytes(diskUsage)} ({Math.Round(diskUsage / (double)drive.TotalSize * 100, 1)}%)");
+                CommandLine.WriteLine($"Disk Usage:     {Formatter.FromBytes(diskUsage - remoteSize)} ({Math.Round((diskUsage - remoteSize) / (double)drive.TotalSize * 100, 1)}%)");
                 CommandLine.WriteLine($"Disk Free:      {Formatter.FromBytes(drive.TotalFreeSpace)} ({Math.Round(drive.TotalFreeSpace / (double)drive.TotalSize * 100, 1)}%)");
                 CommandLine.WriteLine($"Disk Total:     {Formatter.FromBytes(drive.TotalSize)}");
             }

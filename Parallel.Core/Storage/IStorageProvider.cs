@@ -67,9 +67,10 @@ namespace Parallel.Core.Storage
         /// Uploads a stream to the associated file system.
         /// </summary>
         /// <param name="file"></param>
+        /// <param name="overwrite"></param>
         /// <param name="progress"></param>
         /// <param name="ct"></param>
-        Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default);
+        Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite, CancellationToken ct = default);
 
         Task<long> DownloadStreamAsync(Stream output, string remotePath, CancellationToken ct = default);
         Task<long> UploadStreamAsync(Stream input, string remotePath, CancellationToken ct = default);

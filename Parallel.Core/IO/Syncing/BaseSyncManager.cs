@@ -93,7 +93,7 @@ namespace Parallel.Core.IO.Syncing
         {
             Log.Debug($"[{LocalVault.Id}] Disconnecting...");
             SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
-            foreach (SystemFile file in tempFiles) await StorageProvider.UploadFileAsync(file, new NullProgressReporter());
+            foreach (SystemFile file in tempFiles) await StorageProvider.UploadFileAsync(file, new NullProgressReporter(), true);
             StorageProvider?.Dispose();
 
             Log.Information($"[{LocalVault.Id}] Disconnected");

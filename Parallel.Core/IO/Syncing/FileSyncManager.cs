@@ -34,8 +34,8 @@ namespace Parallel.Core.IO.Syncing
                 Interlocked.Increment(ref queued);
                 Log.Debug($"Pushing -> {file.LocalPath}");
 
-                file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.Id);
-                SystemFile? result = await StorageProvider.UploadFileAsync(file, progress, ct);
+                file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum);
+                SystemFile? result = await StorageProvider.UploadFileAsync(file, progress, false, ct);
                 if (result is null) return;
 
                 await Database.AddFileAsync(result);

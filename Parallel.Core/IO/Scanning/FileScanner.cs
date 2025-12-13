@@ -127,7 +127,7 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>True is success, otherwise false.</returns>
         public static bool HasChanged(SystemFile sourcePath, SystemFile? targetPath)
         {
-            return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && !sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum));
+            return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && !sourcePath.CheckSum.Equals(targetPath.CheckSum));
         }
 
 

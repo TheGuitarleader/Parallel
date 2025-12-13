@@ -98,12 +98,18 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default)
+        public async Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite = false, CancellationToken ct = default)
         {
             try
             {
                 progress.Report(ProgressOperation.Uploading, file);
-                if (await ExistsAsync(file.RemotePath)) File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
+                if (await ExistsAsync(file.RemotePath) && !overwrite)
+                {
+                    Log.Debug($"Skipping file: {file.RemotePath}");
+                    return await GetFileAsync(file.RemotePath);
+                }
+
+                if (overwrite) File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
                 await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
 
                 await using FileStream openStream = new(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4194304, useAsync: true);

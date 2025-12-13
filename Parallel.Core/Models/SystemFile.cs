@@ -76,7 +76,7 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The checksum used to check if the file has changed.
         /// </summary>
-        public byte[]? CheckSum { get; }
+        public string CheckSum { get; }
 
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace Parallel.Core.Models
             Hidden = fileInfo.Attributes.HasFlag(FileAttributes.Hidden);
             ReadOnly = fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly);
             Deleted = !fileInfo.Exists;
-            CheckSum = HashGenerator.CheckSum(path);
+            CheckSum = HashGenerator.CheckSum(path) ?? string.Empty;
             // Salt = HashGenerator.RandomBytes(32);
             // IV =  HashGenerator.RandomBytes(32);
         }
@@ -126,7 +126,7 @@ namespace Parallel.Core.Models
         /// <param name="salt"></param>
         /// <param name="iv"></param>
         /// <param name="checksum"></param>
-        public SystemFile(string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, byte[] checksum)
+        public SystemFile(string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
         {
             Id = id;
             Name = name;
@@ -171,7 +171,7 @@ namespace Parallel.Core.Models
                 value?.Hidden != null ? this.Hidden.Equals(value.Hidden) : (bool?)null,
                 value?.ReadOnly != null ? this.ReadOnly.Equals(value.ReadOnly) : (bool?)null,
                 value?.Deleted != null ? this.Deleted.Equals(value.Deleted) : (bool?)null,
-                this?.CheckSum != null && value?.CheckSum != null ? this.CheckSum.SequenceEqual(value.CheckSum) : (bool?)null,
+                this?.CheckSum != null && value?.CheckSum != null ? this.CheckSum.Equals(value.CheckSum) : (bool?)null,
             ];
 
             return results.All(b => b != null && (bool)b);

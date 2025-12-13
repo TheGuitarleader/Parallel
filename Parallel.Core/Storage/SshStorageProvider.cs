@@ -107,12 +107,13 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default)
+        public async Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite = false, CancellationToken ct = default)
         {
             try
             {
                 progress.Report(ProgressOperation.Uploading, file);
-                _client.ChangePermissions(file.RemotePath, 644);
+
+                if (await ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
                 await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
 
                 await using SftpFileStream createStream = _client.Create(file.RemotePath);
