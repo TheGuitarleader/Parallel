@@ -81,6 +81,7 @@ namespace Parallel.Core.Database
         Task<SystemFile?> GetFileAsync(string path);
 
         Task<long> GetLocalSizeAsync();
+        Task<long> GetRemoteSizeAsync();
         Task<long> GetTotalFilesAsync(bool deleted);
 
         #endregion

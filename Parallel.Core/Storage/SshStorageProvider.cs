@@ -117,7 +117,7 @@ namespace Parallel.Core.Storage
 
                 await using SftpFileStream createStream = _client.Create(file.RemotePath);
                 await using FileStream openStream = File.OpenRead(file.LocalPath);
-                await using GZipStream gzipStream = new(createStream, CompressionLevel.SmallestSize);
+                await using GZipStream gzipStream = new(createStream, CompressionLevel.Optimal);
                 await openStream.CopyToAsync(gzipStream, ct);
 
                 _client.ChangePermissions(file.RemotePath, 444);

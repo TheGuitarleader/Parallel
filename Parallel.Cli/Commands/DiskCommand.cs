@@ -45,9 +45,11 @@ namespace Parallel.Cli.Commands
 
             IDatabase db = syncManager.Database;
             long localSize = await db.GetLocalSizeAsync();
+            long remoteSize = await db.GetRemoteSizeAsync();
             long totalLocalFiles = await db.GetTotalFilesAsync(false);
             long totalDeletedFiles = await db.GetTotalFilesAsync(true);
             long totalObjects = await db.GetTotalObjectsAsync();
+            double spaceSaved = Math.Round((localSize - remoteSize) / (double)localSize * 100, 2);
 
             CommandLine.WriteLine($"Using vault '{vault.Name}' ({vault.Id}):");
             CommandLine.WriteLine($"Service Type:   {vault.Credentials.Service}");
@@ -55,8 +57,9 @@ namespace Parallel.Cli.Commands
             CommandLine.WriteLine($"Managed Files:  {(totalLocalFiles + totalDeletedFiles):N0}");
             CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
             CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles:N0}");
-            CommandLine.WriteLine($"Total Objects:  {totalObjects:N0}");
             CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
+            CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(remoteSize)}");
+            CommandLine.WriteLine($"Space Saved:    {(double.IsNaN(spaceSaved) ? 0 : spaceSaved)}%");
 
             if (vault.Credentials.Service.Equals(FileService.Local))
             {

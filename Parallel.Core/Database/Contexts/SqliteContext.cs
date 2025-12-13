@@ -72,14 +72,15 @@ namespace Parallel.Core.Database
         public async Task<long> GetLocalSizeAsync()
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT SUM(localsize) FROM files;";
+            string sql = $"SELECT COALESCE(SUM(localsize), 0) FROM files;";
             return await connection.QuerySingleOrDefaultAsync<long>(sql);
         }
 
+        /// <inheritdoc />
         public async Task<long> GetRemoteSizeAsync()
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT SUM(remotesize) FROM files;";
+            string sql = $"SELECT COALESCE(SUM(remotesize), 0) FROM files;";
             return await connection.QuerySingleOrDefaultAsync<long>(sql);
         }
 
