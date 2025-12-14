@@ -117,7 +117,7 @@ namespace Parallel.Core.Storage
                 await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
                 await using FileStream openStream = new(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4194304, useAsync: true);
                 await using FileStream createStream = new(file.RemotePath, FileMode.Create, FileAccess.Write, FileShare.None, 4194304, useAsync: true);
-                await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.Optimal);
+                await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
                 await openStream.CopyToAsync(gzipStream, ct);
 
                 File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
