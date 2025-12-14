@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
@@ -25,6 +26,7 @@ namespace Parallel.Core.IO.Syncing
             long queued = 0, completed = 0;
 
             if (files.Length == 0) return;
+            ConcurrentDictionary<string, SemaphoreSlim> activeUploads = new ConcurrentDictionary<string, SemaphoreSlim>();
             SystemFile[] uploadFiles = files.Where(f => !f.Deleted).ToArray();
             SystemFile[] deleteFiles = files.Where(f => f.Deleted).ToArray();
 
@@ -32,23 +34,36 @@ namespace Parallel.Core.IO.Syncing
             Task uploader = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
             {
                 Interlocked.Increment(ref queued);
-                Log.Debug($"Pushing -> {file.LocalPath}");
+                SemaphoreSlim threadPool = activeUploads.GetOrAdd(file.CheckSum, _ => new SemaphoreSlim(1, 1));
+                await threadPool.WaitAsync(ct);
 
-                file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum);
-                long result = await StorageProvider.UploadFileAsync(file, progress, false, ct);
-                if (result <= 0)
+                try
                 {
-                    progress.Failed(new InvalidOperationException(), file);
-                    return;
+                    Log.Debug($"Pushing -> {file.LocalPath}");
+                    file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum);
+                    long result = await StorageProvider.UploadFileAsync(file, progress, false, ct);
+                    if (result <= 0)
+                    {
+                        progress.Failed(new InvalidOperationException(), file);
+                        return;
+                    }
+
+                    file.RemoteSize = result;
+                    await Database.AddFileAsync(file);
+                    await Database.AddHistoryAsync(HistoryType.Pushed, file);
+                    progress.Report(ProgressOperation.Pushed, file);
                 }
-
-                file.RemoteSize = result;
-                await Database.AddFileAsync(file);
-                await Database.AddHistoryAsync(HistoryType.Pushed, file);
-                progress.Report(ProgressOperation.Pushed, file);
-
-                Interlocked.Increment(ref completed);
-                Interlocked.Decrement(ref queued);
+                finally
+                {
+                    threadPool.Release();
+                    if (threadPool.CurrentCount == 1)
+                    {
+                        Log.Debug($"Clearing pool for: {file.LocalPath}");
+                        activeUploads.TryRemove(file.CheckSum, out _);
+                        Interlocked.Increment(ref completed);
+                        Interlocked.Decrement(ref queued);
+                    }
+                }
             });
 
             Log.Information($"Archiving {deleteFiles.Length:N0} files...");

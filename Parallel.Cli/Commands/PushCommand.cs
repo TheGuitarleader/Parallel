@@ -22,7 +22,7 @@ namespace Parallel.Cli.Commands
 
         private readonly Option<string> _sourceArg = new(["--path", "-p"], "The source path to sync.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
-        private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces the pull overwriting any files.");
+        private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces the push overwriting any files.");
 
         public PushCommand() : base("push", "Pushes changed files to vaults.")
         {

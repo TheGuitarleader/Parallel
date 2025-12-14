@@ -106,9 +106,9 @@ namespace Parallel.Core.IO
         /// </summary>
         /// <param name="localVault"></param>
         /// <returns></returns>
-        public static string GetFilesDirectory(LocalVaultConfig localVault)
+        public static string GetObjectsDirectory(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "files");
+            return Combine(GetRootDirectory(localVault), "objects");
         }
 
         /// <summary>
@@ -176,7 +176,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetObjectPath(LocalVaultConfig vaultConfig, string hash)
         {
-            return Combine(GetFilesDirectory(vaultConfig), hash.Substring(0, 2), hash.Substring(2, 2), hash);
+            return Combine(GetObjectsDirectory(vaultConfig), hash.Substring(0, 2), hash.Substring(2, 2), hash);
         }
     }
 }
