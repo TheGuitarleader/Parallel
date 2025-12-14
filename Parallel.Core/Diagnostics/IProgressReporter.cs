@@ -9,7 +9,9 @@ namespace Parallel.Core.Diagnostics
         Archived,
         Pulled,
         Pushed,
-        Synced
+        Synced,
+        Downloading,
+        Uploading
     }
 
     /// <summary>

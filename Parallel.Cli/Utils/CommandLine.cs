@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Diagnostics;
 using System.Text;
 using Parallel.Core.Security;
 using Parallel.Core.Settings;
@@ -10,9 +11,15 @@ namespace Parallel.Cli.Utils
     /// <summary>
     /// Represents a series of methods for printing to the console. This class can not be inherited.
     /// </summary>
-    public abstract class CommandLine
+    public static class CommandLine
     {
         private static readonly object _consoleLock = new();
+
+        public static void OpenFile(string path, bool waitForExit = false)
+        {
+            Process? process = Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+            if (process != null && waitForExit) process.WaitForExit();
+        }
 
         public static string? ReadString(object value, ConsoleColor color = ConsoleColor.Gray)
         {

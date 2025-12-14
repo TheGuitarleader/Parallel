@@ -20,18 +20,18 @@ namespace Parallel.Cli.Commands
 
         private Stopwatch _sw = new Stopwatch();
 
-        public RemapCommand() : base("remap", "Remaps paths in the vault.")
+        public RemapCommand() : base("remap", "Remaps the paths in the entire vault.")
         {
             this.AddArgument(_sourceArg);
             this.AddArgument(_targetArg);
             this.SetHandler(async (config, source, target) =>
             {
                 _sw = Stopwatch.StartNew();
-                LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault();
+                LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault(v => v.Enabled);
                 if (!string.IsNullOrEmpty(config)) vault = ParallelConfig.GetVault(config);
                 if (vault == null)
                 {
-                    CommandLine.WriteLine($"Unable to find vault with name: '{vault}'", ConsoleColor.Yellow);
+                    CommandLine.WriteLine($"No vault was found!", ConsoleColor.Yellow);
                     return;
                 }
 
@@ -72,11 +72,8 @@ namespace Parallel.Cli.Commands
                 CommandLine.ProgressBar(progress++, total, _sw.Elapsed);
 
                 string newPath = file.LocalPath.Replace(source, target);
-                string newId = HashGenerator.CreateSHA1(newPath);
-                await syncManager.Database.RemapObjectsAsync(file.Id, newId);
                 await syncManager.Database.RemoveFileAsync(file);
 
-                file.Id = newId;
                 file.LocalPath = newPath;
                 await syncManager.Database.AddFileAsync(file);
             });

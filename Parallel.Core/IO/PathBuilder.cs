@@ -23,7 +23,6 @@ namespace Parallel.Core.IO
             get
             {
                 string tempFolder = Path.Combine(Path.GetTempPath(), "Parallel");
-                Log.Debug($"Temp directory: {tempFolder}");
                 if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
                 return tempFolder;
             }
@@ -36,17 +35,17 @@ namespace Parallel.Core.IO
         {
             get
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Parallel");
                 }
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (OperatingSystem.IsLinux())
                 {
-                    return "/etc/Parallel";
+                    return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "parallel");
                 }
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (OperatingSystem.IsMacOS())
                 {
                     return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "Parallel");
                 }
@@ -107,9 +106,9 @@ namespace Parallel.Core.IO
         /// </summary>
         /// <param name="localVault"></param>
         /// <returns></returns>
-        public static string GetFilesDirectory(LocalVaultConfig localVault)
+        public static string GetObjectsDirectory(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "Files");
+            return Combine(GetRootDirectory(localVault), "objects");
         }
 
         /// <summary>
@@ -119,7 +118,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetSnapshotsDirectory(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "Snapshots");
+            return Combine(GetRootDirectory(localVault), "snapshots");
         }
 
         /// <summary>
@@ -129,7 +128,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetConfigurationFile(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "config.json.gz");
+            return Combine(GetRootDirectory(localVault), "config");
         }
 
         /// <summary>
@@ -139,7 +138,7 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetDatabaseFile(LocalVaultConfig localVault)
         {
-            return Combine(GetRootDirectory(localVault), "index.db.gz");
+            return Combine(GetRootDirectory(localVault), "index");
         }
 
         /// <summary>
@@ -169,11 +168,15 @@ namespace Parallel.Core.IO
             return !Directory.Exists(path) && File.Exists(path);
         }
 
-        public static string GetObjectPath(string basePath, string hash)
+        /// <summary>
+        /// Gets the relative path for the hash.
+        /// </summary>
+        /// <param name="vaultConfig"></param>
+        /// <param name="hash"></param>
+        /// <returns></returns>
+        public static string GetObjectPath(LocalVaultConfig vaultConfig, string hash)
         {
-            string parentDir = Path.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));
-            if (!Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
-            return Path.Combine(parentDir, hash[4..]);
+            return Combine(GetObjectsDirectory(vaultConfig), hash.Substring(0, 2), hash.Substring(2, 2), hash);
         }
     }
 }

@@ -25,7 +25,7 @@ namespace Parallel.Cli.Commands
             this.AddOption(_forceOpt);
             this.SetHandler(async (path, config, force) =>
             {
-                LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault();
+                LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault(v => v.Enabled);
                 if (!string.IsNullOrEmpty(config)) vault = ParallelConfig.GetVault(config);
                 if (vault == null)
                 {

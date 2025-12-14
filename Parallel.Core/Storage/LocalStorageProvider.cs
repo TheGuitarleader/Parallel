@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.IO.Compression;
+using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
@@ -24,7 +25,10 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public void Dispose() { }
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+        }
 
         /// <inheritdoc/>
         public Task CreateDirectoryAsync(string path)
@@ -50,29 +54,31 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task DownloadFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public async Task DownloadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default)
         {
-            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
-            {
-                await using FileStream openStream = File.OpenRead(file.RemotePath);
-                await using FileStream createStream = File.Create(file.LocalPath);
-                await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
-                await gzipStream.CopyToAsync(createStream, ct);
-            });
+            progress.Report(ProgressOperation.Downloading, file);
+            await using FileStream openStream = File.OpenRead(file.RemotePath);
+            await using FileStream createStream = File.Create(file.LocalPath);
+            await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
+            await gzipStream.CopyToAsync(createStream, ct);
         }
 
         /// <inheritdoc />
-        public async Task DownloadStreamAsync(Stream output, string remotePath)
+        public Task<long> DownloadStreamAsync(Stream output, string remotePath, CancellationToken ct = default)
         {
-            await using FileStream openStream = File.OpenRead(remotePath);
-            await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
-            await gzipStream.CopyToAsync(output);
+            throw new NotImplementedException();
         }
 
         /// <inheritdoc />
         public Task<bool> ExistsAsync(string path)
         {
             return Task.FromResult(Directory.Exists(path) || File.Exists(path));
+        }
+
+        /// <inheritdoc />
+        public Task<string> GetDirectoryName(string path)
+        {
+            return Task.FromResult(Path.GetDirectoryName(path) ?? string.Empty);
         }
 
         /// <inheritdoc/>
@@ -92,38 +98,36 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task UploadFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public async Task<long> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite = false, CancellationToken ct = default)
         {
-            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            try
             {
-                try
+                progress.Report(ProgressOperation.Uploading, file);
+                if (await ExistsAsync(file.RemotePath))
                 {
-                    if (await ExistsAsync(file.RemotePath)) File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
-                    string? parent = Path.GetDirectoryName(file.RemotePath);
-                    if (parent != null && !Directory.Exists(parent)) Directory.CreateDirectory(parent);
+                    if (!overwrite)
+                    {
+                        Log.Debug($"Skipping file: {file.RemotePath}");
+                        return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
+                    }
 
-                    await using FileStream openStream = File.OpenRead(file.LocalPath);
-                    await using FileStream createStream = File.Create(file.RemotePath);
-                    await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-                    await openStream.CopyToAsync(gzipStream, ct);
-
-                    File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
+                    File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
                 }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.GetBaseException().ToString());
-                }
-            });
-        }
 
-        /// <inheritdoc />
-        public async Task UploadStreamAsync(Stream input, string remotePath)
-        {
-            await using FileStream createStream = File.OpenWrite(remotePath);
-            await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-            await input.CopyToAsync(gzipStream);
+                await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
+                await using FileStream openStream = new(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4194304, useAsync: true);
+                await using FileStream createStream = new(file.RemotePath, FileMode.Create, FileAccess.Write, FileShare.None, 4194304, useAsync: true);
+                await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+                await openStream.CopyToAsync(gzipStream, ct);
 
-            File.SetAttributes(remotePath, File.GetAttributes(remotePath) | FileAttributes.ReadOnly);
+                File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
+                return createStream.Length;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, ex.Message);
+                return 0;
+            }
         }
     }
 }

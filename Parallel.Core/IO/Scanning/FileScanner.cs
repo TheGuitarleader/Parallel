@@ -127,7 +127,7 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>True is success, otherwise false.</returns>
         public static bool HasChanged(SystemFile sourcePath, SystemFile? targetPath)
         {
-            return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && !sourcePath.CheckSum.SequenceEqual(targetPath.CheckSum));
+            return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && !sourcePath.CheckSum.Equals(targetPath.CheckSum));
         }
 
 
@@ -282,23 +282,41 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>A <see cref="KeyValuePair{TKey,TValue}"/> array of duplicate files, in order of most duplicate entries, where the key refers to the filename, and the values are an array of <see cref="SystemFile"/>s in order of oldest to newest.</returns>
         public static Dictionary<string, SystemFile[]> GetDuplicateFiles(string path)
         {
-            Dictionary<string, List<SystemFile>> dict = new();
+            ConcurrentDictionary<string, List<SystemFile>> dict = new();
             IEnumerable<string> files = GetFiles(path, "*");
             System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, file =>
             {
                 SystemFile entry = new(file);
-                if (dict.TryGetValue(entry.Name, out List<SystemFile> value))
+                dict.AddOrUpdate(entry.Name, _ => [entry], (k, v) =>
+                {
+                    Log.Debug($"Checking: {entry.LocalPath}");
+
+                    lock (v)
+                    {
+                        SystemFile? key = v.FirstOrDefault();
+                        if (entry.LocalSize.Equals(key?.LocalSize))
+                        {
+                            Log.Debug($"{entry.LocalPath} : {key?.LocalPath}");
+                            v.Add(entry);
+                        }
+                    }
+
+                    return v;
+                });
+
+                /*if (dict.TryGetValue(entry.Name, out List<SystemFile>? value))
                 {
                     SystemFile? key = value.FirstOrDefault();
-                    if (entry.LocalSize.Equals(key?.LocalSize))
+                    if (!HasChanged(entry, key))
                     {
+                        Log.Debug($"HasChanged: {entry.LocalPath}");
                         value.Add(entry);
                     }
                 }
                 else
                 {
-                    dict.Add(entry.Name, new List<SystemFile> { entry });
-                }
+                    dict[entry.Name] = new List<SystemFile> { entry };
+                }*/
             });
 
             return dict.Where(kv => kv.Value.Count > 1).OrderByDescending(kv => kv.Value.Count).ToDictionary(k => k.Key, v => v.Value.OrderBy(l => l.LastWrite.TotalMilliseconds).ToArray());

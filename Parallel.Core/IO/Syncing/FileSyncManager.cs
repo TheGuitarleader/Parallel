@@ -1,5 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
@@ -19,41 +21,80 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress)
+        public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            if (!files.Any()) return;
-            SystemFile[] backupFiles = files.Where(f => !f.Deleted).ToArray();
-            Log.Information($"Backing up {backupFiles.Length} files...");
-            await StorageProvider.UploadFilesAsync(backupFiles, progress);
+            long queued = 0, completed = 0;
 
-            progress.Reset();
-            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            if (files.Length == 0) return;
+            ConcurrentDictionary<string, SemaphoreSlim> activeUploads = new ConcurrentDictionary<string, SemaphoreSlim>();
+            SystemFile[] uploadFiles = files.Where(f => f is { Deleted: false, LocalSize: > 0 }).ToArray();
+            SystemFile[] deleteFiles = files.Except(uploadFiles).ToArray();
+
+            Log.Information($"Pushing {uploadFiles.Length:N0} files...");
+            Task uploader = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
             {
-                if (file.Deleted)
+                Interlocked.Increment(ref queued);
+                SemaphoreSlim threadPool = activeUploads.GetOrAdd(file.CheckSum, _ => new SemaphoreSlim(1, 1));
+                await threadPool.WaitAsync(ct);
+
+                try
                 {
-                    await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
-                    await Database.AddFileAsync(file);
-                    progress.Report(ProgressOperation.Archived, file);
-                }
-                else
-                {
-                    SystemFile? remote = await StorageProvider.GetFileAsync(file.RemotePath);
-                    if (remote is not null)
+                    Log.Debug($"Pushing -> {file.LocalPath}");
+                    file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum);
+                    long result = await StorageProvider.UploadFileAsync(file, progress, false, ct);
+                    if (result <= 0)
                     {
-                        file.RemoteSize = remote.RemoteSize;
-                        await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
-                        await Database.AddFileAsync(file);
+                        progress.Failed(new InvalidOperationException(), file);
+                        return;
                     }
 
-                    progress.Report(ProgressOperation.Synced, file);
+                    file.RemoteSize = result;
+                    await Database.AddFileAsync(file);
+                    await Database.AddHistoryAsync(HistoryType.Pushed, file);
+                    progress.Report(ProgressOperation.Pushed, file);
+                }
+                finally
+                {
+                    threadPool.Release();
+                    if (threadPool.CurrentCount == 1)
+                    {
+                        activeUploads.TryRemove(file.CheckSum, out _);
+                        Interlocked.Increment(ref completed);
+                        Interlocked.Decrement(ref queued);
+                    }
                 }
             });
+
+            Log.Information($"Archiving {deleteFiles.Length:N0} files...");
+            foreach (SystemFile file in deleteFiles)
+            {
+                await Database.AddFileAsync(file);
+                await Database.AddHistoryAsync(HistoryType.Archived, file);
+                progress.Report(ProgressOperation.Archived, file);
+            }
+
+            Task monitor = Task.Run(async () =>
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                while (!uploader.IsCompleted)
+                {
+                    Log.Debug($"UPLOAD STATS @ {sw.Elapsed}: queued={queued}, completed={completed}");
+                    await Task.Delay(1000);
+                }
+            });
+
+            await Task.WhenAll(uploader, monitor).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
         public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            await StorageProvider.DownloadFilesAsync(files, progress);
+            if (files.Length == 0) return;
+            SystemFile[] downloadFiles = files.Where(f => !f.Deleted).ToArray();
+            await System.Threading.Tasks.Parallel.ForEachAsync(downloadFiles, ParallelConfig.Options, async (file, ct) =>
+            {
+
+            });
         }
     }
 }

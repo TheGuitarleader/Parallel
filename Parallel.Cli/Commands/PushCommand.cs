@@ -22,7 +22,7 @@ namespace Parallel.Cli.Commands
 
         private readonly Option<string> _sourceArg = new(["--path", "-p"], "The source path to sync.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
-        private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces the pull overwriting any files.");
+        private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces the push overwriting any files.");
 
         public PushCommand() : base("push", "Pushes changed files to vaults.")
         {
@@ -51,7 +51,6 @@ namespace Parallel.Cli.Commands
 
         private async Task SyncPathAsync(string path, bool force)
         {
-            CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
             await Program.Settings.ForEachVaultAsync(async vault =>
             {
                 ISyncManager? syncManager = SyncManager.CreateNew(vault);
@@ -70,14 +69,12 @@ namespace Parallel.Cli.Commands
                 if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)))
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is not set to be backed up!", ConsoleColor.Yellow);
-                    await syncManager.DisconnectAsync();
                     return;
                 }
 
                 if (FileScanner.IsIgnored(fullPath, ignoredFolders))
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is set to be ignored!", ConsoleColor.Yellow);
-                    await syncManager.DisconnectAsync();
                     return;
                 }
 
@@ -88,16 +85,14 @@ namespace Parallel.Cli.Commands
                 if (successFiles == 0)
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is already up to date.", ConsoleColor.Green);
-                    await syncManager.DisconnectAsync();
                     return;
                 }
 
-                CommandLine.WriteLine(vault, $"Backing up {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
-                await syncManager.PushFilesAsync(files, force, new ProgressReport(vault, successFiles));
-                //await syncManager.PushFilesAsync(files, new ProgressBarReporter());
+                CommandLine.WriteLine(vault, $"Backing up {files.Length:N0} files...", ConsoleColor.DarkGray);
+                await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles * 2));
                 await syncManager.DisconnectAsync();
 
-                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles.ToString("N0")} files in {_sw.Elapsed}.", ConsoleColor.Green);
+                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
             });
         }
     }

@@ -30,9 +30,9 @@ namespace Parallel.Core.Settings
         };
 
         /// <summary>
-        /// Gets the static value for <see cref="MaxConcurrentTransfers"/>.
+        /// Gets the static value for <see cref="MaxRetries"/>.
         /// </summary>
-        public static int MaxStaticTransfers { get; } = Math.Max(1, Load().MaxConcurrentTransfers);
+        public static int MaxStaticTransfers { get; } = Math.Max(1, Load().MaxRetries);
 
         // /// <summary>
         // /// The address that will accept incoming commands.
@@ -59,10 +59,10 @@ namespace Parallel.Core.Settings
         public int MaxConcurrentProcesses { get; set; } = Environment.ProcessorCount;
 
         /// <summary>
-        /// Gets or sets the maximum number of concurrent transfers that can run.
-        /// <para>Default: 4</para>
+        /// Gets or sets the maximum number of times a file can attempt to be uploaded.
+        /// <para>Default: 3</para>
         /// </summary>
-        public int MaxConcurrentTransfers { get; set; } = 4;
+        public int MaxRetries { get; set; } = 3;
 
         /// <summary>
         /// The amount of time, in days, to hold a file before it can be cleaned.

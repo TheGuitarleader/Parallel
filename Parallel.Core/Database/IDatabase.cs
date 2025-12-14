@@ -81,6 +81,9 @@ namespace Parallel.Core.Database
         Task<SystemFile?> GetFileAsync(string path);
 
         Task<long> GetLocalSizeAsync();
+        Task<long> GetRemoteSizeAsync();
+        Task<long> GetTotalSizeAsync();
+        Task<long> GetTotalFilesAsync();
         Task<long> GetTotalFilesAsync(bool deleted);
 
         #endregion
@@ -90,10 +93,10 @@ namespace Parallel.Core.Database
         /// <summary>
         /// Adds a new history.
         /// </summary>
-        /// <param name="path"></param>
         /// <param name="type"></param>
+        /// <param name="file"></param>
         /// <returns>True if successful, false otherwise</returns>
-        Task<bool> AddHistoryAsync(string path, HistoryType type);
+        Task<bool> AddHistoryAsync(HistoryType type, SystemFile file);
 
         IEnumerable<HistoryEvent>? GetHistory(string path, int limit);
 

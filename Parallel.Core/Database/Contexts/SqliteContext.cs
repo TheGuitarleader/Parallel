@@ -39,13 +39,10 @@ namespace Parallel.Core.Database
         public async Task InitializeAsync()
         {
             Log.Information("Creating index database...");
-
             using IDbConnection connection = CreateConnection();
-            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`id` TEXT NOT NULL, `hash` TEXT NOT NULL, orderIndex INTEGER NOT NULL, UNIQUE (id, orderIndex));");
-            await connection.ExecuteAsync(
-                "CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` BLOB, PRIMARY KEY(`id`));");
-
-            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`path` TEXT NOT NULL, `hash` TEXT NOT NULL, orderIndex INTEGER NOT NULL, UNIQUE (path, orderIndex));");
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, UNIQUE (localpath, checksum));");
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `checksum` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
         }
 
         #endregion
@@ -56,30 +53,47 @@ namespace Parallel.Core.Database
         public async Task<bool> AddFileAsync(SystemFile file)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = @"INSERT OR REPLACE INTO files (id, name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Id, @Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
-            return await connection.ExecuteAsync(sql, new { file.Id, file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
+            string sql = @"INSERT OR REPLACE INTO files (name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
+            return await connection.ExecuteAsync(sql, new { file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
         }
 
         /// <inheritdoc />
         public async Task RemoveFileAsync(SystemFile file)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"DELETE FROM files WHERE id = @Id;";
-            await connection.ExecuteAsync(sql, new { file.Id });
+            string sql = $"DELETE FROM files WHERE checksum = @Checksum;";
+            await connection.ExecuteAsync(sql, new { file.CheckSum });
         }
 
         /// <inheritdoc />
         public async Task<long> GetLocalSizeAsync()
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT SUM(localsize) FROM files;";
+            string sql = $"SELECT COALESCE(SUM(f.localsize), 0) FROM files f JOIN (SELECT localpath, MAX(lastupdate) AS max_lastupdate FROM files WHERE deleted = 0 GROUP BY localpath) latest ON f.localpath = latest.localpath AND f.lastupdate = latest.max_lastupdate;";
             return await connection.QuerySingleOrDefaultAsync<long>(sql);
         }
 
+        /// <inheritdoc />
         public async Task<long> GetRemoteSizeAsync()
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT SUM(remotesize) FROM files;";
+            string sql = $"SELECT COALESCE(SUM(f.remotesize), 0) FROM files f JOIN (SELECT localpath, MAX(lastupdate) AS max_lastupdate FROM files WHERE deleted = 0 GROUP BY localpath) latest ON f.localpath = latest.localpath AND f.lastupdate = latest.max_lastupdate;";
+            return await connection.QuerySingleOrDefaultAsync<long>(sql);
+        }
+
+        /// <inheritdoc />
+        public async Task<long> GetTotalSizeAsync()
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT COALESCE(SUM(remotesize), 0) FROM files;";
+            return await connection.QuerySingleOrDefaultAsync<long>(sql);
+        }
+
+        /// <inheritdoc />
+        public async Task<long> GetTotalFilesAsync()
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT COUNT(*) FROM files;";
             return await connection.QuerySingleOrDefaultAsync<long>(sql);
         }
 
@@ -87,7 +101,7 @@ namespace Parallel.Core.Database
         public async Task<long> GetTotalFilesAsync(bool deleted)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT COUNT(*) FROM files WHERE deleted = @deleted;";
+            string sql = $"SELECT COUNT(DISTINCT localpath) FROM files WHERE deleted = @deleted;";
             return await connection.QuerySingleOrDefaultAsync<long>(sql, new { deleted });
         }
 
@@ -111,7 +125,7 @@ namespace Parallel.Core.Database
         public async Task<SystemFile?> GetFileAsync(string path)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT (id, name, localpath, remotepath, lastwrite, lastupdate, localsize, remotesize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
+            string sql = $"SELECT (name, localpath, remotepath, lastwrite, lastupdate, localsize, remotesize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
             return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql, new { path });
         }
 
@@ -120,21 +134,21 @@ namespace Parallel.Core.Database
         #region History
 
         /// <inheritdoc />
-        public async Task<bool> AddHistoryAsync(string path, HistoryType type)
+        public async Task<bool> AddHistoryAsync(HistoryType type, SystemFile file)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = @"INSERT OR REPLACE INTO history (timestamp, name, path, type) VALUES(@Timestamp, @Name, @Path, @Type);";
-            return await connection.ExecuteAsync(sql, new { Timestamp = UnixTime.Now.TotalMilliseconds, Name = Path.GetFileName(path), Path = path, Type = type }) > 0;
+            string sql = @"INSERT OR REPLACE INTO history (timestamp, path, checksum, type) VALUES(@Timestamp, @Path, @CheckSum, @Type);";
+            return await connection.ExecuteAsync(sql, new { Timestamp = UnixTime.Now.TotalMilliseconds, Path = file.LocalPath, file.CheckSum, Type = type }) > 0;
         }
 
         /// <inheritdoc />
-        public IEnumerable<HistoryEvent>? GetHistory(string path, int limit)
+        public IEnumerable<HistoryEvent> GetHistory(string path, int limit)
         {
             throw new NotImplementedException();
         }
 
         /// <inheritdoc />
-        public IEnumerable<HistoryEvent>? GetHistory(string path, HistoryType type, int limit)
+        public IEnumerable<HistoryEvent> GetHistory(string path, HistoryType type, int limit)
         {
             throw new NotImplementedException();
         }

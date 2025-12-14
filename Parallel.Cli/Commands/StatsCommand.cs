@@ -1,8 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.CommandLine;
-using System.Data;
-using Newtonsoft.Json.Linq;
 using Parallel.Cli.Utils;
 using Parallel.Core.Database;
 using Parallel.Core.IO.FileSystem;
@@ -12,20 +10,20 @@ using Parallel.Core.Utils;
 
 namespace Parallel.Cli.Commands
 {
-    public class DiskCommand : Command
+    public class StatsCommand : Command
     {
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
-        public DiskCommand() : base("disk", "Shows the current disk usage.")
+        public StatsCommand() : base("stats", "Displays various vault statistics.")
         {
             this.AddOption(_configOpt);
             this.SetHandler(async (config) =>
             {
-                LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault();
+                LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault(v => v.Enabled);
                 if (!string.IsNullOrEmpty(config)) vault = ParallelConfig.GetVault(config);
                 if (vault == null)
                 {
-                    CommandLine.WriteLine($"Unable to find vault with name: '{vault}'", ConsoleColor.Yellow);
+                    CommandLine.WriteLine($"No vault was found!", ConsoleColor.Yellow);
                     return;
                 }
 
@@ -45,24 +43,29 @@ namespace Parallel.Cli.Commands
 
             IDatabase db = syncManager.Database;
             long localSize = await db.GetLocalSizeAsync();
+            long remoteSize = await db.GetRemoteSizeAsync();
+            long totalSize = await db.GetTotalSizeAsync();
+            long totalFiles = await db.GetTotalFilesAsync();
             long totalLocalFiles = await db.GetTotalFilesAsync(false);
             long totalDeletedFiles = await db.GetTotalFilesAsync(true);
-            long totalObjects = await db.GetTotalObjectsAsync();
+            double spaceSaved = Math.Round((localSize - remoteSize) / (double)localSize * 100, 2);
 
             CommandLine.WriteLine($"Using vault '{vault.Name}' ({vault.Id}):");
             CommandLine.WriteLine($"Service Type:   {vault.Credentials.Service}");
             CommandLine.WriteLine($"Root Directory: {vault.Credentials.RootDirectory}");
-            CommandLine.WriteLine($"Managed Files:  {(totalLocalFiles + totalDeletedFiles):N0}");
+            CommandLine.WriteLine($"Managed Files:  {totalFiles:N0}");
             CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
             CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles:N0}");
-            CommandLine.WriteLine($"Total Objects:  {totalObjects:N0}");
+            CommandLine.WriteLine($"Total Size:     {Formatter.FromBytes(totalSize)}");
             CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
+            CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(remoteSize)} ({(double.IsNaN(spaceSaved) ? 0 : spaceSaved)}%)");
 
             if (vault.Credentials.Service.Equals(FileService.Local))
             {
                 DriveInfo drive = new(vault.Credentials.RootDirectory);
                 long diskUsage = drive.TotalSize - drive.TotalFreeSpace;
                 CommandLine.WriteLine($"Total Usage:    {Formatter.FromBytes(diskUsage)} ({Math.Round(diskUsage / (double)drive.TotalSize * 100, 1)}%)");
+                CommandLine.WriteLine($"Disk Usage:     {Formatter.FromBytes(diskUsage - totalSize)} ({Math.Round((diskUsage - totalSize) / (double)drive.TotalSize * 100, 1)}%)");
                 CommandLine.WriteLine($"Disk Free:      {Formatter.FromBytes(drive.TotalFreeSpace)} ({Math.Round(drive.TotalFreeSpace / (double)drive.TotalSize * 100, 1)}%)");
                 CommandLine.WriteLine($"Disk Total:     {Formatter.FromBytes(drive.TotalSize)}");
             }

@@ -50,7 +50,7 @@ namespace Parallel.Core.IO.Syncing
         /// <param name="files"></param>
         /// <param name="force"></param>
         /// <param name="progress"></param>
-        Task PushFilesAsync(SystemFile[] files, bool force, IProgressReporter progress);
+        Task PushFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <summary>
         /// Pulls an array of files from a vault.
