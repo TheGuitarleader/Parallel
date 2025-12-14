@@ -65,7 +65,7 @@ namespace Parallel.Core.IO.Scanning
             HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
 
             Log.Debug("Getting database files...");
-            IEnumerable<SystemFile> remoteFiles = await _db.GetFilesAsync(path, false);
+            IEnumerable<SystemFile> remoteFiles = await _db.GetLatestFilesAsync(path, false);
             System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile, ct) =>
             {
                 if (File.Exists(remoteFile.LocalPath))

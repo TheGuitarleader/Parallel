@@ -76,8 +76,33 @@ namespace Parallel.Core.Database
 
         Task RemoveFileAsync(SystemFile file);
 
-        Task<IEnumerable<SystemFile>> GetFilesAsync(string path);
-        Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted);
+        /// <summary>
+        /// Gets a list of files by newest revision.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path);
+
+        /// <summary>
+        /// Gets a list of files by newest revision.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="deleted"></param>
+        /// <returns></returns>
+        Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path, bool deleted);
+
+        /// <summary>
+        /// Gets a list of revisions from a file.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        Task<IEnumerable<SystemFile>> GetRevisedFilesAsync(string path);
+
+        /// <summary>
+        /// Gets a specific file.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         Task<SystemFile?> GetFileAsync(string path);
 
         Task<long> GetLocalSizeAsync();

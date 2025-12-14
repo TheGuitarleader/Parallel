@@ -106,19 +106,27 @@ namespace Parallel.Core.Database
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path)
+        public async Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = "SELECT * FROM files WHERE localpath LIKE @Path OR remotepath LIKE @Path ORDER BY lastupdate DESC";
+            string sql = "SELECT * FROM (SELECT * FROM files WHERE localpath LIKE @Path OR remotepath LIKE @Path ORDER BY lastupdate DESC) GROUP BY localpath;";
             return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%" });
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<SystemFile>> GetFilesAsync(string path, bool deleted)
+        public async Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path, bool deleted)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT * FROM files WHERE localpath LIKE @Path AND deleted = @deleted ORDER BY lastupdate DESC";
+            string sql = "SELECT * FROM (SELECT * FROM files WHERE localpath LIKE @Path AND deleted = @deleted ORDER BY lastupdate DESC) GROUP BY localpath;";
             return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", deleted });
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<SystemFile>> GetRevisedFilesAsync(string path)
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = "SELECT * FROM files WHERE localpath LIKE @Path OR remotepath LIKE @Path ORDER BY lastupdate DESC";
+            return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%" });
         }
 
         /// <inheritdoc />
