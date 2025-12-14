@@ -23,7 +23,7 @@ namespace Parallel.Cli.Commands
                 if (!string.IsNullOrEmpty(config)) vault = ParallelConfig.GetVault(config);
                 if (vault == null)
                 {
-                    CommandLine.WriteLine($"Unable to find vault with name: '{vault}'", ConsoleColor.Yellow);
+                    CommandLine.WriteLine($"No vault was found!", ConsoleColor.Yellow);
                     return;
                 }
 
