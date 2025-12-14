@@ -23,7 +23,6 @@ namespace Parallel.Core.IO
             get
             {
                 string tempFolder = Path.Combine(Path.GetTempPath(), "Parallel");
-                Log.Debug($"Temp directory: {tempFolder}");
                 if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
                 return tempFolder;
             }
@@ -36,17 +35,17 @@ namespace Parallel.Core.IO
         {
             get
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Parallel");
                 }
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (OperatingSystem.IsLinux())
                 {
-                    return "/etc/Parallel";
+                    return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "parallel");
                 }
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (OperatingSystem.IsMacOS())
                 {
                     return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "Parallel");
                 }

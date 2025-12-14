@@ -282,22 +282,22 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>A <see cref="KeyValuePair{TKey,TValue}"/> array of duplicate files, in order of most duplicate entries, where the key refers to the filename, and the values are an array of <see cref="SystemFile"/>s in order of oldest to newest.</returns>
         public static Dictionary<string, SystemFile[]> GetDuplicateFiles(string path)
         {
-            Dictionary<string, List<SystemFile>> dict = new();
+            ConcurrentDictionary<string, List<SystemFile>> dict = new();
             IEnumerable<string> files = GetFiles(path, "*");
             System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, file =>
             {
                 SystemFile entry = new(file);
-                if (dict.TryGetValue(entry.Name, out List<SystemFile> value))
+                if (dict.TryGetValue(entry.Name, out List<SystemFile>? value))
                 {
                     SystemFile? key = value.FirstOrDefault();
-                    if (entry.LocalSize.Equals(key?.LocalSize))
+                    if (!HasChanged(entry, key))
                     {
                         value.Add(entry);
                     }
                 }
                 else
                 {
-                    dict.Add(entry.Name, new List<SystemFile> { entry });
+                    dict[entry.Name] = new List<SystemFile> { entry };
                 }
             });
 
