@@ -71,6 +71,7 @@ namespace Parallel.Core.IO.Syncing
 
             if (!await StorageProvider.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
             {
+                if (File.Exists(TempDbFile)) File.Delete(TempDbFile);
                 Database = new SqliteContext(TempDbFile);
                 await Database.InitializeAsync();
 

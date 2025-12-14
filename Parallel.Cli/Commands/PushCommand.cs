@@ -70,14 +70,12 @@ namespace Parallel.Cli.Commands
                 if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)))
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is not set to be backed up!", ConsoleColor.Yellow);
-                    await syncManager.DisconnectAsync();
                     return;
                 }
 
                 if (FileScanner.IsIgnored(fullPath, ignoredFolders))
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is set to be ignored!", ConsoleColor.Yellow);
-                    await syncManager.DisconnectAsync();
                     return;
                 }
 
@@ -88,7 +86,6 @@ namespace Parallel.Cli.Commands
                 if (successFiles == 0)
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is already up to date.", ConsoleColor.Green);
-                    await syncManager.DisconnectAsync();
                     return;
                 }
 

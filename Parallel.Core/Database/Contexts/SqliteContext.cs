@@ -41,9 +41,7 @@ namespace Parallel.Core.Database
             Log.Information("Creating index database...");
             using IDbConnection connection = CreateConnection();
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`id` TEXT NOT NULL, `hash` TEXT NOT NULL, orderIndex INTEGER NOT NULL, UNIQUE (id, orderIndex));");
-            await connection.ExecuteAsync(
-                "CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, PRIMARY KEY(`checksum`));");
-
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, PRIMARY KEY(`checksum`));");
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`id` TEXT NOT NULL, `timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `checksum` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
         }
 
@@ -128,13 +126,13 @@ namespace Parallel.Core.Database
         }
 
         /// <inheritdoc />
-        public IEnumerable<HistoryEvent>? GetHistory(string path, int limit)
+        public IEnumerable<HistoryEvent> GetHistory(string path, int limit)
         {
             throw new NotImplementedException();
         }
 
         /// <inheritdoc />
-        public IEnumerable<HistoryEvent>? GetHistory(string path, HistoryType type, int limit)
+        public IEnumerable<HistoryEvent> GetHistory(string path, HistoryType type, int limit)
         {
             throw new NotImplementedException();
         }
