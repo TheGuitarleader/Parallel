@@ -68,7 +68,7 @@ namespace Parallel.Core.IO.Syncing
                         await using MemoryStream ms = new MemoryStream(job.Data, false);
 
                         using CancellationTokenSource cts = new CancellationTokenSource(uploadTimeout);
-                        Task uploadTask = StorageProvider.UploadStreamAsync(ms, fullPath, cts.Token);
+                        Task uploadTask = Task.CompletedTask; //StorageProvider.UploadStreamAsync(ms, fullPath, cts.Token);
 
                         Task timeoutTask = await Task.WhenAny(uploadTask, Task.Delay(uploadTimeout, cts.Token));
                         if (timeoutTask != uploadTask)
@@ -118,7 +118,7 @@ namespace Parallel.Core.IO.Syncing
                                     Buffer.BlockCopy(buffer, 0, chunk, 0, bytesRead);
 
                                     string hash = HashGenerator.CreateSHA256(chunk);
-                                    await Database.AddObjectAsync(file.Id, hash, index++);
+                                    await Database.AddObjectAsync(file.LocalPath, hash, index++);
 
                                     string basePath = PathBuilder.Combine(RemoteVault.Credentials.RootDirectory, "Parallel", RemoteVault.Id, "objects");
                                     string parentDir = PathBuilder.Combine(basePath, hash.Substring(0, 2), hash.Substring(2, 2));

@@ -14,11 +14,6 @@ namespace Parallel.Core.Models
     public class SystemFile
     {
         /// <summary>
-        /// The unique identifier of the file.
-        /// </summary>
-        public string Id { get; set; } = string.Empty;
-
-        /// <summary>
         /// The name of the file.
         /// </summary>
         public string Name { get; set; } = string.Empty;
@@ -85,7 +80,6 @@ namespace Parallel.Core.Models
         public SystemFile(string path)
         {
             FileInfo fileInfo = new FileInfo(path);
-            Id = HashGenerator.CreateSHA1(path);
             Name = fileInfo.Name;
             LocalPath = fileInfo.FullName;
             LocalSize = fileInfo.Length;
@@ -95,10 +89,8 @@ namespace Parallel.Core.Models
             Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
             Hidden = fileInfo.Attributes.HasFlag(FileAttributes.Hidden);
             ReadOnly = fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly);
-            Deleted = !fileInfo.Exists;
             CheckSum = HashGenerator.CheckSum(path) ?? string.Empty;
-            // Salt = HashGenerator.RandomBytes(32);
-            // IV =  HashGenerator.RandomBytes(32);
+            Deleted = !fileInfo.Exists;
         }
 
         public SystemFile(string localPath, string remotePath)
@@ -126,9 +118,8 @@ namespace Parallel.Core.Models
         /// <param name="salt"></param>
         /// <param name="iv"></param>
         /// <param name="checksum"></param>
-        public SystemFile(string id, string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
+        public SystemFile(string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
         {
-            Id = id;
             Name = name;
             LocalPath = localpath;
             RemotePath = remotepath;
@@ -161,7 +152,6 @@ namespace Parallel.Core.Models
         {
             bool?[] results =
             [
-                this?.Id != null && value?.Id != null ? this.Id.Equals(value.Id) : (bool?)null,
                 this?.Name != null && value?.Name != null ? this.Name.Equals(value.Name) : (bool?)null,
                 this?.LocalPath != null && value?.LocalPath != null ? this.LocalPath.Equals(value.LocalPath) : (bool?)null,
                 this?.RemotePath != null && value?.RemotePath != null ? this.RemotePath.Equals(value.RemotePath) : (bool?)null,

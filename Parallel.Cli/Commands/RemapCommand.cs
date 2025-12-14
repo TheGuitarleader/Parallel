@@ -72,11 +72,8 @@ namespace Parallel.Cli.Commands
                 CommandLine.ProgressBar(progress++, total, _sw.Elapsed);
 
                 string newPath = file.LocalPath.Replace(source, target);
-                string newId = HashGenerator.CreateSHA1(newPath);
-                await syncManager.Database.RemapObjectsAsync(file.Id, newId);
                 await syncManager.Database.RemoveFileAsync(file);
 
-                file.Id = newId;
                 file.LocalPath = newPath;
                 await syncManager.Database.AddFileAsync(file);
             });

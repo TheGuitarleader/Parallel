@@ -6,7 +6,7 @@ using Parallel.Core.Models;
 namespace Parallel.Core.Storage
 {
     /// <summary>
-    /// Defines the way for communicating with a file system.
+    /// Defines the way for communicating with a storage provider.
     /// </summary>
     public interface IStorageProvider : IDisposable
     {
@@ -32,7 +32,7 @@ namespace Parallel.Core.Storage
         Task DeleteFileAsync(string path);
 
         /// <summary>
-        /// Downloads a file from the associated file system.
+        /// Downloads a file from the associated storage provider.
         /// </summary>
         /// <param name="file"></param>
         /// <param name="progress"></param>
@@ -40,7 +40,7 @@ namespace Parallel.Core.Storage
         Task DownloadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default);
 
         /// <summary>
-        /// Checks if a path exists on the associated file system.
+        /// Checks if a path exists on the associated storage provider.
         /// </summary>
         /// <param name="path"></param>
         /// <param name="ct"></param>
@@ -56,7 +56,7 @@ namespace Parallel.Core.Storage
         Task<string> GetDirectoryName(string path);
 
         /// <summary>
-        /// Gets a file on the associated file system.
+        /// Gets a file on the associated storage provider.
         /// </summary>
         /// <param name="path"></param>
         /// <param name="ct"></param>
@@ -64,15 +64,13 @@ namespace Parallel.Core.Storage
         Task<SystemFile?> GetFileAsync(string path);
 
         /// <summary>
-        /// Uploads a stream to the associated file system.
+        /// Uploads a file to the associated storage provider.
         /// </summary>
         /// <param name="file"></param>
         /// <param name="overwrite"></param>
         /// <param name="progress"></param>
         /// <param name="ct"></param>
-        Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite, CancellationToken ct = default);
-
-        Task<long> DownloadStreamAsync(Stream output, string remotePath, CancellationToken ct = default);
-        Task<long> UploadStreamAsync(Stream input, string remotePath, CancellationToken ct = default);
+        /// <returns>The size, in bytes, of the amount of data transferred. Otherwise, 0.</returns>
+        Task<long> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite, CancellationToken ct = default);
     }
 }

@@ -107,7 +107,7 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite = false, CancellationToken ct = default)
+        public async Task<long> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite = false, CancellationToken ct = default)
         {
             try
             {
@@ -122,31 +122,13 @@ namespace Parallel.Core.Storage
                 await openStream.CopyToAsync(gzipStream, ct);
 
                 _client.ChangePermissions(file.RemotePath, 444);
-                file.RemoteSize = createStream.Length;
-                return file;
+                return createStream.Length;
             }
             catch (Exception ex)
             {
                 Log.Error(ex.GetBaseException().ToString());
-                return null;
+                return 0;
             }
-        }
-
-        /// <inheritdoc />
-        public Task<long> DownloadStreamAsync(Stream output, string remotePath, CancellationToken ct = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc />
-        public async Task<long> UploadStreamAsync(Stream input, string remotePath, CancellationToken ct = default)
-        {
-            await using SftpFileStream createStream = _client.Create(remotePath);
-            await using GZipStream gzipStream = new(createStream, CompressionLevel.SmallestSize);
-            await input.CopyToAsync(gzipStream, ct);
-
-            _client.ChangePermissions(remotePath, 444);
-            return createStream.Length;
         }
     }
 }

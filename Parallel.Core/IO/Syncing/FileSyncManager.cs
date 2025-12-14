@@ -35,14 +35,15 @@ namespace Parallel.Core.IO.Syncing
                 Log.Debug($"Pushing -> {file.LocalPath}");
 
                 file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum);
-                SystemFile? result = await StorageProvider.UploadFileAsync(file, progress, false, ct);
-                if (result is null || result.RemoteSize <= 0)
+                long result = await StorageProvider.UploadFileAsync(file, progress, false, ct);
+                if (result <= 0)
                 {
                     progress.Failed(new InvalidOperationException(), file);
                     return;
                 }
 
-                await Database.AddFileAsync(result);
+                file.RemoteSize = result;
+                await Database.AddFileAsync(file);
                 await Database.AddHistoryAsync(HistoryType.Pushed, file);
                 progress.Report(ProgressOperation.Pushed, file);
 

@@ -98,7 +98,7 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task<SystemFile?> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite = false, CancellationToken ct = default)
+        public async Task<long> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite = false, CancellationToken ct = default)
         {
             try
             {
@@ -108,7 +108,7 @@ namespace Parallel.Core.Storage
                     if (!overwrite)
                     {
                         Log.Debug($"Skipping file: {file.RemotePath}");
-                        return await GetFileAsync(file.RemotePath);
+                        return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
                     }
 
                     File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
@@ -121,26 +121,13 @@ namespace Parallel.Core.Storage
                 await openStream.CopyToAsync(gzipStream, ct);
 
                 File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
-                file.RemoteSize = createStream.Length;
-                return file;
+                return createStream.Length;
             }
             catch (Exception ex)
             {
                 Log.Error(ex.GetBaseException().ToString());
-                return null;
+                return 0;
             }
-        }
-
-        /// <inheritdoc />
-        public async Task<long> UploadStreamAsync(Stream input, string remotePath, CancellationToken ct = default)
-        {
-            await CreateDirectoryAsync(await GetDirectoryName(remotePath));
-            await using FileStream createStream = File.Create(remotePath);
-            await using GZipStream gzipStream = new(createStream, CompressionLevel.SmallestSize);
-            await input.CopyToAsync(gzipStream, ct);
-
-            File.SetAttributes(remotePath, File.GetAttributes(remotePath) | FileAttributes.ReadOnly);
-            return createStream.Length;
         }
     }
 }
