@@ -69,7 +69,7 @@ namespace Parallel.Core.Database
         public async Task<long> GetLocalSizeAsync()
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT COALESCE(SUM(localsize), 0) FROM files;";
+            string sql = $"SELECT COALESCE(SUM(f.localsize), 0) FROM files f JOIN (SELECT localpath, MAX(lastupdate) AS max_lastupdate FROM files WHERE deleted = 0 GROUP BY localpath) latest ON f.localpath = latest.localpath AND f.lastupdate = latest.max_lastupdate;";
             return await connection.QuerySingleOrDefaultAsync<long>(sql);
         }
 
@@ -77,7 +77,23 @@ namespace Parallel.Core.Database
         public async Task<long> GetRemoteSizeAsync()
         {
             using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT COALESCE(SUM(f.remotesize), 0) FROM files f JOIN (SELECT localpath, MAX(lastupdate) AS max_lastupdate FROM files WHERE deleted = 0 GROUP BY localpath) latest ON f.localpath = latest.localpath AND f.lastupdate = latest.max_lastupdate;";
+            return await connection.QuerySingleOrDefaultAsync<long>(sql);
+        }
+
+        /// <inheritdoc />
+        public async Task<long> GetTotalSizeAsync()
+        {
+            using IDbConnection connection = CreateConnection();
             string sql = $"SELECT COALESCE(SUM(remotesize), 0) FROM files;";
+            return await connection.QuerySingleOrDefaultAsync<long>(sql);
+        }
+
+        /// <inheritdoc />
+        public async Task<long> GetTotalFilesAsync()
+        {
+            using IDbConnection connection = CreateConnection();
+            string sql = $"SELECT COUNT(*) FROM files;";
             return await connection.QuerySingleOrDefaultAsync<long>(sql);
         }
 
@@ -85,7 +101,7 @@ namespace Parallel.Core.Database
         public async Task<long> GetTotalFilesAsync(bool deleted)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT COUNT(*) FROM files WHERE deleted = @deleted;";
+            string sql = $"SELECT COUNT(DISTINCT localpath) FROM files WHERE deleted = @deleted;";
             return await connection.QuerySingleOrDefaultAsync<long>(sql, new { deleted });
         }
 
@@ -109,7 +125,7 @@ namespace Parallel.Core.Database
         public async Task<SystemFile?> GetFileAsync(string path)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"SELECT (id, name, localpath, remotepath, lastwrite, lastupdate, localsize, remotesize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
+            string sql = $"SELECT (name, localpath, remotepath, lastwrite, lastupdate, localsize, remotesize, type, hidden, readonly, deleted, checksum) FROM files WHERE localpath LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
             return await connection.QuerySingleOrDefaultAsync<SystemFile>(sql, new { path });
         }
 

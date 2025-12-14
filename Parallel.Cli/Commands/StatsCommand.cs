@@ -1,8 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.CommandLine;
-using System.Data;
-using Newtonsoft.Json.Linq;
 using Parallel.Cli.Utils;
 using Parallel.Core.Database;
 using Parallel.Core.IO.FileSystem;
@@ -12,11 +10,11 @@ using Parallel.Core.Utils;
 
 namespace Parallel.Cli.Commands
 {
-    public class DiskCommand : Command
+    public class StatsCommand : Command
     {
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
-        public DiskCommand() : base("disk", "Shows the current disk usage.")
+        public StatsCommand() : base("stats", "Displays various vault statistics.")
         {
             this.AddOption(_configOpt);
             this.SetHandler(async (config) =>
@@ -46,20 +44,21 @@ namespace Parallel.Cli.Commands
             IDatabase db = syncManager.Database;
             long localSize = await db.GetLocalSizeAsync();
             long remoteSize = await db.GetRemoteSizeAsync();
+            long totalSize = await db.GetTotalSizeAsync();
+            long totalFiles = await db.GetTotalFilesAsync();
             long totalLocalFiles = await db.GetTotalFilesAsync(false);
             long totalDeletedFiles = await db.GetTotalFilesAsync(true);
-            long totalObjects = await db.GetTotalObjectsAsync();
             double spaceSaved = Math.Round((localSize - remoteSize) / (double)localSize * 100, 2);
 
             CommandLine.WriteLine($"Using vault '{vault.Name}' ({vault.Id}):");
             CommandLine.WriteLine($"Service Type:   {vault.Credentials.Service}");
             CommandLine.WriteLine($"Root Directory: {vault.Credentials.RootDirectory}");
-            CommandLine.WriteLine($"Managed Files:  {(totalLocalFiles + totalDeletedFiles):N0}");
+            CommandLine.WriteLine($"Managed Files:  {totalFiles:N0}");
             CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
             CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles:N0}");
+            CommandLine.WriteLine($"Total Size:     {Formatter.FromBytes(totalSize)}");
             CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
-            CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(remoteSize)}");
-            CommandLine.WriteLine($"Space Saved:    {(double.IsNaN(spaceSaved) ? 0 : spaceSaved)}%");
+            CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(remoteSize)} ({(double.IsNaN(spaceSaved) ? 0 : spaceSaved)}%)");
 
             if (vault.Credentials.Service.Equals(FileService.Local))
             {
