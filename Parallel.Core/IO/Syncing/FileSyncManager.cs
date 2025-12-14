@@ -27,8 +27,8 @@ namespace Parallel.Core.IO.Syncing
 
             if (files.Length == 0) return;
             ConcurrentDictionary<string, SemaphoreSlim> activeUploads = new ConcurrentDictionary<string, SemaphoreSlim>();
-            SystemFile[] uploadFiles = files.Where(f => !f.Deleted).ToArray();
-            SystemFile[] deleteFiles = files.Where(f => f.Deleted).ToArray();
+            SystemFile[] uploadFiles = files.Where(f => f is { Deleted: false, LocalSize: > 0 }).ToArray();
+            SystemFile[] deleteFiles = files.Except(uploadFiles).ToArray();
 
             Log.Information($"Pushing {uploadFiles.Length:N0} files...");
             Task uploader = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
@@ -58,7 +58,6 @@ namespace Parallel.Core.IO.Syncing
                     threadPool.Release();
                     if (threadPool.CurrentCount == 1)
                     {
-                        Log.Debug($"Clearing pool for: {file.LocalPath}");
                         activeUploads.TryRemove(file.CheckSum, out _);
                         Interlocked.Increment(ref completed);
                         Interlocked.Decrement(ref queued);

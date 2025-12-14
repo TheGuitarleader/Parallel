@@ -51,7 +51,6 @@ namespace Parallel.Cli.Commands
 
         private async Task SyncPathAsync(string path, bool force)
         {
-            CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
             await Program.Settings.ForEachVaultAsync(async vault =>
             {
                 ISyncManager? syncManager = SyncManager.CreateNew(vault);
