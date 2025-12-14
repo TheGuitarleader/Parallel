@@ -21,10 +21,10 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            if (files.Length == 0) return;
-            long queued = 0, completed = 0;
+            if (files.Length == 0) return 0;
+            int queued = 0, completed = 0;
 
             ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
             SystemFile[] uploadFiles = files.Where(f => f is { Deleted: false, LocalSize: > 0 }).ToArray();
@@ -53,15 +53,17 @@ namespace Parallel.Core.IO.Syncing
                     await Database.AddHistoryAsync(HistoryType.Pushed, file);
                     progress.Report(ProgressOperation.Pushed, file);
                 }
+                catch (Exception ex)
+                {
+                    await StorageProvider.DeleteFileAsync(file.RemotePath);
+                    Log.Error(ex.GetBaseException().ToString());
+                }
                 finally
                 {
                     lockedThread.Release();
-                    if (lockedThread.CurrentCount == 1)
-                    {
-                        threadPool.TryRemove(file.CheckSum, out _);
-                        Interlocked.Increment(ref completed);
-                        Interlocked.Decrement(ref queued);
-                    }
+                    threadPool.TryRemove(file.CheckSum, out _);
+                    Interlocked.Increment(ref completed);
+                    Interlocked.Decrement(ref queued);
                 }
             });
 
@@ -84,13 +86,14 @@ namespace Parallel.Core.IO.Syncing
             });
 
             await Task.WhenAll(worker, monitor).ConfigureAwait(false);
+            return completed;
         }
 
         /// <inheritdoc/>
-        public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task<int> PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            if (files.Length == 0) return;
-            long queued = 0, completed = 0;
+            if (files.Length == 0) return 0;
+            int queued = 0, completed = 0;
 
             ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
             Task worker = System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
@@ -118,15 +121,17 @@ namespace Parallel.Core.IO.Syncing
                     await Database.AddHistoryAsync(HistoryType.Pulled, file);
                     progress.Report(ProgressOperation.Pulled, file);
                 }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.GetBaseException().ToString());
+                    File.Delete(file.LocalPath);
+                }
                 finally
                 {
                     lockedThread.Release();
-                    if (lockedThread.CurrentCount == 1)
-                    {
-                        threadPool.TryRemove(file.CheckSum, out _);
-                        Interlocked.Increment(ref completed);
-                        Interlocked.Decrement(ref queued);
-                    }
+                    threadPool.TryRemove(file.CheckSum, out _);
+                    Interlocked.Increment(ref completed);
+                    Interlocked.Decrement(ref queued);
                 }
             });
 
@@ -141,6 +146,7 @@ namespace Parallel.Core.IO.Syncing
             });
 
             await Task.WhenAll(worker, monitor).ConfigureAwait(false);
+            return completed;
         }
     }
 }

@@ -93,33 +93,25 @@ namespace Parallel.Core.Storage
         /// <inheritdoc />
         public async Task<long> UploadFileAsync(SystemFile file, bool overwrite = false, CancellationToken ct = default)
         {
-            try
+            if (await ExistsAsync(file.RemotePath))
             {
-                if (await ExistsAsync(file.RemotePath))
+                if (!overwrite)
                 {
-                    if (!overwrite)
-                    {
-                        Log.Debug($"Skipping file: {file.RemotePath}");
-                        return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
-                    }
-
-                    File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
+                    Log.Debug($"Skipping file: {file.RemotePath}");
+                    return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
                 }
 
-                await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
-                await using FileStream openStream = new(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4194304, useAsync: true);
-                await using FileStream createStream = new(file.RemotePath, FileMode.Create, FileAccess.Write, FileShare.None, 4194304, useAsync: true);
-                await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-                await openStream.CopyToAsync(gzipStream, ct);
+                File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
+            }
 
-                File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
-                return createStream.Length;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, ex.Message);
-                return 0;
-            }
+            await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
+            await using FileStream openStream = new(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4194304, useAsync: true);
+            await using FileStream createStream = new(file.RemotePath, FileMode.Create, FileAccess.Write, FileShare.None, 4194304, useAsync: true);
+            await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
+            await openStream.CopyToAsync(gzipStream, ct);
+
+            File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
+            return createStream.Length;
         }
     }
 }

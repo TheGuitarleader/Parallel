@@ -101,9 +101,9 @@ namespace Parallel.Core.IO.Syncing
         }
 
         /// <inheritdoc />
-        public abstract Task PushFilesAsync(SystemFile[] files, IProgressReporter progress);
+        public abstract Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress);
 
         /// <inheritdoc />
-        public abstract Task PullFilesAsync(SystemFile[] files, IProgressReporter progress);
+        public abstract Task<int> PullFilesAsync(SystemFile[] files, IProgressReporter progress);
     }
 }
