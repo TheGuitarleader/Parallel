@@ -287,18 +287,36 @@ namespace Parallel.Core.IO.Scanning
             System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, file =>
             {
                 SystemFile entry = new(file);
-                if (dict.TryGetValue(entry.Name, out List<SystemFile>? value))
+                dict.AddOrUpdate(entry.Name, _ => [entry], (k, v) =>
+                {
+                    Log.Debug($"Checking: {entry.LocalPath}");
+
+                    lock (v)
+                    {
+                        SystemFile? key = v.FirstOrDefault();
+                        if (entry.LocalSize.Equals(key?.LocalSize))
+                        {
+                            Log.Debug($"{entry.LocalPath} : {key?.LocalPath}");
+                            v.Add(entry);
+                        }
+                    }
+
+                    return v;
+                });
+
+                /*if (dict.TryGetValue(entry.Name, out List<SystemFile>? value))
                 {
                     SystemFile? key = value.FirstOrDefault();
                     if (!HasChanged(entry, key))
                     {
+                        Log.Debug($"HasChanged: {entry.LocalPath}");
                         value.Add(entry);
                     }
                 }
                 else
                 {
                     dict[entry.Name] = new List<SystemFile> { entry };
-                }
+                }*/
             });
 
             return dict.Where(kv => kv.Value.Count > 1).OrderByDescending(kv => kv.Value.Count).ToDictionary(k => k.Key, v => v.Value.OrderBy(l => l.LastWrite.TotalMilliseconds).ToArray());
