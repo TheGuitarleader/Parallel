@@ -48,7 +48,7 @@ namespace Parallel.Core.Storage
         Task<bool> ExistsAsync(string path);
 
         /// <summary>
-        ///
+        /// Gets the specified directory path.
         /// </summary>
         /// <param name="path"></param>
         /// <param name="ct"></param>

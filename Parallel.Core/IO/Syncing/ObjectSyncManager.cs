@@ -100,7 +100,7 @@ namespace Parallel.Core.IO.Syncing
                         {
                             if (file.Deleted)
                             {
-                                await Database.AddHistoryAsync(file.LocalPath, HistoryType.Archived);
+                                await Database.AddHistoryAsync(HistoryType.Archived, file);
                                 await Database.AddFileAsync(file);
                                 progress.Report(ProgressOperation.Archived, file);
                                 return;
@@ -142,7 +142,7 @@ namespace Parallel.Core.IO.Syncing
                             }
 
                             progress.Report(ProgressOperation.Pushed, file);
-                            await Database.AddHistoryAsync(file.LocalPath, HistoryType.Pushed);
+                            await Database.AddHistoryAsync(HistoryType.Pushed, file);
                             await Database.AddFileAsync(file);
                         }
                         catch (Exception ex)

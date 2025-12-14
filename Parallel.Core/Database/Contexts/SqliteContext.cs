@@ -42,8 +42,9 @@ namespace Parallel.Core.Database
             using IDbConnection connection = CreateConnection();
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`id` TEXT NOT NULL, `hash` TEXT NOT NULL, orderIndex INTEGER NOT NULL, UNIQUE (id, orderIndex));");
             await connection.ExecuteAsync(
-                "CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, PRIMARY KEY(`id`));");
-            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
+                "CREATE TABLE IF NOT EXISTS `files` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, PRIMARY KEY(`checksum`));");
+
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`id` TEXT NOT NULL, `timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `checksum` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
         }
 
         #endregion
@@ -119,11 +120,11 @@ namespace Parallel.Core.Database
         #region History
 
         /// <inheritdoc />
-        public async Task<bool> AddHistoryAsync(string path, HistoryType type)
+        public async Task<bool> AddHistoryAsync(HistoryType type, SystemFile file)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = @"INSERT OR REPLACE INTO history (timestamp, name, path, type) VALUES(@Timestamp, @Name, @Path, @Type);";
-            return await connection.ExecuteAsync(sql, new { Timestamp = UnixTime.Now.TotalMilliseconds, Name = Path.GetFileName(path), Path = path, Type = type }) > 0;
+            string sql = @"INSERT OR REPLACE INTO history (id, timestamp, path, checksum, type) VALUES(@Timestamp, @Name, @Path, @Checksum, @Type);";
+            return await connection.ExecuteAsync(sql, new { file.Id, Timestamp = UnixTime.Now.TotalMilliseconds, Path = file.LocalPath, file.CheckSum, Type = type }) > 0;
         }
 
         /// <inheritdoc />

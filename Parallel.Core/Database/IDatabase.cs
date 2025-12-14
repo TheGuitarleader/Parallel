@@ -91,10 +91,10 @@ namespace Parallel.Core.Database
         /// <summary>
         /// Adds a new history.
         /// </summary>
-        /// <param name="path"></param>
         /// <param name="type"></param>
+        /// <param name="file"></param>
         /// <returns>True if successful, false otherwise</returns>
-        Task<bool> AddHistoryAsync(string path, HistoryType type);
+        Task<bool> AddHistoryAsync(HistoryType type, SystemFile file);
 
         IEnumerable<HistoryEvent>? GetHistory(string path, int limit);
 

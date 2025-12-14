@@ -103,15 +103,18 @@ namespace Parallel.Core.Storage
             try
             {
                 progress.Report(ProgressOperation.Uploading, file);
-                if (await ExistsAsync(file.RemotePath) && !overwrite)
+                if (await ExistsAsync(file.RemotePath))
                 {
-                    Log.Debug($"Skipping file: {file.RemotePath}");
-                    return await GetFileAsync(file.RemotePath);
+                    if (!overwrite)
+                    {
+                        Log.Debug($"Skipping file: {file.RemotePath}");
+                        return await GetFileAsync(file.RemotePath);
+                    }
+
+                    File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
                 }
 
-                if (overwrite) File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
                 await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
-
                 await using FileStream openStream = new(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4194304, useAsync: true);
                 await using FileStream createStream = new(file.RemotePath, FileMode.Create, FileAccess.Write, FileShare.None, 4194304, useAsync: true);
                 await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.Optimal);
