@@ -55,7 +55,7 @@ namespace Parallel.Cli.Commands
             }
 
             CommandLine.WriteLine(vault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
-            IEnumerable<SystemFile> files = await syncManager.Database.GetFilesAsync(fullPath);
+            IEnumerable<SystemFile> files = await syncManager.Database.GetLatestFilesAsync(fullPath);
             if (!files.Any())
             {
                 CommandLine.WriteLine(vault, "No files were found!", ConsoleColor.Yellow);
@@ -70,8 +70,15 @@ namespace Parallel.Cli.Commands
             });
 
             Log.Debug($"Pulling {pullFiles.Count} files...");
-            await syncManager.PullFilesAsync(pullFiles.ToArray(), new ProgressReport(vault, files.Count()));
-            CommandLine.WriteLine(vault, $"Successfully pulled {pullFiles.Count:N0} files from '{vault.Credentials.RootDirectory}'.", ConsoleColor.Green);
+            int pulledFiles = await syncManager.PullFilesAsync(pullFiles.ToArray(), new ProgressReport(vault, files.Count()));
+            if (pulledFiles > 0)
+            {
+                CommandLine.WriteLine(vault, $"Successfully pulled {pulledFiles:N0} files from '{vault.Credentials.RootDirectory}'.", ConsoleColor.Green);
+            }
+            else
+            {
+                CommandLine.WriteLine(vault, "Failed to pull files!", ConsoleColor.Red);
+            }
         }
 
         private async Task PullFileAsync(ISyncManager syncManager, string fullPath, bool force)
@@ -92,10 +99,17 @@ namespace Parallel.Cli.Commands
             }
 
             Log.Debug($"Pulling '{fullPath}'");
-            await syncManager.PullFilesAsync([remoteFile], new ProgressLogger());
+            int pulledFiles = await syncManager.PullFilesAsync([remoteFile], new ProgressLogger());
             await syncManager.DisconnectAsync();
 
-            CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pulled file from '{syncManager.RemoteVault.Credentials.RootDirectory}'.", ConsoleColor.Green);
+            if (pulledFiles > 0)
+            {
+                CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pulled file from '{syncManager.RemoteVault.Credentials.RootDirectory}'.", ConsoleColor.Green);
+            }
+            else
+            {
+                CommandLine.WriteLine(syncManager.RemoteVault, "Failed to pull files!", ConsoleColor.Red);
+            }
         }
     }
 }

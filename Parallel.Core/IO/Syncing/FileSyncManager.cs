@@ -21,27 +21,27 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            long queued = 0, completed = 0;
+            if (files.Length == 0) return 0;
+            int queued = 0, completed = 0;
 
-            if (files.Length == 0) return;
-            ConcurrentDictionary<string, SemaphoreSlim> activeUploads = new ConcurrentDictionary<string, SemaphoreSlim>();
+            ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
             SystemFile[] uploadFiles = files.Where(f => f is { Deleted: false, LocalSize: > 0 }).ToArray();
             SystemFile[] deleteFiles = files.Except(uploadFiles).ToArray();
 
             Log.Information($"Pushing {uploadFiles.Length:N0} files...");
-            Task uploader = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
+            Task worker = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
             {
                 Interlocked.Increment(ref queued);
-                SemaphoreSlim threadPool = activeUploads.GetOrAdd(file.CheckSum, _ => new SemaphoreSlim(1, 1));
-                await threadPool.WaitAsync(ct);
+                SemaphoreSlim lockedThread = threadPool.GetOrAdd(file.CheckSum, _ => new SemaphoreSlim(1, 1));
+                await lockedThread.WaitAsync(ct);
 
                 try
                 {
                     Log.Debug($"Pushing -> {file.LocalPath}");
                     file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum);
-                    long result = await StorageProvider.UploadFileAsync(file, progress, false, ct);
+                    long result = await StorageProvider.UploadFileAsync(file, false, ct);
                     if (result <= 0)
                     {
                         progress.Failed(new InvalidOperationException(), file);
@@ -53,15 +53,17 @@ namespace Parallel.Core.IO.Syncing
                     await Database.AddHistoryAsync(HistoryType.Pushed, file);
                     progress.Report(ProgressOperation.Pushed, file);
                 }
+                catch (Exception ex)
+                {
+                    await StorageProvider.DeleteFileAsync(file.RemotePath);
+                    Log.Error(ex.GetBaseException().ToString());
+                }
                 finally
                 {
-                    threadPool.Release();
-                    if (threadPool.CurrentCount == 1)
-                    {
-                        activeUploads.TryRemove(file.CheckSum, out _);
-                        Interlocked.Increment(ref completed);
-                        Interlocked.Decrement(ref queued);
-                    }
+                    lockedThread.Release();
+                    threadPool.TryRemove(file.CheckSum, out _);
+                    Interlocked.Increment(ref completed);
+                    Interlocked.Decrement(ref queued);
                 }
             });
 
@@ -76,25 +78,75 @@ namespace Parallel.Core.IO.Syncing
             Task monitor = Task.Run(async () =>
             {
                 Stopwatch sw = Stopwatch.StartNew();
-                while (!uploader.IsCompleted)
+                while (!worker.IsCompleted)
                 {
-                    Log.Debug($"UPLOAD STATS @ {sw.Elapsed}: queued={queued}, completed={completed}");
+                    Log.Debug($"WORKER STATS @ {sw.Elapsed}: queued={queued}, completed={completed}");
                     await Task.Delay(1000);
                 }
             });
 
-            await Task.WhenAll(uploader, monitor).ConfigureAwait(false);
+            await Task.WhenAll(worker, monitor).ConfigureAwait(false);
+            return completed;
         }
 
         /// <inheritdoc/>
-        public override async Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task<int> PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
-            if (files.Length == 0) return;
-            SystemFile[] downloadFiles = files.Where(f => !f.Deleted).ToArray();
-            await System.Threading.Tasks.Parallel.ForEachAsync(downloadFiles, ParallelConfig.Options, async (file, ct) =>
-            {
+            if (files.Length == 0) return 0;
+            int queued = 0, completed = 0;
 
+            ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
+            Task worker = System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            {
+                Interlocked.Increment(ref queued);
+                SemaphoreSlim lockedThread = threadPool.GetOrAdd(file.CheckSum, _ => new SemaphoreSlim(1, 1));
+                await lockedThread.WaitAsync(ct);
+
+                try
+                {
+                    await StorageProvider.DownloadFileAsync(file, ct);
+                    if (!File.Exists(file.LocalPath))
+                    {
+                        progress.Failed(new InvalidOperationException(), file);
+                        return;
+                    }
+
+                    FileInfo fileInfo = new(file.LocalPath);
+                    FileAttributes attributes = fileInfo.Attributes;
+                    if (file.ReadOnly) attributes |= FileAttributes.ReadOnly;
+                    if (file.Hidden) attributes |= FileAttributes.Hidden;
+                    fileInfo.LastWriteTime = file.LastWrite.ToLocalTime();
+                    fileInfo.Attributes = attributes;
+
+                    await Database.AddHistoryAsync(HistoryType.Pulled, file);
+                    progress.Report(ProgressOperation.Pulled, file);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.GetBaseException().ToString());
+                    File.Delete(file.LocalPath);
+                }
+                finally
+                {
+                    lockedThread.Release();
+                    threadPool.TryRemove(file.CheckSum, out _);
+                    Interlocked.Increment(ref completed);
+                    Interlocked.Decrement(ref queued);
+                }
             });
+
+            Task monitor = Task.Run(async () =>
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                while (!worker.IsCompleted)
+                {
+                    Log.Debug($"WORKER STATS @ {sw.Elapsed}: queued={queued}, completed={completed}");
+                    await Task.Delay(1000);
+                }
+            });
+
+            await Task.WhenAll(worker, monitor).ConfigureAwait(false);
+            return completed;
         }
     }
 }

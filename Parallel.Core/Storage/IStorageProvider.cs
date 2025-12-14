@@ -35,9 +35,8 @@ namespace Parallel.Core.Storage
         /// Downloads a file from the associated storage provider.
         /// </summary>
         /// <param name="file"></param>
-        /// <param name="progress"></param>
         /// <param name="ct"></param>
-        Task DownloadFileAsync(SystemFile file, IProgressReporter progress, CancellationToken ct = default);
+        Task DownloadFileAsync(SystemFile file, CancellationToken ct = default);
 
         /// <summary>
         /// Checks if a path exists on the associated storage provider.
@@ -68,9 +67,8 @@ namespace Parallel.Core.Storage
         /// </summary>
         /// <param name="file"></param>
         /// <param name="overwrite"></param>
-        /// <param name="progress"></param>
         /// <param name="ct"></param>
         /// <returns>The size, in bytes, of the amount of data transferred. Otherwise, 0.</returns>
-        Task<long> UploadFileAsync(SystemFile file, IProgressReporter progress, bool overwrite, CancellationToken ct = default);
+        Task<long> UploadFileAsync(SystemFile file, bool overwrite, CancellationToken ct = default);
     }
 }

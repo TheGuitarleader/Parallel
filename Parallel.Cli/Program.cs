@@ -9,7 +9,7 @@ using Serilog.Events;
 
 namespace Parallel.Cli
 {
-    internal class Program
+    internal static class Program
     {
         private static readonly LogEventTracker EventTracker = new LogEventTracker();
         internal static ParallelConfig Settings = new ParallelConfig();

@@ -66,13 +66,13 @@ namespace Parallel.Cli.Commands
                 string[] ignoredFolders = syncManager.RemoteVault.IgnoreDirectories.ToArray();
 
                 bool isFile = PathBuilder.IsFile(fullPath);
-                if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)))
+                if (!PathBuilder.IsDirectory(fullPath) && !isFile)
                 {
-                    CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is not set to be backed up!", ConsoleColor.Yellow);
+                    CommandLine.WriteLine(vault, $"The provided path is invalid!", ConsoleColor.Yellow);
                     return;
                 }
 
-                if (FileScanner.IsIgnored(fullPath, ignoredFolders))
+                if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)) || FileScanner.IsIgnored(fullPath, ignoredFolders))
                 {
                     CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is set to be ignored!", ConsoleColor.Yellow);
                     return;
@@ -89,10 +89,10 @@ namespace Parallel.Cli.Commands
                 }
 
                 CommandLine.WriteLine(vault, $"Backing up {files.Length:N0} files...", ConsoleColor.DarkGray);
-                await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles * 2));
+                int pushedFiles = await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles));
                 await syncManager.DisconnectAsync();
 
-                CommandLine.WriteLine(vault, $"Successfully pushed {successFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
+                CommandLine.WriteLine(vault, $"Successfully pushed {pushedFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
             });
         }
     }

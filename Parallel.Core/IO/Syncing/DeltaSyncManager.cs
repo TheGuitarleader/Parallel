@@ -18,13 +18,13 @@ namespace Parallel.Core.IO.Syncing
         public DeltaSyncManager(RemoteVaultConfig remoteVaultConfig) : base(remoteVaultConfig) { }
 
         /// <inheritdoc />
-        public override Task PushFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }
 
         /// <inheritdoc />
-        public override Task PullFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override Task<int> PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }
