@@ -41,7 +41,7 @@ namespace Parallel.Core.IO.Syncing
                 {
                     Log.Debug($"Pushing -> {file.LocalPath}");
                     file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum);
-                    long result = await StorageProvider.UploadFileAsync(file, progress, false, ct);
+                    long result = await StorageProvider.UploadFileAsync(file, false, ct);
                     if (result <= 0)
                     {
                         progress.Failed(new InvalidOperationException(), file);
