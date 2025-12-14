@@ -125,7 +125,7 @@ namespace Parallel.Core.Storage
             }
             catch (Exception ex)
             {
-                Log.Error(ex.GetBaseException().ToString());
+                Log.Error(ex, ex.Message);
                 return 0;
             }
         }
