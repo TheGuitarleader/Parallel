@@ -34,10 +34,10 @@ namespace Parallel.Core.Utils
         /// Formats a <see cref="DateTime"/> with the corresponding data volume.
         /// </summary>
         /// <param name="dateTime">The bytes to convert.</param>
-        /// <returns>A <see cref="DateTime"/> formatted as a MM/DD/YYYY HH:MM TT.</returns>
+        /// <returns>A <see cref="DateTime"/> formatted as an MM/DD/YYYY HH:MM TT.</returns>
         public static string FromDateTime(DateTime dateTime)
         {
-            return dateTime.ToLocalTime().ToString("g");
+            return dateTime.ToLocalTime().ToString("MM/dd/yyyy hh:mm:sstt");
         }
 
         public static string FromTimeSpan(TimeSpan timeSpan)

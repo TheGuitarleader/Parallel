@@ -42,7 +42,7 @@ namespace Parallel.Core.Database
             using IDbConnection connection = CreateConnection();
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`path` TEXT NOT NULL, `hash` TEXT NOT NULL, orderIndex INTEGER NOT NULL, UNIQUE (path, orderIndex));");
             await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `files` (`name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, UNIQUE (localpath, checksum));");
-            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `checksum` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
+            await connection.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `checksum` TEXT NOT NULL, `type` INTEGER NOT NULL, PRIMARY KEY(`timestamp`));");
         }
 
         #endregion
@@ -150,15 +150,19 @@ namespace Parallel.Core.Database
         }
 
         /// <inheritdoc />
-        public IEnumerable<HistoryEvent> GetHistory(string path, int limit)
+        public async Task<IEnumerable<HistoryEvent>> GetHistoryAsync(string path, int limit)
         {
-            throw new NotImplementedException();
+            using IDbConnection connection = CreateConnection();
+            string sql = "SELECT * FROM history WHERE path LIKE @Path ORDER BY timestamp DESC LIMIT @limit;";
+            return await connection.QueryAsync<HistoryEvent>(sql, new { Path = $"%{path}%", limit });
         }
 
         /// <inheritdoc />
-        public IEnumerable<HistoryEvent> GetHistory(string path, HistoryType type, int limit)
+        public async Task<IEnumerable<HistoryEvent>> GetHistoryAsync(string path, HistoryType type, int limit)
         {
-            throw new NotImplementedException();
+            using IDbConnection connection = CreateConnection();
+            string sql = "SELECT * FROM history WHERE path LIKE @Path AND type = @type ORDER BY timestamp DESC LIMIT @limit;";
+            return await connection.QueryAsync<HistoryEvent>(sql, new { Path = $"%{path}%", type, limit });
         }
 
         #endregion
