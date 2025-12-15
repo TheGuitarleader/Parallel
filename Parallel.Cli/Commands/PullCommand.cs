@@ -1,7 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.CommandLine;
-using Newtonsoft.Json.Linq;
 using Parallel.Cli.Utils;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.IO;

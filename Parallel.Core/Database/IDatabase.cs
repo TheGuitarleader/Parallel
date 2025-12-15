@@ -124,9 +124,9 @@ namespace Parallel.Core.Database
         /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddHistoryAsync(HistoryType type, SystemFile file);
 
-        IEnumerable<HistoryEvent>? GetHistory(string path, int limit);
+        Task<IEnumerable<HistoryEvent>> GetHistoryAsync(string path, int limit);
 
-        IEnumerable<HistoryEvent>? GetHistory(string path, HistoryType type, int limit);
+        Task<IEnumerable<HistoryEvent>> GetHistoryAsync(string path, HistoryType type, int limit);
 
         #endregion
 
