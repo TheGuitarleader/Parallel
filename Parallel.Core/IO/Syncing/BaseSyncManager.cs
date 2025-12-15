@@ -66,7 +66,7 @@ namespace Parallel.Core.IO.Syncing
                 if (config == null) return false;
                 RemoteVault = config;
 
-                Log.Debug($"Downloaded config file: {TempConfigFile}");
+                Log.Debug($"Downloaded file: {TempConfigFile}");
             }
 
             if (!await StorageProvider.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
@@ -82,7 +82,7 @@ namespace Parallel.Core.IO.Syncing
                 await StorageProvider.DownloadFileAsync(new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault)));
                 Database = new SqliteContext(TempDbFile);
 
-                Log.Debug($"Downloaded db file: {TempDbFile}");
+                Log.Debug($"Downloaded file: {TempDbFile}");
             }
 
             Log.Information($"[{LocalVault.Id}] Connected");
@@ -94,7 +94,11 @@ namespace Parallel.Core.IO.Syncing
         {
             Log.Debug($"[{LocalVault.Id}] Disconnecting...");
             SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
-            foreach (SystemFile file in tempFiles) await StorageProvider.UploadFileAsync(file, true);
+            foreach (SystemFile file in tempFiles)
+            {
+                await StorageProvider.UploadFileAsync(file, true);
+                Log.Debug($"Uploaded file: {TempConfigFile}");
+            }
             StorageProvider?.Dispose();
 
             Log.Information($"[{LocalVault.Id}] Disconnected");
