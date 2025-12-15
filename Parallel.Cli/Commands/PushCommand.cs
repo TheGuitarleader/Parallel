@@ -16,17 +16,13 @@ namespace Parallel.Cli.Commands
     {
         private Stopwatch _sw = new Stopwatch();
 
-        private Command addCmd = new("add", "Adds a new directory to the sync list.");
-        private Command listCmd = new("list", "Shows all directories in the sync list.");
-        private Command removeCmd = new("remove", "Removes a directory from the sync list.");
-
-        private readonly Option<string> _sourceArg = new(["--path", "-p"], "The source path to sync.");
+        private readonly Option<string> _sourceOpt = new(["--path", "-p"], "The source path to push.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
         private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces the push overwriting any files.");
 
         public PushCommand() : base("push", "Pushes changed files to vaults.")
         {
-            this.AddOption(_sourceArg);
+            this.AddOption(_sourceOpt);
             this.AddOption(_configOpt);
             this.AddOption(_forceOpt);
             this.SetHandler(async (path, config, force) =>
@@ -41,7 +37,7 @@ namespace Parallel.Cli.Commands
                     await SyncPathAsync(path, force);
                 }
 
-            }, _sourceArg, _configOpt, _forceOpt);
+            }, _sourceOpt, _configOpt, _forceOpt);
         }
 
         private Task SyncSystemAsync()

@@ -106,11 +106,11 @@ namespace Parallel.Core.Database
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path)
+        public async Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = "SELECT * FROM (SELECT * FROM files WHERE localpath LIKE @Path OR remotepath LIKE @Path ORDER BY lastupdate DESC) GROUP BY localpath;";
-            return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%" });
+            string sql = "SELECT * FROM (SELECT * FROM files WHERE localpath LIKE @Path AND lastupdate <= @Time ORDER BY lastupdate DESC) GROUP BY localpath;";
+            return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", Time = new UnixTime(timestamp).TotalMilliseconds });
         }
 
         /// <inheritdoc />
@@ -146,7 +146,7 @@ namespace Parallel.Core.Database
         {
             using IDbConnection connection = CreateConnection();
             string sql = @"INSERT OR REPLACE INTO history (timestamp, path, checksum, type) VALUES(@Timestamp, @Path, @CheckSum, @Type);";
-            return await connection.ExecuteAsync(sql, new { Timestamp = UnixTime.Now.TotalMilliseconds, Path = file.LocalPath, file.CheckSum, Type = type }) > 0;
+            return await connection.ExecuteAsync(sql, new { Timestamp = file.LastUpdate.TotalMilliseconds, Path = file.LocalPath, file.CheckSum, Type = type }) > 0;
         }
 
         /// <inheritdoc />
