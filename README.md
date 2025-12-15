@@ -27,6 +27,7 @@ Your computer already gives you enough to fight with — your files don't have t
 | **Encryption**                | ✅ Optional   | ❌ Vendor-controlled | ❌ Vendor-controlled | ❌ Vendor-controlled | ⚠️ Depends on drive encryption
 | **Cross-platform**            | ✅ Yes        | ✅ Yes       | ✅ Yes        | ⚠️ Apple-centric | ❌ Windows only
 | **Version History**           | ✅ Yes        | ✅ Yes       | ✅ Yes        | ✅ Yes | ⚠️ Limited
+| **System Snapshots**          | ✅ Yes        | ❌ No       | ❌ No        | ❌ No | ⚠️ Limited
 | **Offline access**            | ✅ Full       | ⚠️ Partial   | ⚠️ Partial    | ⚠️ Partial | ✅ Full
 | **Free to use**               | ✅ Always    | ⚠️ 2GB free | ⚠️ 5GB free   | ⚠️ 5GB free | ✅ Yes
 | **Max storage**               | ✅ Unlimited (your hardware)  | ⚠️ 2GB (free), 3TB (personal), 15TB (enterprise) | ⚠️ 5TB (personal), 25TB (enterprise) | ⚠️ 5GB–12TB (paid tiers) | ⚠️ Limited by drive size
