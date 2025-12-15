@@ -14,17 +14,20 @@ namespace Parallel.Cli.Commands
 {
     public class PullCommand : Command
     {
-        private readonly Option<string> _sourceArg = new(["--path", "-p"], "The source path to sync.");
+        private readonly Argument<string> _sourceArg = new("path", "The source path to pull.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
+        private readonly Option<DateTime> _beforeOpt = new(["--before"], "Pulls files before a certain timestamp.");
         private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces the pull overwriting any files.");
 
         public PullCommand() : base("pull", "Pulls changes from a vault.")
         {
-            this.AddOption(_sourceArg);
+            this.AddArgument(_sourceArg);
             this.AddOption(_configOpt);
             this.AddOption(_forceOpt);
-            this.SetHandler(async (path, config, force) =>
+            this.AddOption(_beforeOpt);
+            this.SetHandler(async (path, config, force, before) =>
             {
+                DateTime timestamp = before != DateTime.MinValue ? before : DateTime.Now;
                 LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault(v => v.Enabled);
                 if (!string.IsNullOrEmpty(config)) vault = ParallelConfig.GetVault(config);
                 if (vault == null)
@@ -33,13 +36,14 @@ namespace Parallel.Cli.Commands
                     return;
                 }
 
-                await PullPathAsync(vault, path, force);
-            }, _sourceArg, _configOpt, _forceOpt);
+                CommandLine.WriteLine(vault, $"Using time: {timestamp}");
+
+                await PullPathAsync(vault, path, timestamp, force);
+            }, _sourceArg, _configOpt, _forceOpt, _beforeOpt);
         }
 
-        private async Task PullPathAsync(LocalVaultConfig vault, string path, bool force)
+        private async Task PullPathAsync(LocalVaultConfig vault, string path, DateTime timestamp, bool force)
         {
-            CommandLine.WriteLine($"Retrieving vault information...", ConsoleColor.DarkGray);
             ISyncManager? syncManager = SyncManager.CreateNew(vault);
             if (syncManager == null || !await syncManager.ConnectAsync())
             {
@@ -55,7 +59,7 @@ namespace Parallel.Cli.Commands
             }
 
             CommandLine.WriteLine(vault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
-            IEnumerable<SystemFile> files = await syncManager.Database.GetLatestFilesAsync(fullPath);
+            IEnumerable<SystemFile> files = await syncManager.Database.GetLatestFilesAsync(fullPath, timestamp);
             if (!files.Any())
             {
                 CommandLine.WriteLine(vault, "No files were found!", ConsoleColor.Yellow);
@@ -71,14 +75,8 @@ namespace Parallel.Cli.Commands
 
             Log.Debug($"Pulling {pullFiles.Count} files...");
             int pulledFiles = await syncManager.PullFilesAsync(pullFiles.ToArray(), new ProgressReport(vault, files.Count()));
-            if (pulledFiles > 0)
-            {
-                CommandLine.WriteLine(vault, $"Successfully pulled {pulledFiles:N0} files from '{vault.Credentials.RootDirectory}'.", ConsoleColor.Green);
-            }
-            else
-            {
-                CommandLine.WriteLine(vault, "Failed to pull files!", ConsoleColor.Red);
-            }
+            CommandLine.WriteLine(vault, $"Successfully pulled {pulledFiles:N0} files from '{vault.Credentials.RootDirectory}'.", ConsoleColor.Green);
+            await syncManager.DisconnectAsync();
         }
 
         private async Task PullFileAsync(ISyncManager syncManager, string fullPath, bool force)
@@ -100,16 +98,8 @@ namespace Parallel.Cli.Commands
 
             Log.Debug($"Pulling '{fullPath}'");
             int pulledFiles = await syncManager.PullFilesAsync([remoteFile], new ProgressLogger());
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pulled {pulledFiles:N0} file from '{syncManager.RemoteVault.Credentials.RootDirectory}'.", ConsoleColor.Green);
             await syncManager.DisconnectAsync();
-
-            if (pulledFiles > 0)
-            {
-                CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pulled file from '{syncManager.RemoteVault.Credentials.RootDirectory}'.", ConsoleColor.Green);
-            }
-            else
-            {
-                CommandLine.WriteLine(syncManager.RemoteVault, "Failed to pull files!", ConsoleColor.Red);
-            }
         }
     }
 }

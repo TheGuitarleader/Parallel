@@ -56,7 +56,7 @@ namespace Parallel.Cli.Commands
             }
 
             CommandLine.WriteLine(vault, $"Scanning for files in {source}...", ConsoleColor.DarkGray);
-            IEnumerable<SystemFile> files = await syncManager.Database.GetLatestFilesAsync(source);
+            IEnumerable<SystemFile> files = await syncManager.Database.GetLatestFilesAsync(source, DateTime.UtcNow);
             if (!files.Any())
             {
                 CommandLine.WriteLine(vault, "No files were found!", ConsoleColor.Yellow);

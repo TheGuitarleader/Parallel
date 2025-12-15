@@ -80,8 +80,9 @@ namespace Parallel.Core.Database
         /// Gets a list of files by newest revision.
         /// </summary>
         /// <param name="path"></param>
+        /// <param name="timestamp"></param>
         /// <returns></returns>
-        Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path);
+        Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp);
 
         /// <summary>
         /// Gets a list of files by newest revision.
