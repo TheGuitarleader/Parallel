@@ -73,8 +73,7 @@ jobs:
           }
 
           $projects = @(
-              @{ name="cmd"; path="DotnetAction.Cmd/DotnetAction.Cmd.csproj" },
-              @{ name="app"; path="DotnetAction.Gui/DotnetAction.Gui.csproj" }
+              @{ name="cmd"; path="Parallel.Cli/Parallel.Cli.csproj" }
           )
 
           $distRoot = Join-Path $env:GITHUB_WORKSPACE "dist"
