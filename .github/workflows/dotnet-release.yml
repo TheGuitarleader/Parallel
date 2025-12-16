@@ -9,9 +9,8 @@ on:
       - 'release/*'
 
 jobs:
-
   build:
-    name: Build Executables
+    name: Build & Zip Projects
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -31,7 +30,7 @@ jobs:
         with:
           dotnet-version: ${{ vars.DOTNET_VERSION }}
 
-      - name: Extract version
+      - name: Extract version from branch
         id: extract_version
         shell: pwsh
         run: |
@@ -54,13 +53,18 @@ jobs:
             }
           }
 
-      - name: Build Executable
+      - name: Build and Zip Projects
         shell: pwsh
         run: |
           $version = "${{ steps.extract_version.outputs.version }}"
-          $repo = "${{ github.repository }}" -split "/" | Select-Object -Last 1
           $os = "${{ matrix.os }}"
           $arch = "${{ matrix.arch }}"
+
+          $osName = switch ($os) {
+              "windows" { "win" }
+              "macos"   { "mac" }
+              "ubuntu"  { "linux" }
+          }
 
           $rid = switch ($os) {
               "windows" { "win-$arch" }
@@ -68,26 +72,30 @@ jobs:
               "ubuntu"  { "linux-$arch" }
           }
 
-          $outputDir = Join-Path $env:GITHUB_WORKSPACE "dist/$os/$arch"
-          New-Item -ItemType Directory -Force -Path $outputDir
+          $projects = @(
+              @{ name="cmd"; path="DotnetAction.Cmd/DotnetAction.Cmd.csproj" },
+              @{ name="app"; path="DotnetAction.Gui/DotnetAction.Gui.csproj" }
+          )
 
-          dotnet publish "./Parallel.Cli/Parallel.Cli.csproj" -c Release -r $rid /p:PublishSingleFile=true /p:DebugType=None /p:DebugSymbols=false /p:PublishDir=$outputDir
+          $distRoot = Join-Path $env:GITHUB_WORKSPACE "dist"
+          New-Item -ItemType Directory -Force -Path $distRoot
 
-          if ($os -eq "windows") {
-              Rename-Item "$outputDir/$repo.exe" "$repo-$version-$os-$arch.exe"
-          } else {
-              Rename-Item "$outputDir/$repo" "$repo-$version-$os-$arch"
+          foreach ($proj in $projects) {
+              $outputDir = Join-Path $env:GITHUB_WORKSPACE "dist/$($proj.name)/$os/$arch"
+              New-Item -ItemType Directory -Force -Path $outputDir
+
+              dotnet publish $proj.path -c Release -r $rid /p:PublishSingleFile=true /p:DebugType=None /p:DebugSymbols=false /p:PublishDir=$outputDir
+                
+              $zipName = "DotnetActions-$version-$($proj.name)-$osName-$arch.zip"
+              Compress-Archive -Path "$outputDir/*" -DestinationPath "$distRoot/$zipName" -Force
           }
 
-      - name: Upload Executable
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.os }}-${{ matrix.arch }}
-          path: |
-            dist/${{ matrix.os }}/${{ matrix.arch }}/*.exe
-            dist/${{ matrix.os }}/${{ matrix.arch }}/*${{ steps.extract_version.outputs.version }}*
+          name: ${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*.zip
           if-no-files-found: error
-
 
   release:
     name: Create GitHub Release
@@ -95,26 +103,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: release
 
-      - name: Collect binaries into release folder
+      - name: Flatten release folder
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path release
-
-          $files = Get-ChildItem artifacts -Recurse -File | Where-Object {
-              $_.Name -match "${{ needs.build.outputs.version }}"
+          Get-ChildItem -Recurse release -Filter '*.zip' | ForEach-Object {
+              Copy-Item $_.FullName -Destination "release/$($_.Name)" -Force
           }
-
-          foreach ($file in $files) {
-              Copy-Item $file.FullName -Destination "release/$($file.Name)" -Force
-          }
-
-          Write-Host "Release files:"
-          Get-ChildItem release
 
       - name: Generate Release Notes
         id: release_notes
@@ -122,16 +121,13 @@ jobs:
         run: |
           $version = "${{ needs.build.outputs.version }}"
           $notes = ""
-
           if (Test-Path "CHANGELOG.md") {
               $content = Get-Content "CHANGELOG.md" -Raw
               if ($content -match "## \[$version\](.*?)(## \[|$)") {
                   $notes = $matches[1].Trim()
               }
           }
-
-          $escaped = $notes.Replace('%','%25').Replace("`n",'%0A').Replace("`r",'%0D')
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "notes=$escaped"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "notes=$notes"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -139,6 +135,6 @@ jobs:
           tag_name: ${{ needs.build.outputs.version }}
           name: "${{ github.event.repository.name }} ${{ needs.build.outputs.version }}"
           body: ${{ steps.release_notes.outputs.notes }}
-          files: release/*
+          files: release/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
