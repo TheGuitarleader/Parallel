@@ -46,7 +46,7 @@ namespace Parallel.Cli.Commands
             ISyncManager? syncManager = SyncManager.CreateNew(vault);
             if (syncManager == null || !await syncManager.ConnectAsync())
             {
-                CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);
+                CommandLine.WriteLine(vault, $"Failed to connect to vault!", ConsoleColor.Red);
                 return;
             }
 

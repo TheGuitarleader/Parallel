@@ -65,7 +65,7 @@ namespace Parallel.Core.IO.Syncing
                 RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
                 if (config == null) return false;
                 RemoteVault = config;
-
+                LocalVault.Name = config.Name;
                 Log.Debug($"Downloaded file: {TempConfigFile}");
             }
 

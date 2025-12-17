@@ -37,7 +37,7 @@ namespace Parallel.Cli.Commands
             ISyncManager? syncManager = SyncManager.CreateNew(vault);
             if (syncManager == null || !await syncManager.ConnectAsync())
             {
-                CommandLine.WriteLine(vault, $"Failed to connect to vault '{vault.Name}'!", ConsoleColor.Red);
+                CommandLine.WriteLine(vault, $"Failed to connect to vault!", ConsoleColor.Red);
                 return;
             }
 
@@ -50,12 +50,13 @@ namespace Parallel.Cli.Commands
             long totalDeletedFiles = await db.GetTotalFilesAsync(true);
             double spaceSaved = Math.Round((localSize - remoteSize) / (double)localSize * 100, 2);
 
-            CommandLine.WriteLine($"Using vault '{vault.Name}' ({vault.Id}):");
+            CommandLine.WriteLine($"Using vault '{syncManager.RemoteVault.Name}' ({vault.Id}):");
             CommandLine.WriteLine($"Service Type:   {vault.Credentials.Service}");
             CommandLine.WriteLine($"Root Directory: {vault.Credentials.RootDirectory}");
             CommandLine.WriteLine($"Managed Files:  {totalFiles:N0}");
             CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
             CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles:N0}");
+            CommandLine.WriteLine($"Revisions:      {totalFiles - (totalLocalFiles + totalDeletedFiles):N0}");
             CommandLine.WriteLine($"Total Size:     {Formatter.FromBytes(totalSize)}");
             CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
             CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(remoteSize)} ({(double.IsNaN(spaceSaved) ? 0 : spaceSaved)}%)");

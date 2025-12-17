@@ -124,7 +124,7 @@ namespace Parallel.Core.IO.Syncing
                 catch (Exception ex)
                 {
                     Log.Error(ex.GetBaseException().ToString());
-                    File.Delete(file.LocalPath);
+                    if (File.Exists(file.LocalPath)) File.Delete(file.LocalPath);
                 }
                 finally
                 {
