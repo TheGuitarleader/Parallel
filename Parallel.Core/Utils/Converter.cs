@@ -27,13 +27,6 @@ namespace Parallel.Core.Utils
         public static int ToInt32(bool value)
         {
             return value ? 1 : 0;
-
-            if (value)
-            {
-                return 1;
-            }
-
-            return 0;
         }
 
         /// <summary>
@@ -44,17 +37,6 @@ namespace Parallel.Core.Utils
         public static double ToPercent(double part, double whole)
         {
             return part * 100 / whole;
-        }
-
-        /// <summary>
-        /// Converts an <see cref="EndPoint"/> to
-        /// </summary>
-        /// <param name="endPoint"></param>
-        /// <returns></returns>
-        public static string ToString(EndPoint endPoint)
-        {
-            string value = endPoint.ToString();
-            return value[..value.IndexOf(':')];
         }
     }
 }

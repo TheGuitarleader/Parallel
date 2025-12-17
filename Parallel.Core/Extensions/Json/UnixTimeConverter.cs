@@ -12,7 +12,7 @@ namespace Parallel.Core.Extensions.Json
             return objectType.IsValueType;
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
             UnixTime unix;
             if (reader.TokenType == JsonToken.Integer)
@@ -21,7 +21,7 @@ namespace Parallel.Core.Extensions.Json
             }
             else if (reader.TokenType == JsonToken.String)
             {
-                unix = UnixTime.Parse((string)reader.Value);
+                unix = UnixTime.Parse((string?)reader.Value);
             }
             else
             {
@@ -34,14 +34,6 @@ namespace Parallel.Core.Extensions.Json
         public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             long seconds;
-            //if(value is DateTime dateTime)
-            //{
-            //    seconds = (long)dateTime.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-            //}
-            //else if(value is DateTimeOffset dateTimeOffset)
-            //{
-            //    seconds = (long)dateTimeOffset.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-            //}
             if (value is UnixTime unixTime)
             {
                 seconds = unixTime.TotalMilliseconds;

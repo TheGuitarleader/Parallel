@@ -9,7 +9,6 @@ namespace Parallel.Core.Models
     {
         public HistoryType Type { get; set; }
         public UnixTime CreatedAt { get; set; }
-        public string Vault { get; set; }
         public string Fullname { get; set; }
         public string CheckSum { get; set; }
 

@@ -71,7 +71,7 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The checksum used to check if the file has changed.
         /// </summary>
-        public string CheckSum { get; }
+        public string CheckSum { get; } = string.Empty;
 
 
         /// <summary>

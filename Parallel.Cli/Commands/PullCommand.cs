@@ -58,7 +58,7 @@ namespace Parallel.Cli.Commands
             }
 
             CommandLine.WriteLine(vault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
-            IEnumerable<SystemFile> files = await syncManager.Database.GetLatestFilesAsync(fullPath, timestamp);
+            IEnumerable<SystemFile> files = await (syncManager.Database?.GetLatestFilesAsync(fullPath, timestamp) ?? Task.FromResult<IEnumerable<SystemFile>>([]));
             if (!files.Any())
             {
                 CommandLine.WriteLine(vault, "No files were found!", ConsoleColor.Yellow);
@@ -80,7 +80,7 @@ namespace Parallel.Cli.Commands
 
         private async Task PullFileAsync(ISyncManager syncManager, string fullPath, bool force)
         {
-            SystemFile? remoteFile = await syncManager.Database.GetFileAsync(fullPath);
+            SystemFile? remoteFile = await (syncManager.Database?.GetFileAsync(fullPath) ?? Task.FromResult<SystemFile?>(null));
             if (remoteFile == null)
             {
                 CommandLine.WriteLine("The provided file was not found!", ConsoleColor.Yellow);
@@ -96,7 +96,7 @@ namespace Parallel.Cli.Commands
             }
 
             Log.Debug($"Pulling '{fullPath}'");
-            int pulledFiles = await syncManager.PullFilesAsync([remoteFile], new ProgressLogger());
+            int pulledFiles = await syncManager.PullFilesAsync([remoteFile], new ProgressReport(syncManager.RemoteVault, 1));
             CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pulled {pulledFiles:N0} file from '{syncManager.RemoteVault.Credentials.RootDirectory}'.", ConsoleColor.Green);
             await syncManager.DisconnectAsync();
         }

@@ -16,10 +16,9 @@ namespace Parallel.Core.Security
         /// </summary>
         /// <param name="value">The string to be encoded.</param>
         /// <returns>A base64 encoded string.</returns>
-        public static string Encode(string value)
+        public static string Encode(string? value)
         {
             if (string.IsNullOrEmpty(value)) return string.Empty;
-
             byte[] data = Encoding.UTF8.GetBytes(value);
             string encoded = Convert.ToBase64String(data);
             return encoded;
@@ -29,10 +28,9 @@ namespace Parallel.Core.Security
         /// Converts a base64 string to a string of UTF-8 characters.
         /// </summary>
         /// <param name="value">The base64 string to decode.</param>
-        public static string Decode(string value)
+        public static string Decode(string? value)
         {
             if (string.IsNullOrEmpty(value)) return string.Empty;
-
             byte[] data = Convert.FromBase64String(value);
             string decoded = Encoding.UTF8.GetString(data);
             return decoded;

@@ -21,31 +21,14 @@ namespace Parallel.Core.IO.Scanning
     public class FileScanner
     {
         private static readonly Dictionary<string, Regex> _cache = new();
-        private readonly RemoteVaultConfig _config;
-        private readonly IDatabase _db;
+        private readonly RemoteVaultConfig? _config;
+        private readonly IDatabase? _db;
 
         public FileScanner(ISyncManager syncManager)
         {
             _config = syncManager.RemoteVault;
             _db = syncManager.Database;
         }
-
-        /*/// <summary>
-        /// Scans all marked backup locations for file changes.
-        /// </summary>
-        /// <returns></returns>
-        public SystemFile[] GetFileChanges()
-        {
-            List<SystemFile> scannedFiles = new();
-            foreach (string path in _profile.BackupDirectories.ToArray())
-            {
-                SystemFile[] files = GetFileChanges(path, _profile.IgnoreDirectories.ToArray());
-                scannedFiles.AddRange(files);
-            }
-
-            Log.Information($"Backing up {scannedFiles.Where(x => !x.Deleted).Count()} files...");
-            return scannedFiles.ToArray();
-        }*/
 
         /// <summary>
         /// Scans for file changes in a directory.
@@ -65,7 +48,7 @@ namespace Parallel.Core.IO.Scanning
             HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
 
             Log.Debug("Getting database files...");
-            IEnumerable<SystemFile> remoteFiles = await _db.GetLatestFilesAsync(path, false);
+            IEnumerable<SystemFile> remoteFiles = _db is null ? [] : await _db.GetLatestFilesAsync(path, false);
             System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile, ct) =>
             {
                 if (File.Exists(remoteFile.LocalPath))
@@ -114,7 +97,7 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>True is success, otherwise false.</returns>
         public static bool HasChanged(SystemFile sourcePath, SystemFile? targetPath)
         {
-            return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && !sourcePath.CheckSum.Equals(targetPath.CheckSum));
+            return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && Convert.ToBoolean(!sourcePath.CheckSum?.Equals(targetPath.CheckSum)));
         }
 
 
