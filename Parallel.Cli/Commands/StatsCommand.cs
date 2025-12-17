@@ -41,13 +41,13 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            IDatabase db = syncManager.Database;
-            long localSize = await db.GetLocalSizeAsync();
-            long remoteSize = await db.GetRemoteSizeAsync();
-            long totalSize = await db.GetTotalSizeAsync();
-            long totalFiles = await db.GetTotalFilesAsync();
-            long totalLocalFiles = await db.GetTotalFilesAsync(false);
-            long totalDeletedFiles = await db.GetTotalFilesAsync(true);
+            IDatabase? db = syncManager.Database;
+            long localSize = await (db?.GetLocalSizeAsync() ?? Task.FromResult(0L));
+            long remoteSize = await (db?.GetRemoteSizeAsync() ?? Task.FromResult(0L));
+            long totalSize = await (db?.GetTotalSizeAsync() ?? Task.FromResult(0L));
+            long totalFiles = await (db?.GetTotalFilesAsync() ?? Task.FromResult(0L));
+            long totalLocalFiles = await (db?.GetTotalFilesAsync(false) ?? Task.FromResult(0L));
+            long totalDeletedFiles = await (db?.GetTotalFilesAsync(true) ?? Task.FromResult(0L));
             double spaceSaved = Math.Round((localSize - remoteSize) / (double)localSize * 100, 2);
 
             CommandLine.WriteLine($"Using vault '{syncManager.RemoteVault.Name}' ({vault.Id}):");

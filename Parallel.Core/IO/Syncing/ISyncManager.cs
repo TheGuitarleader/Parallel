@@ -27,7 +27,7 @@ namespace Parallel.Core.IO.Syncing
         /// <summary>
         /// The associated database connection.
         /// </summary>
-        IDatabase Database { get; set; }
+        IDatabase? Database { get; set; }
 
         /// <summary>
         /// The associated file system connection.

@@ -49,8 +49,8 @@ namespace Parallel.Core.IO.Syncing
                     }
 
                     file.RemoteSize = result;
-                    await Database.AddFileAsync(file);
-                    await Database.AddHistoryAsync(HistoryType.Pushed, file);
+                    await (Database?.AddHistoryAsync(HistoryType.Pushed, file) ?? Task.CompletedTask);
+                    await (Database?.AddFileAsync(file) ?? Task.CompletedTask);
                     progress.Report(ProgressOperation.Pushed, file);
                 }
                 catch (Exception ex)
@@ -70,8 +70,8 @@ namespace Parallel.Core.IO.Syncing
             Log.Information($"Archiving {deleteFiles.Length:N0} files...");
             foreach (SystemFile file in deleteFiles)
             {
-                await Database.AddFileAsync(file);
-                await Database.AddHistoryAsync(HistoryType.Archived, file);
+                await (Database?.AddHistoryAsync(HistoryType.Archived, file) ?? Task.CompletedTask);
+                await (Database?.AddFileAsync(file) ?? Task.CompletedTask);
                 progress.Report(ProgressOperation.Archived, file);
             }
 
@@ -118,7 +118,7 @@ namespace Parallel.Core.IO.Syncing
                     fileInfo.LastWriteTime = file.LastWrite.ToLocalTime();
                     fileInfo.Attributes = attributes;
 
-                    await Database.AddHistoryAsync(HistoryType.Pulled, file);
+                    await (Database?.AddHistoryAsync(HistoryType.Pulled, file) ?? Task.CompletedTask);
                     progress.Report(ProgressOperation.Pulled, file);
                 }
                 catch (Exception ex)

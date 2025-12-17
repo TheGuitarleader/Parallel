@@ -25,7 +25,7 @@ namespace Parallel.Core.IO.Syncing
         public RemoteVaultConfig RemoteVault { get; private set; }
 
         /// <inheritdoc />
-        public IDatabase Database { get; set; }
+        public IDatabase? Database { get; set; }
 
         /// <inheritdoc />
         public IStorageProvider StorageProvider { get; set; }
@@ -36,8 +36,9 @@ namespace Parallel.Core.IO.Syncing
         /// <param name="localVault"></param>
         public BaseSyncManager(LocalVaultConfig localVault)
         {
-            StorageProvider = StorageConnection.CreateNew(localVault);
             LocalVault = localVault;
+            RemoteVault = new RemoteVaultConfig(localVault);
+            StorageProvider = StorageConnection.CreateNew(localVault);
         }
 
         /// <inheritdoc />

@@ -68,10 +68,8 @@ namespace Parallel.Core.Storage
         /// <inheritdoc/>
         public async Task DeleteFileAsync(string path)
         {
-            if (await ExistsAsync(path))
-            {
-                await _client.DeleteAsync(path);
-            }
+            if (!await ExistsAsync(path)) return;
+            await _client.DeleteAsync(path);
         }
 
         /// <inheritdoc />

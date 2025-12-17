@@ -123,9 +123,9 @@ namespace Parallel.Core.Utils
         /// <returns>An object equivalent to the date and time of the string.</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="FormatException"></exception>
-        public static UnixTime Parse(string s)
+        public static UnixTime Parse(string? s)
         {
-            ArgumentNullException.ThrowIfNullOrEmpty(s);
+            ArgumentException.ThrowIfNullOrEmpty(s);
             return new UnixTime(DateTime.Parse(s).ToUniversalTime());
         }
 

@@ -13,7 +13,6 @@ namespace Parallel.Core.IO.Rsync
     public abstract class RsyncAlgorithm
     {
         private static readonly IProgress<ProgressReport> Logging = new RsyncProgress();
-        private static int DeltaSize = 206;
 
         /// <summary>
         /// Creates a new signature file. A signature file contains checksums for file changes.

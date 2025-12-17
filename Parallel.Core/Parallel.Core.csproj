@@ -44,9 +44,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="EntexSharp">
-            <HintPath>..\EntexSharp.dll</HintPath>
-        </Reference>
         <Reference Include="Newtonsoft.Json">
             <HintPath>C:\Users\kebbi\.nuget\packages\newtonsoft.json\13.0.3\lib\net6.0\Newtonsoft.Json.dll</HintPath>
         </Reference>
