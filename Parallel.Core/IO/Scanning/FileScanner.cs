@@ -73,14 +73,14 @@ namespace Parallel.Core.IO.Scanning
                     SystemFile localFile = new SystemFile(remoteFile.LocalPath);
                     if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
-                        Log.Debug($"Ignored -> {localFile.LocalPath}");
+                        //Log.Debug($"Ignored -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;
                         localFile.Deleted = true;
                         changedFiles.Add(localFile);
                     }
                     else if (HasChanged(localFile, remoteFile) || force)
                     {
-                        Log.Debug($"Changed -> {localFile.LocalPath}");
+                        //Log.Debug($"Changed -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;
                         changedFiles.Add(localFile);
                     }
@@ -89,31 +89,18 @@ namespace Parallel.Core.IO.Scanning
                 }
                 else
                 {
-                    Log.Debug($"Deleted -> {remoteFile.LocalPath}");
+                    //Log.Debug($"Deleted -> {remoteFile.LocalPath}");
                     remoteFile.Deleted = true;
                     changedFiles.Add(remoteFile);
                 }
             });
 
-            HashSet<string> remainingFiles = localFiles.Except(new HashSet<string>(scannedFiles)).ToHashSet();
-            Log.Debug($"{remainingFiles.Count} files are untracked! Adding...");
-
-            remainingFiles.AsParallel().WithDegreeOfParallelism(Environment.ProcessorCount).Where(f => !IsIgnored(f, ignoreFolders)).ForAll(file =>
+            // Adds the remaining files as created
+            foreach (string file in localFiles.Except(new HashSet<string>(scannedFiles)))
             {
-                Log.Debug($"Created -> {file}");
+                //Log.Debug($"Created -> {file}");
                 changedFiles.Add(new SystemFile(file));
-            });
-
-            // System.Threading.Tasks.Parallel.ForEach(remainingFiles, ParallelConfig.Options, (file, ct) =>
-            // {
-            //     if (!IsIgnored(file, ignoreFolders))
-            //     {
-            //         Log.Debug($"Created -> {file}");
-            //         changedFiles.Add(new SystemFile(file) { RemotePath = PathBuilder.Remote(file, _config) });
-            //     }
-            //
-            //     Log.Debug($"Done");
-            // });
+            }
 
             Log.Information($"Found {changedFiles.Count:N0} changes in '{path}'");
             return changedFiles.ToArray();
@@ -257,7 +244,17 @@ namespace Parallel.Core.IO.Scanning
                     continue;
                 }
 
-                foreach (string file in files) yield return file;
+                foreach (string file in files)
+                {
+                    if (IsIgnored(file, exempt))
+                    {
+                        Log.Debug($"Ignored -> {file}");
+                        continue;
+                    }
+
+                    yield return file;
+                }
+
                 if (!recursive) continue;
                 IEnumerable<string> subDirs;
                 try
