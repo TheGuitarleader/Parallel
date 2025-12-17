@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -16,12 +17,6 @@ namespace Parallel.Core.Settings
     /// </summary>
     public class RemoteVaultConfig : LocalVaultConfig
     {
-        /// <summary>
-        /// The amount of time, in minutes, between backup cycles.
-        /// <para>Default: 60 minutes</para>
-        /// </summary>
-        public int BackupInterval { get; set; } = 60;
-
         /// <summary>
         /// The amount of time, in days, to hold a file before it can be pruned.
         /// <para>Default: 180 days (6 months)</para>
@@ -51,9 +46,8 @@ namespace Parallel.Core.Settings
         public RemoteVaultConfig(LocalVaultConfig localVault) : base(localVault.Id, localVault.Name, localVault.Credentials) { }
 
         [JsonConstructor]
-        public RemoteVaultConfig(string id, string name, StorageCredentials credentials, int backupInterval, int prunePeriod, IEnumerable<string> backupDirectories, IEnumerable<string> ignoreDirectories, IEnumerable<string> pruneDirectories) : base(id, name, credentials)
+        public RemoteVaultConfig(string id, string name, StorageCredentials credentials, int prunePeriod, IEnumerable<string> backupDirectories, IEnumerable<string> ignoreDirectories, IEnumerable<string> pruneDirectories) : base(id, name, credentials)
         {
-            BackupInterval = backupInterval;
             PrunePeriod = prunePeriod;
             BackupDirectories = new HashSet<string>(backupDirectories);
             IgnoreDirectories = new HashSet<string>(ignoreDirectories);
