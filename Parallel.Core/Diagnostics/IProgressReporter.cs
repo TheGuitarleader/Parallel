@@ -11,7 +11,8 @@ namespace Parallel.Core.Diagnostics
         Pushed,
         Synced,
         Downloading,
-        Uploading
+        Uploading,
+        Hashing
     }
 
     /// <summary>

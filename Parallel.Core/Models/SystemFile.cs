@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.Data;
+using System.Security.Cryptography;
 using Parallel.Core.Data;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Security;
@@ -71,7 +72,7 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The checksum used to check if the file has changed.
         /// </summary>
-        public string CheckSum { get; } = string.Empty;
+        public string? CheckSum { get; set; } = string.Empty;
 
 
         /// <summary>
@@ -89,7 +90,6 @@ namespace Parallel.Core.Models
             Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
             Hidden = fileInfo.Attributes.HasFlag(FileAttributes.Hidden);
             ReadOnly = fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly);
-            CheckSum = HashGenerator.CheckSum(path) ?? string.Empty;
             Deleted = !fileInfo.Exists;
         }
 
@@ -165,6 +165,28 @@ namespace Parallel.Core.Models
             ];
 
             return results.All(b => b != null && (bool)b);
+        }
+
+        public bool TryGenerateCheckSum()
+        {
+            // Ignore if already valid.
+            if (!string.IsNullOrEmpty(CheckSum)) return true;
+
+            try
+            {
+                Log.Debug($"Generating checksum -> {LocalPath}");
+                if (!File.Exists(LocalPath)) return false;
+
+                using SHA256 sha256 = SHA256.Create();
+                using FileStream fs = File.OpenRead(LocalPath);
+                CheckSum = Convert.ToHexStringLower(sha256.ComputeHash(fs));
+                return !string.IsNullOrEmpty(CheckSum);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"Checksum generation failed -> {LocalPath}");
+                return false;
+            }
         }
     }
 }

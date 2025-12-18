@@ -96,18 +96,5 @@ namespace Parallel.Core.Security
             ArgumentException.ThrowIfNullOrEmpty(value);
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLower();
         }
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public static string? CheckSum(string path)
-        {
-            if (!File.Exists(path)) return null;
-            using FileStream fs = File.OpenRead(path);
-            using SHA256 sha256 = SHA256.Create();
-            return Convert.ToHexStringLower(sha256.ComputeHash(fs));
-        }
     }
 }

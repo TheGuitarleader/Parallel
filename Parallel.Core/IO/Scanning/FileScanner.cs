@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
+using Parallel.Core.Security;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
 using FileInfo = System.IO.FileInfo;
@@ -98,6 +99,7 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>True is success, otherwise false.</returns>
         public static bool HasChanged(SystemFile sourcePath, SystemFile? targetPath)
         {
+            if (string.IsNullOrEmpty(sourcePath.CheckSum)) sourcePath.TryGenerateCheckSum();
             return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && Convert.ToBoolean(!sourcePath.CheckSum?.Equals(targetPath.CheckSum)));
         }
 
