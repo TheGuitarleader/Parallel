@@ -37,7 +37,8 @@ namespace Parallel.Core.IO.Syncing
             Task worker = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
             {
                 Interlocked.Increment(ref queued);
-                if (string.IsNullOrEmpty(file.CheckSum) && !file.TryGenerateCheckSum()) return;
+                if (!file.TryGenerateCheckSum()) return;
+
                 SemaphoreSlim lockedThread = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
                 await lockedThread.WaitAsync(ct);
 
@@ -103,7 +104,8 @@ namespace Parallel.Core.IO.Syncing
             Task worker = System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
                 Interlocked.Increment(ref queued);
-                if (string.IsNullOrEmpty(file.CheckSum) && !file.TryGenerateCheckSum()) return;
+                if (!file.TryGenerateCheckSum()) return;
+
                 SemaphoreSlim lockedThread = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
                 await lockedThread.WaitAsync(ct);
 

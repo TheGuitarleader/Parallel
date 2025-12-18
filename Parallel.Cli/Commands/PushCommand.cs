@@ -120,7 +120,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            CommandLine.WriteLine(syncManager.RemoteVault, $"Backing up {files.Length:N0} files...", ConsoleColor.DarkGray);
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Pushing {files.Length:N0} files...", ConsoleColor.DarkGray);
             int pushedFiles = await syncManager.PushFilesAsync(files, new ProgressReport(syncManager.RemoteVault, successFiles), force);
             CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pushed {pushedFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
         }

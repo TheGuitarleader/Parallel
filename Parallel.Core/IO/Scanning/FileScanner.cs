@@ -45,10 +45,7 @@ namespace Parallel.Core.IO.Scanning
             ConcurrentBag<string> scannedFiles = new();
             ConcurrentBag<SystemFile> changedFiles = new();
 
-            Log.Debug("Getting system files...");
             HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
-
-            Log.Debug("Getting database files...");
             IEnumerable<SystemFile> remoteFiles = _db is null ? [] : await _db.GetLatestFilesAsync(path, false);
             System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile, ct) =>
             {
@@ -94,15 +91,15 @@ namespace Parallel.Core.IO.Scanning
         /// <summary>
         /// Gets if a file has changed.
         /// </summary>
-        /// <param name="sourcePath">The source file to compare.</param>
-        /// <param name="targetPath">The target file to compare to.</param>
+        /// <param name="source">The source file to compare.</param>
+        /// <param name="target">The target file to compare to.</param>
         /// <returns>True is success, otherwise false.</returns>
-        public static bool HasChanged(SystemFile sourcePath, SystemFile? targetPath)
+        public static bool HasChanged(SystemFile source, SystemFile? target)
         {
-            if (string.IsNullOrEmpty(sourcePath.CheckSum)) sourcePath.TryGenerateCheckSum();
-            return targetPath == null || (sourcePath.LastWrite.TotalMilliseconds > targetPath.LastWrite.TotalMilliseconds && Convert.ToBoolean(!sourcePath.CheckSum?.Equals(targetPath.CheckSum)));
+            if (target is null || !source.TryGenerateCheckSum()) return false;
+            if (source.LastWrite.TotalMilliseconds <= target.LastWrite.TotalMilliseconds) return false;
+            return source.CheckSum != target.CheckSum;
         }
-
 
         /// <summary>
         /// Gets the total size, in bytes, of a directory.
@@ -222,12 +219,11 @@ namespace Parallel.Core.IO.Scanning
                 IEnumerable<string> files;
                 try
                 {
-                    Log.Debug($"Scanning -> {current}");
                     files = Directory.EnumerateFiles(current, searchPattern);
                 }
                 catch
                 {
-                    Log.Debug($"No file access -> {current}");
+                    Log.Warning($"No file access -> {current}");
                     continue;
                 }
 
@@ -250,7 +246,7 @@ namespace Parallel.Core.IO.Scanning
                 }
                 catch
                 {
-                    Log.Debug($"No directory access -> {current}");
+                    Log.Warning($"No directory access -> {current}");
                     continue;
                 }
 
@@ -273,8 +269,6 @@ namespace Parallel.Core.IO.Scanning
                 SystemFile entry = new(file);
                 dict.AddOrUpdate(entry.Name, _ => [entry], (k, v) =>
                 {
-                    Log.Debug($"Checking: {entry.LocalPath}");
-
                     lock (v)
                     {
                         SystemFile? key = v.FirstOrDefault();
@@ -287,20 +281,6 @@ namespace Parallel.Core.IO.Scanning
 
                     return v;
                 });
-
-                /*if (dict.TryGetValue(entry.Name, out List<SystemFile>? value))
-                {
-                    SystemFile? key = value.FirstOrDefault();
-                    if (!HasChanged(entry, key))
-                    {
-                        Log.Debug($"HasChanged: {entry.LocalPath}");
-                        value.Add(entry);
-                    }
-                }
-                else
-                {
-                    dict[entry.Name] = new List<SystemFile> { entry };
-                }*/
             });
 
             return dict.Where(kv => kv.Value.Count > 1).OrderByDescending(kv => kv.Value.Count).ToDictionary(k => k.Key, v => v.Value.OrderBy(l => l.LastWrite.TotalMilliseconds).ToArray());

@@ -174,9 +174,7 @@ namespace Parallel.Core.Models
 
             try
             {
-                Log.Debug($"Generating checksum -> {LocalPath}");
                 if (!File.Exists(LocalPath)) return false;
-
                 using SHA256 sha256 = SHA256.Create();
                 using FileStream fs = File.OpenRead(LocalPath);
                 CheckSum = Convert.ToHexStringLower(sha256.ComputeHash(fs));
@@ -184,7 +182,7 @@ namespace Parallel.Core.Models
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"Checksum generation failed -> {LocalPath}");
+                Log.Error(ex.GetBaseException().ToString());
                 return false;
             }
         }
