@@ -72,7 +72,7 @@ namespace Parallel.Cli.Commands
                 if (!File.Exists(file.LocalPath) || FileScanner.HasChanged(file, new SystemFile(file.LocalPath)) || force) pullFiles.Add(file);
             });
 
-            Log.Debug($"Pulling {pullFiles.Count} files...");
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Pulling {pullFiles.Count:N0} files...", ConsoleColor.DarkGray);
             int pulledFiles = await syncManager.PullFilesAsync(pullFiles.ToArray(), new ProgressReport(vault, files.Count()));
             CommandLine.WriteLine(vault, $"Successfully pulled {pulledFiles:N0} files from '{vault.Credentials.RootDirectory}'.", ConsoleColor.Green);
             await syncManager.DisconnectAsync();
@@ -95,7 +95,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            Log.Debug($"Pulling '{fullPath}'");
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Pulling 1 file...", ConsoleColor.DarkGray);
             int pulledFiles = await syncManager.PullFilesAsync([remoteFile], new ProgressReport(syncManager.RemoteVault, 1));
             CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pulled {pulledFiles:N0} file from '{syncManager.RemoteVault.Credentials.RootDirectory}'.", ConsoleColor.Green);
             await syncManager.DisconnectAsync();

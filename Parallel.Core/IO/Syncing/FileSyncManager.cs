@@ -23,7 +23,7 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress, bool overwrite)
         {
             if (files.Length == 0) return 0;
             int queued = 0, completed = 0, total = 0;
@@ -37,7 +37,8 @@ namespace Parallel.Core.IO.Syncing
             Task worker = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
             {
                 Interlocked.Increment(ref queued);
-                if (string.IsNullOrEmpty(file.CheckSum) && !file.TryGenerateCheckSum()) return;
+                if (!file.TryGenerateCheckSum()) return;
+
                 SemaphoreSlim lockedThread = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
                 await lockedThread.WaitAsync(ct);
 
@@ -45,7 +46,7 @@ namespace Parallel.Core.IO.Syncing
                 {
                     Log.Debug($"Pushing -> {file.LocalPath}");
                     file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!);
-                    long result = await StorageProvider.UploadFileAsync(file, false, ct);
+                    long result = await StorageProvider.UploadFileAsync(file, overwrite, ct);
                     if (result <= 0)
                     {
                         progress.Failed(new InvalidOperationException(), file);
@@ -103,7 +104,8 @@ namespace Parallel.Core.IO.Syncing
             Task worker = System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
                 Interlocked.Increment(ref queued);
-                if (string.IsNullOrEmpty(file.CheckSum) && !file.TryGenerateCheckSum()) return;
+                if (!file.TryGenerateCheckSum()) return;
+
                 SemaphoreSlim lockedThread = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
                 await lockedThread.WaitAsync(ct);
 
