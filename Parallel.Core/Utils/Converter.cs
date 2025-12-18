@@ -38,5 +38,16 @@ namespace Parallel.Core.Utils
         {
             return part * 100 / whole;
         }
+
+        public static TimeSpan ToRemainingTimeSpan(TimeSpan elapsed, double current, double total)
+        {
+            if (current <= 0 || total <= 0 || current >= total) return TimeSpan.Zero;
+            double remainingMs = elapsed.TotalMilliseconds * (total - current) / current;
+
+            if (double.IsNaN(remainingMs) || remainingMs <= 0) return TimeSpan.Zero;
+            if (double.IsInfinity(remainingMs) || remainingMs >= TimeSpan.MaxValue.TotalMilliseconds) return TimeSpan.MaxValue;
+            return TimeSpan.FromMilliseconds(remainingMs);
+        }
+
     }
 }

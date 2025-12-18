@@ -79,11 +79,12 @@ namespace Parallel.Core.IO.Scanning
             });
 
             // Adds the remaining files as created
-            foreach (string file in localFiles.Except(new HashSet<string>(scannedFiles)))
+            IEnumerable<string> remainingFiles = localFiles.Except(scannedFiles);
+            System.Threading.Tasks.Parallel.ForEach(remainingFiles, (file) =>
             {
                 //Log.Debug($"Created -> {file}");
                 changedFiles.Add(new SystemFile(file));
-            }
+            });
 
             Log.Information($"Found {changedFiles.Count:N0} changes in '{path}'");
             return changedFiles.ToArray();
@@ -219,6 +220,7 @@ namespace Parallel.Core.IO.Scanning
                 IEnumerable<string> files;
                 try
                 {
+                    Log.Debug($"Scanning -> {current}");
                     files = Directory.EnumerateFiles(current, searchPattern);
                 }
                 catch
