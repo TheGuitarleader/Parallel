@@ -48,9 +48,9 @@ namespace Parallel.Core.IO.Syncing
         /// Pushes an array of files to a vault.
         /// </summary>
         /// <param name="files"></param>
-        /// <param name="force"></param>
         /// <param name="progress"></param>
-        Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress);
+        /// <param name="overwrite"></param>
+        Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress, bool overwrite);
 
         /// <summary>
         /// Pulls an array of files from a vault.

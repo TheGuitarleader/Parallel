@@ -23,7 +23,7 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress, bool overwrite)
         {
             if (files.Length == 0) return 0;
             int queued = 0, completed = 0, total = 0;
@@ -45,7 +45,7 @@ namespace Parallel.Core.IO.Syncing
                 {
                     Log.Debug($"Pushing -> {file.LocalPath}");
                     file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!);
-                    long result = await StorageProvider.UploadFileAsync(file, false, ct);
+                    long result = await StorageProvider.UploadFileAsync(file, overwrite, ct);
                     if (result <= 0)
                     {
                         progress.Failed(new InvalidOperationException(), file);
