@@ -229,11 +229,12 @@ namespace Parallel.Core.IO.Scanning
 
                 foreach (string file in files)
                 {
-                    if (IsIgnored(file, exempt))
-                    {
-                        Log.Debug($"Ignored -> {file}");
-                        continue;
-                    }
+                    // This is a better system. However, if a user adds something to ignore, with this code it will never mark it for deletion.
+                    // if (IsIgnored(file, exempt))
+                    // {
+                    //     Log.Debug($"Ignored -> {file}");
+                    //     continue;
+                    // }
 
                     yield return file;
                 }
