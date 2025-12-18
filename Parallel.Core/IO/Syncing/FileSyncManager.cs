@@ -6,6 +6,7 @@ using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
+using Parallel.Core.Utils;
 
 namespace Parallel.Core.IO.Syncing
 {
@@ -24,11 +25,12 @@ namespace Parallel.Core.IO.Syncing
         public override async Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             if (files.Length == 0) return 0;
-            int queued = 0, completed = 0;
+            int queued = 0, completed = 0, total = 0;
 
             ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
             SystemFile[] uploadFiles = files.Where(f => f is { Deleted: false, LocalSize: > 0 }).ToArray();
             SystemFile[] deleteFiles = files.Except(uploadFiles).ToArray();
+            total = uploadFiles.Length;
 
             Log.Information($"Pushing {uploadFiles.Length:N0} files...");
             Task worker = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
@@ -80,8 +82,8 @@ namespace Parallel.Core.IO.Syncing
                 Stopwatch sw = Stopwatch.StartNew();
                 while (!worker.IsCompleted)
                 {
-                    Log.Debug($"WORKER STATS @ {sw.Elapsed}: queued={queued}, completed={completed}");
-                    await Task.Delay(1000);
+                    Log.Debug($"WORKER STATS @ ETA {Converter.ToRemainingTimeSpan(sw.Elapsed, completed, total)}: queued={queued}, completed={completed}, total={total}");
+                    await Task.Delay(10000);
                 }
             });
 
@@ -93,7 +95,7 @@ namespace Parallel.Core.IO.Syncing
         public override async Task<int> PullFilesAsync(SystemFile[] files, IProgressReporter progress)
         {
             if (files.Length == 0) return 0;
-            int queued = 0, completed = 0;
+            int queued = 0, completed = 0, total = files.Length;
 
             ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
             Task worker = System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
@@ -140,8 +142,8 @@ namespace Parallel.Core.IO.Syncing
                 Stopwatch sw = Stopwatch.StartNew();
                 while (!worker.IsCompleted)
                 {
-                    Log.Debug($"WORKER STATS @ {sw.Elapsed}: queued={queued}, completed={completed}");
-                    await Task.Delay(1000);
+                    Log.Debug($"WORKER STATS @ ETA {Converter.ToRemainingTimeSpan(sw.Elapsed, completed, total)}: queued={queued}, completed={completed}, total={total}");
+                    await Task.Delay(10000);
                 }
             });
 

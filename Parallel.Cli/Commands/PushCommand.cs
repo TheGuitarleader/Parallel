@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Collections.Concurrent;
 using System.CommandLine;
 using System.Diagnostics;
 using Parallel.Cli.Utils;
@@ -30,66 +31,98 @@ namespace Parallel.Cli.Commands
                 _sw = Stopwatch.StartNew();
                 if (string.IsNullOrEmpty(path))
                 {
-                    await SyncSystemAsync();
+                    await PushSystemAsync(force);
                 }
                 else
                 {
-                    await SyncPathAsync(path, force);
+                    await PushPathAsync(path, force);
                 }
 
             }, _sourceOpt, _configOpt, _forceOpt);
         }
 
-        private Task SyncSystemAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        private async Task SyncPathAsync(string path, bool force)
+        private async Task PushSystemAsync(bool force)
         {
             await Program.Settings.ForEachVaultAsync(async vault =>
             {
                 ISyncManager? syncManager = SyncManager.CreateNew(vault);
                 if (syncManager == null || !await syncManager.ConnectAsync())
                 {
-                    CommandLine.WriteLine(vault, $"Failed to connect to vault!", ConsoleColor.Red);
+                    CommandLine.WriteLine(vault, "Failed to connect to vault!", ConsoleColor.Red);
                     return;
                 }
 
-                // Normalize paths for safe comparison
-                string fullPath = Path.GetFullPath(path);
-                string[] backupFolders = syncManager.RemoteVault.BackupDirectories.ToArray();
-                string[] ignoredFolders = syncManager.RemoteVault.IgnoreDirectories.ToArray();
-
-                bool isFile = PathBuilder.IsFile(fullPath);
-                if (!PathBuilder.IsDirectory(fullPath) && !isFile)
+                try
                 {
-                    CommandLine.WriteLine(vault, $"The provided path is invalid!", ConsoleColor.Yellow);
-                    return;
+                    foreach (string path in syncManager.RemoteVault.BackupDirectories)
+                    {
+                        await PushPathInternalAsync(syncManager, path, force);
+                    }
                 }
-
-                if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)) || FileScanner.IsIgnored(fullPath, ignoredFolders))
+                finally
                 {
-                    CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is set to be ignored!", ConsoleColor.Yellow);
-                    return;
+                    await syncManager.DisconnectAsync();
                 }
-
-                CommandLine.WriteLine(vault, $"Scanning for file changes in {path}...", ConsoleColor.DarkGray);
-                FileScanner scanner = new FileScanner(syncManager);
-                SystemFile[] files = await scanner.GetFileChangesAsync(path, ignoredFolders, force);
-                int successFiles = files.Length;
-                if (successFiles == 0)
-                {
-                    CommandLine.WriteLine(vault, $"The provided {(isFile ? "file" : "folder")} is already up to date.", ConsoleColor.Green);
-                    return;
-                }
-
-                CommandLine.WriteLine(vault, $"Backing up {files.Length:N0} files...", ConsoleColor.DarkGray);
-                int pushedFiles = await syncManager.PushFilesAsync(files, new ProgressReport(vault, successFiles));
-                await syncManager.DisconnectAsync();
-
-                CommandLine.WriteLine(vault, $"Successfully pushed {pushedFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
             });
+        }
+
+
+        private async Task PushPathAsync(string path, bool force)
+        {
+            await Program.Settings.ForEachVaultAsync(async vault =>
+            {
+                ISyncManager? syncManager = SyncManager.CreateNew(vault);
+                if (syncManager == null || !await syncManager.ConnectAsync())
+                {
+                    CommandLine.WriteLine(vault, "Failed to connect to vault!", ConsoleColor.Red);
+                    return;
+                }
+
+                try
+                {
+                    await PushPathInternalAsync(syncManager, path, force);
+                }
+                finally
+                {
+                    await syncManager.DisconnectAsync();
+                }
+            });
+        }
+
+
+        private async Task PushPathInternalAsync(ISyncManager syncManager, string path, bool force)
+        {
+            // Normalize paths for safe comparison
+            string fullPath = Path.GetFullPath(path);
+            string[] backupFolders = syncManager.RemoteVault.BackupDirectories.ToArray();
+            string[] ignoredFolders = syncManager.RemoteVault.IgnoreDirectories.ToArray();
+
+            bool isFile = PathBuilder.IsFile(fullPath);
+            if (!PathBuilder.IsDirectory(fullPath) && !isFile)
+            {
+                CommandLine.WriteLine(syncManager.RemoteVault, $"The provided path is invalid!", ConsoleColor.Yellow);
+                return;
+            }
+
+            if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)) || FileScanner.IsIgnored(fullPath, ignoredFolders))
+            {
+                CommandLine.WriteLine(syncManager.RemoteVault, $"The provided {(isFile ? "file" : "folder")} is set to be ignored!", ConsoleColor.Yellow);
+                return;
+            }
+
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for file changes in {path}...", ConsoleColor.DarkGray);
+            FileScanner scanner = new FileScanner(syncManager);
+            SystemFile[] files = await scanner.GetFileChangesAsync(path, ignoredFolders, force);
+            int successFiles = files.Length;
+            if (successFiles == 0)
+            {
+                CommandLine.WriteLine(syncManager.RemoteVault, $"The provided {(isFile ? "file" : "folder")} is already up to date.", ConsoleColor.Green);
+                return;
+            }
+
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Backing up {files.Length:N0} files...", ConsoleColor.DarkGray);
+            int pushedFiles = await syncManager.PushFilesAsync(files, new ProgressReport(syncManager.RemoteVault, successFiles));
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pushed {pushedFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
         }
     }
 }
