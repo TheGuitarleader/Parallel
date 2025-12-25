@@ -92,6 +92,8 @@ namespace Parallel.Cli.Commands
 
         private async Task PushPathInternalAsync(ISyncManager syncManager, string path, bool force)
         {
+            _sw.Restart();
+
             // Normalize paths for safe comparison
             string fullPath = Path.GetFullPath(path);
             string[] backupFolders = syncManager.RemoteVault.BackupDirectories.ToArray();

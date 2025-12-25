@@ -16,9 +16,9 @@ namespace Parallel.Core.Diagnostics
         public void Reset() { }
 
         /// <inheritdoc />
-        public void Failed(Exception exception, SystemFile file)
+        public void Failed(SystemFile file, string message)
         {
-            Log.Error($"{exception.GetType().FullName}: {exception.Message}");
+            Log.Error(message);
         }
     }
 }

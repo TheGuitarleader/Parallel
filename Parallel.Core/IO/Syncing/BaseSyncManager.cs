@@ -98,7 +98,7 @@ namespace Parallel.Core.IO.Syncing
             foreach (SystemFile file in tempFiles)
             {
                 await StorageProvider.UploadFileAsync(file, true);
-                Log.Debug($"Uploaded file: {TempConfigFile}");
+                Log.Debug($"Uploaded file: {file.LocalPath}");
             }
             StorageProvider?.Dispose();
 
