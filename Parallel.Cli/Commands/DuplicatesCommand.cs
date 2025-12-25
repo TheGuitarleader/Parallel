@@ -5,9 +5,7 @@ using Parallel.Cli.Utils;
 using Parallel.Core.IO;
 using Parallel.Core.IO.Scanning;
 using Parallel.Core.Models;
-using Parallel.Core.Settings;
 using Parallel.Core.Utils;
-using TextWriter = Parallel.Cli.Utils.TextWriter;
 
 namespace Parallel.Cli.Commands
 {

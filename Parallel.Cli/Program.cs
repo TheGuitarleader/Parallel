@@ -1,7 +1,9 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using System.CommandLine;
+using System.Diagnostics;
 using System.Reflection;
+using Parallel.Cli.Utils;
 using Parallel.Core.IO;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
@@ -16,15 +18,21 @@ namespace Parallel.Cli
 
         public static async Task Main(string[] args)
         {
+            if (!ParallelConfig.CanStartCliInstance())
+            {
+                CommandLine.WriteLine("An instance of Parallel is already running!", ConsoleColor.Yellow);
+                return;
+            }
+
             Settings = ParallelConfig.Load();
             AssemblyName assembly = Assembly.GetExecutingAssembly().GetName();
-            Log.Information($"{assembly.Name} [Version {assembly.Version}]");
 #if DEBUG
             Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Sink(EventTracker).WriteTo.Console().CreateLogger();
 #else
             Log.Logger = new LoggerConfiguration().WriteTo.Sink(EventTracker).CreateLogger();
 #endif
 
+            Log.Information($"{assembly.Name} [Version {assembly.Version}]");
             RootCommand rootCommand = new("Parallel file manager - Easily back up and synchronize massive amounts of files, and free up drive space.");
             Type[] types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsSubclassOf(typeof(Command)) && t.IsClass).ToArray();
             foreach (Type? type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);

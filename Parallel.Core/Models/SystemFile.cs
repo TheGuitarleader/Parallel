@@ -174,6 +174,8 @@ namespace Parallel.Core.Models
 
             try
             {
+                Log.Debug($"Generating checksum -> {LocalPath}");
+
                 if (!File.Exists(LocalPath)) return false;
                 using SHA256 sha256 = SHA256.Create();
                 using FileStream fs = File.OpenRead(LocalPath);

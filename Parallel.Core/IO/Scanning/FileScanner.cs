@@ -54,7 +54,7 @@ namespace Parallel.Core.IO.Scanning
                     SystemFile localFile = new SystemFile(remoteFile.LocalPath);
                     if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
-                        //Log.Debug($"Ignored -> {localFile.LocalPath}");
+                        Log.Debug($"Ignored -> {localFile.LocalPath}");
                         localFile.RemotePath = remoteFile.RemotePath;
                         localFile.Deleted = true;
                         changedFiles.Add(localFile);
@@ -96,8 +96,8 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>True is success, otherwise false.</returns>
         public static bool HasChanged(SystemFile source, SystemFile? target)
         {
-            if (target is null || !source.TryGenerateCheckSum()) return false;
-            if (source.LastWrite.TotalMilliseconds <= target.LastWrite.TotalMilliseconds) return false;
+            if (target is null || source.LastWrite.TotalMilliseconds <= target.LastWrite.TotalMilliseconds) return false;
+            if (!source.TryGenerateCheckSum()) return false;
             return source.CheckSum != target.CheckSum;
         }
 
