@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using System.Diagnostics;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Math.EC;
 using Parallel.Core.IO;
@@ -30,21 +31,16 @@ namespace Parallel.Core.Settings
         };
 
         /// <summary>
-        /// Gets the static value for <see cref="MaxRetries"/>.
+        /// The address that will accept incoming commands.
+        /// <para>Default: 127.0.0.1</para>
         /// </summary>
-        public static int MaxStaticTransfers { get; } = Math.Max(1, Load().MaxRetries);
+        public string Address { get; set; } = "127.0.0.1";
 
-        // /// <summary>
-        // /// The address that will accept incoming commands.
-        // /// <para>Default: 127.0.0.1</para>
-        // /// </summary>
-        // public string Address { get; set; } = "127.0.0.1";
-        //
-        // /// <summary>
-        // /// The port number to listen for commands on.
-        // /// <para>Default: 8192</para>
-        // /// </summary>
-        // public int ListenerPort { get; set; } = 8192;
+        /// <summary>
+        /// The port number to listen for commands on.
+        /// <para>Default: 8192</para>
+        /// </summary>
+        public int ListenerPort { get; set; } = 8192;
 
         /// <summary>
         /// Gets or sets the maximum number of concurrent vaults that can run.
@@ -57,12 +53,6 @@ namespace Parallel.Core.Settings
         /// <para>Default: The processor count.</para>
         /// </summary>
         public int MaxConcurrentProcesses { get; set; } = Environment.ProcessorCount;
-
-        /// <summary>
-        /// Gets or sets the maximum number of times a file can attempt to be uploaded.
-        /// <para>Default: 3</para>
-        /// </summary>
-        public int MaxRetries { get; set; } = 3;
 
         /// <summary>
         /// The amount of time, in days, to hold a file before it can be cleaned.
@@ -146,6 +136,16 @@ namespace Parallel.Core.Settings
         public static LocalVaultConfig? GetVault(string vault)
         {
             return Load().Vaults.FirstOrDefault(v => v.Id.Equals(vault, StringComparison.OrdinalIgnoreCase) || v.Name.Equals(vault, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public static bool CanStartCliInstance()
+        {
+            return Process.GetProcessesByName("Parallel").Length <= 1;
+        }
+
+        public static bool CanStartGuiInstance()
+        {
+            return Process.GetProcessesByName("Parallel Desktop").Length <= 1;
         }
     }
 }
