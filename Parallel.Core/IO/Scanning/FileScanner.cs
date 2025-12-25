@@ -51,18 +51,16 @@ namespace Parallel.Core.IO.Scanning
             {
                 if (File.Exists(remoteFile.LocalPath))
                 {
-                    SystemFile localFile = new SystemFile(remoteFile.LocalPath);
+                    SystemFile localFile = new SystemFile(remoteFile);
                     if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
                         Log.Debug($"Ignored -> {localFile.LocalPath}");
-                        localFile.RemotePath = remoteFile.RemotePath;
                         localFile.Deleted = true;
                         changedFiles.Add(localFile);
                     }
                     else if (HasChanged(localFile, remoteFile) || force)
                     {
-                        //Log.Debug($"Changed -> {localFile.LocalPath}");
-                        localFile.RemotePath = remoteFile.RemotePath;
+                        Log.Debug($"Changed -> {localFile.LocalPath}");
                         changedFiles.Add(localFile);
                     }
 
@@ -70,7 +68,7 @@ namespace Parallel.Core.IO.Scanning
                 }
                 else
                 {
-                    //Log.Debug($"Deleted -> {remoteFile.LocalPath}");
+                    Log.Debug($"Deleted -> {remoteFile.LocalPath}");
                     remoteFile.Deleted = true;
                     changedFiles.Add(remoteFile);
                 }
@@ -78,10 +76,11 @@ namespace Parallel.Core.IO.Scanning
 
             // Adds the remaining files as created
             IEnumerable<string> remainingFiles = localFiles.Except(scannedFiles);
-            System.Threading.Tasks.Parallel.ForEach(remainingFiles, (file) =>
+            System.Threading.Tasks.Parallel.ForEach(remainingFiles, ParallelConfig.Options, (filePath) =>
             {
-                //Log.Debug($"Created -> {file}");
-                changedFiles.Add(new SystemFile(file));
+                if (IsIgnored(filePath, ignoreFolders)) return;
+                Log.Debug($"Created -> {filePath}");
+                changedFiles.Add(new SystemFile(filePath));
             });
 
             Log.Information($"Found {changedFiles.Count:N0} changes in '{path}'");

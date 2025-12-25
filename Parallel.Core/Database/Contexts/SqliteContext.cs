@@ -49,9 +49,13 @@ namespace Parallel.Core.Database
 
         #region Files
 
+        /// <exception cref="ArgumentNullException"></exception>
         /// <inheritdoc />
         public async Task<bool> AddFileAsync(SystemFile file)
         {
+            if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
+            if (string.IsNullOrEmpty(file.CheckSum)) throw new ArgumentNullException(nameof(file.CheckSum));
+
             using IDbConnection connection = CreateConnection();
             string sql = @"INSERT OR REPLACE INTO files (name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
             return await connection.ExecuteAsync(sql, new { file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
@@ -118,6 +122,7 @@ namespace Parallel.Core.Database
         {
             using IDbConnection connection = CreateConnection();
             string sql = "SELECT * FROM (SELECT * FROM files WHERE localpath LIKE @Path AND deleted = @deleted ORDER BY lastupdate DESC) GROUP BY localpath;";
+            Log.Debug($"SELECT * FROM (SELECT * FROM files WHERE localpath LIKE '%{path}%' AND deleted = {deleted} ORDER BY lastupdate DESC) GROUP BY localpath;");
             return await connection.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", deleted });
         }
 
@@ -144,6 +149,9 @@ namespace Parallel.Core.Database
         /// <inheritdoc />
         public async Task<bool> AddHistoryAsync(HistoryType type, SystemFile file)
         {
+            if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
+            if (string.IsNullOrEmpty(file.CheckSum)) throw new ArgumentNullException(nameof(file.CheckSum));
+
             using IDbConnection connection = CreateConnection();
             string sql = @"INSERT OR REPLACE INTO history (timestamp, path, checksum, type) VALUES(@Timestamp, @Path, @CheckSum, @Type);";
             return await connection.ExecuteAsync(sql, new { Timestamp = file.LastUpdate.TotalMilliseconds, Path = file.LocalPath, file.CheckSum, Type = type }) > 0;

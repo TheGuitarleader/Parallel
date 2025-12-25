@@ -141,6 +141,21 @@ namespace Parallel.Core.Models
             LastWrite = new UnixTime(lastWriteTime);
         }
 
+        public SystemFile(SystemFile file)
+        {
+            Name = file.Name;
+            LocalPath = file.LocalPath;
+            RemotePath = file.RemotePath;
+            LastWrite = file.LastWrite;
+            LastUpdate = file.LastUpdate;
+            LocalSize = file.LocalSize;
+            RemoteSize = file.RemoteSize;
+            Hidden = file.Hidden;
+            ReadOnly = file.ReadOnly;
+            Deleted = file.Deleted;
+            CheckSum = file.CheckSum;
+        }
+
         //public SystemFile() { }
 
         /// <summary>
@@ -174,8 +189,6 @@ namespace Parallel.Core.Models
 
             try
             {
-                Log.Debug($"Generating checksum -> {LocalPath}");
-
                 if (!File.Exists(LocalPath)) return false;
                 using SHA256 sha256 = SHA256.Create();
                 using FileStream fs = File.OpenRead(LocalPath);

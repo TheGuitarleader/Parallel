@@ -33,6 +33,6 @@ namespace Parallel.Core.Diagnostics
         /// <summary>
         /// Reports a failed update.
         /// </summary>
-        void Failed(Exception exception, SystemFile file);
+        void Failed(SystemFile file, string reason);
     }
 }

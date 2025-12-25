@@ -107,8 +107,6 @@ namespace Parallel.Cli.Commands
                 CommandLine.WriteArray("Ignore Directories", remoteVault.IgnoreDirectories);
                 CommandLine.WriteArray("Prune Directories", remoteVault.PruneDirectories);
                 CommandLine.WriteLine($"Prune Period: {remoteVault.PrunePeriod} days");
-
-                await syncManager.DisconnectAsync();
             }, configArg);
 
             this.AddCommand(setCmd);

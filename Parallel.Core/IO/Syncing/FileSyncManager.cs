@@ -2,6 +2,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
@@ -29,7 +30,7 @@ namespace Parallel.Core.IO.Syncing
             int queued = 0, completed = 0, total = 0;
 
             ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
-            SystemFile[] uploadFiles = files.Where(f => f is { Deleted: false, LocalSize: > 0 }).ToArray();
+            SystemFile[] uploadFiles = files.Where(f => !f.Deleted).ToArray();
             SystemFile[] deleteFiles = files.Except(uploadFiles).ToArray();
             total = uploadFiles.Length;
 
@@ -47,11 +48,6 @@ namespace Parallel.Core.IO.Syncing
                     Log.Debug($"Pushing -> {file.LocalPath}");
                     file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!);
                     long result = await StorageProvider.UploadFileAsync(file, overwrite, ct);
-                    if (result <= 0)
-                    {
-                        progress.Failed(new InvalidOperationException(), file);
-                        return;
-                    }
 
                     file.RemoteSize = result;
                     await (Database?.AddHistoryAsync(HistoryType.Pushed, file) ?? Task.CompletedTask);
@@ -61,7 +57,7 @@ namespace Parallel.Core.IO.Syncing
                 catch (Exception ex)
                 {
                     await StorageProvider.DeleteFileAsync(file.RemotePath);
-                    Log.Error(ex.GetBaseException().ToString());
+                    progress.Failed(file, ex.GetBaseException().ToString());
                 }
                 finally
                 {
@@ -73,12 +69,13 @@ namespace Parallel.Core.IO.Syncing
             });
 
             Log.Information($"Archiving {deleteFiles.Length:N0} files...");
-            foreach (SystemFile file in deleteFiles)
+            await System.Threading.Tasks.Parallel.ForEachAsync(deleteFiles, ParallelConfig.Options, async (file, ct) =>
             {
                 await (Database?.AddHistoryAsync(HistoryType.Archived, file) ?? Task.CompletedTask);
                 await (Database?.AddFileAsync(file) ?? Task.CompletedTask);
                 progress.Report(ProgressOperation.Archived, file);
-            }
+                Interlocked.Increment(ref completed);
+            });
 
             Task monitor = Task.Run(async () =>
             {
@@ -114,7 +111,7 @@ namespace Parallel.Core.IO.Syncing
                     await StorageProvider.DownloadFileAsync(file, ct);
                     if (!File.Exists(file.LocalPath))
                     {
-                        progress.Failed(new InvalidOperationException(), file);
+                        progress.Failed(file, "File not found!");
                         return;
                     }
 
@@ -130,7 +127,7 @@ namespace Parallel.Core.IO.Syncing
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.GetBaseException().ToString());
+                    progress.Failed(file, ex.GetBaseException().ToString());
                     if (File.Exists(file.LocalPath)) File.Delete(file.LocalPath);
                 }
                 finally
