@@ -51,7 +51,7 @@ namespace Parallel.Core.IO.Scanning
             {
                 if (File.Exists(remoteFile.LocalPath))
                 {
-                    SystemFile localFile = new SystemFile(remoteFile);
+                    SystemFile localFile = new SystemFile(remoteFile.LocalPath);
                     if (IsIgnored(localFile.LocalPath, ignoreFolders))
                     {
                         Log.Debug($"Ignored -> {localFile.LocalPath}");

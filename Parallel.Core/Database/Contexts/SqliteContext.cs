@@ -54,7 +54,7 @@ namespace Parallel.Core.Database
         public async Task<bool> AddFileAsync(SystemFile file)
         {
             if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
-            if (string.IsNullOrEmpty(file.CheckSum)) throw new ArgumentNullException(nameof(file.CheckSum));
+            if (!file.TryGenerateCheckSum()) throw new ArgumentNullException(nameof(file.CheckSum));
 
             using IDbConnection connection = CreateConnection();
             string sql = @"INSERT OR REPLACE INTO files (name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
@@ -65,8 +65,8 @@ namespace Parallel.Core.Database
         public async Task RemoveFileAsync(SystemFile file)
         {
             using IDbConnection connection = CreateConnection();
-            string sql = $"DELETE FROM files WHERE checksum = @Checksum;";
-            await connection.ExecuteAsync(sql, new { file.CheckSum });
+            string sql = $"DELETE FROM files WHERE localpath = @LocalPath AND checksum = @Checksum;";
+            await connection.ExecuteAsync(sql, new { file.LocalPath, file.CheckSum });
         }
 
         /// <inheritdoc />

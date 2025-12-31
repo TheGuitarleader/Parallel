@@ -85,7 +85,7 @@ namespace Parallel.Core.Models
             LocalPath = fileInfo.FullName;
             LocalSize = fileInfo.Length;
             RemoteSize = fileInfo.Length;
-            LastWrite = new UnixTime(fileInfo.LastWriteTime);
+            LastWrite = new UnixTime(fileInfo.LastWriteTimeUtc);
             LastUpdate = UnixTime.Now;
             Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
             Hidden = fileInfo.Attributes.HasFlag(FileAttributes.Hidden);
@@ -139,21 +139,6 @@ namespace Parallel.Core.Models
             RemotePath = remotePath;
             RemoteSize = length;
             LastWrite = new UnixTime(lastWriteTime);
-        }
-
-        public SystemFile(SystemFile file)
-        {
-            Name = file.Name;
-            LocalPath = file.LocalPath;
-            RemotePath = file.RemotePath;
-            LastWrite = file.LastWrite;
-            LastUpdate = file.LastUpdate;
-            LocalSize = file.LocalSize;
-            RemoteSize = file.RemoteSize;
-            Hidden = file.Hidden;
-            ReadOnly = file.ReadOnly;
-            Deleted = file.Deleted;
-            CheckSum = file.CheckSum;
         }
 
         //public SystemFile() { }
