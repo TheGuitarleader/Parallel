@@ -67,7 +67,7 @@ namespace Parallel.Core.Utils
         /// <summary>
         /// Gets a <see cref="UnixTime"/> object that is set to current time since epoch.
         /// </summary>
-        public static UnixTime Now => new(DateTime.Now);
+        public static UnixTime Now => new(DateTime.UtcNow);
 
         /// <summary>
         /// Gets the value of the current <see cref="UnixTime"/> structure expressed as whole milliseconds.
