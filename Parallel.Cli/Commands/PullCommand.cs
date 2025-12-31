@@ -28,7 +28,7 @@ namespace Parallel.Cli.Commands
             this.AddOption(_beforeOpt);
             this.SetHandler(async (path, config, remap, force, before) =>
             {
-                DateTime timestamp = before != DateTime.MinValue ? before.Add(TimeSpan.FromMinutes(1)) : DateTime.Now;
+                DateTime timestamp = before != DateTime.MinValue ? before.AddMinutes(1).AddTicks(-1) : DateTime.Now;
                 LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault(v => v.Enabled);
                 if (!string.IsNullOrEmpty(config)) vault = ParallelConfig.GetVault(config);
                 if (vault == null)
