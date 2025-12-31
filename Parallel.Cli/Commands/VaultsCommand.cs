@@ -63,8 +63,11 @@ namespace Parallel.Cli.Commands
                     spc.Password = CommandLine.ReadPassword("Password");
                 }
 
-                string profileId = CommandLine.ReadString("Id") ?? HashGenerator.GenerateHash(8, true);
-                string profileName = CommandLine.ReadString("Name") ?? "Default";
+                string? inputId = CommandLine.ReadString("Id");
+                string profileId = string.IsNullOrWhiteSpace(inputId) ? HashGenerator.GenerateHash(8, true) : inputId;
+
+                string? inputName = CommandLine.ReadString("Name");
+                string profileName = string.IsNullOrWhiteSpace(inputName) ? "Default" : inputName;
 
                 spc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
                 spc.EncryptionKey = spc.Encrypt ? HashGenerator.GenerateHash(32, true) : null;

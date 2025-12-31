@@ -29,7 +29,7 @@ namespace Parallel.Cli
 #if DEBUG
             Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Sink(EventTracker).WriteTo.Console().CreateLogger();
 #else
-            Log.Logger = new LoggerConfiguration().WriteTo.Sink(EventTracker).CreateLogger();
+            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Sink(EventTracker).CreateLogger();
 #endif
 
             Log.Information($"{assembly.Name} [Version {assembly.Version}]");
@@ -40,11 +40,10 @@ namespace Parallel.Cli
 
             // Clean successful logs
             await Log.CloseAndFlushAsync();
-            if (EventTracker.Warnings.Count > 0 || EventTracker.Errors.Count > 0)
-            {
-                await File.WriteAllTextAsync(Path.Combine(PathBuilder.ProgramData, "Logs", $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.json"), JsonConvert.SerializeObject(EventTracker, Formatting.Indented));
-            }
 
+            string logDir = Path.Combine(PathBuilder.ProgramData, "Logs");
+            if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
+            await File.WriteAllTextAsync(Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.json"), JsonConvert.SerializeObject(EventTracker, Formatting.Indented));
             Settings.Save();
         }
     }

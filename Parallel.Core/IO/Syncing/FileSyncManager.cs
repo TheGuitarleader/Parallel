@@ -50,8 +50,11 @@ namespace Parallel.Core.IO.Syncing
                     long result = await StorageProvider.UploadFileAsync(file, overwrite, ct);
 
                     file.RemoteSize = result;
-                    await (Database?.AddHistoryAsync(HistoryType.Pushed, file) ?? Task.CompletedTask);
-                    await (Database?.AddFileAsync(file) ?? Task.CompletedTask);
+                    if (!await (Database?.AddHistoryAsync(HistoryType.Pushed, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
+                    if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error($"Failed to add file: {file.LocalPath}");
+
+                    await (Database?.AddHistoryAsync(HistoryType.Pushed, file) ?? Task.FromResult(false));
+                    await (Database?.AddFileAsync(file) ?? Task.FromResult(false));
                     progress.Report(ProgressOperation.Pushed, file);
                 }
                 catch (Exception ex)
@@ -71,8 +74,8 @@ namespace Parallel.Core.IO.Syncing
             Log.Information($"Archiving {deleteFiles.Length:N0} files...");
             await System.Threading.Tasks.Parallel.ForEachAsync(deleteFiles, ParallelConfig.Options, async (file, ct) =>
             {
-                await (Database?.AddHistoryAsync(HistoryType.Archived, file) ?? Task.CompletedTask);
-                await (Database?.AddFileAsync(file) ?? Task.CompletedTask);
+                if (!await (Database?.AddHistoryAsync(HistoryType.Archived, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
+                if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error($"Failed to add file: {file.LocalPath}");
                 progress.Report(ProgressOperation.Archived, file);
                 Interlocked.Increment(ref completed);
             });
@@ -122,7 +125,7 @@ namespace Parallel.Core.IO.Syncing
                     fileInfo.LastWriteTime = file.LastWrite.ToLocalTime();
                     fileInfo.Attributes = attributes;
 
-                    await (Database?.AddHistoryAsync(HistoryType.Pulled, file) ?? Task.CompletedTask);
+                    if (!await (Database?.AddHistoryAsync(HistoryType.Pulled, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
                     progress.Report(ProgressOperation.Pulled, file);
                 }
                 catch (Exception ex)
