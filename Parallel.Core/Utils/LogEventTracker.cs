@@ -12,16 +12,6 @@ namespace Parallel.Core.Utils
     public class LogEventTracker : ILogEventSink
     {
         /// <summary>
-        /// Gets an array of debug log messages.
-        /// </summary>
-        public readonly ConcurrentBag<string> Debugs = new ConcurrentBag<string>();
-
-        /// <summary>
-        /// Gets an array of information log messages.
-        /// </summary>
-        public readonly ConcurrentBag<string> Messages = new ConcurrentBag<string>();
-
-        /// <summary>
         /// Gets an array of warning log messages.
         /// </summary>
         public readonly ConcurrentBag<string> Warnings = new ConcurrentBag<string>();
@@ -34,16 +24,6 @@ namespace Parallel.Core.Utils
         /// <inheritdoc />
         public void Emit(LogEvent logEvent)
         {
-            if (logEvent.Level == LogEventLevel.Debug)
-            {
-                Debugs.Add($"[{logEvent.Timestamp.LocalDateTime:HH:mm:ss.fff}]: {logEvent.RenderMessage()}");
-            }
-
-            if (logEvent.Level == LogEventLevel.Information)
-            {
-                Messages.Add($"[{logEvent.Timestamp.LocalDateTime:HH:mm:ss.fff}]: {logEvent.RenderMessage()}");
-            }
-
             if (logEvent.Level == LogEventLevel.Warning)
             {
                 Warnings.Add($"[{logEvent.Timestamp.LocalDateTime:HH:mm:ss.fff}]: {logEvent.RenderMessage()}");
