@@ -52,12 +52,6 @@ namespace Parallel.Core.Database
         #region Base
 
         /// <summary>
-        /// Creates a new <see cref="IDbConnection"/>.
-        /// </summary>
-        /// <returns></returns>
-        IDbConnection CreateConnection();
-
-        /// <summary>
         /// Called when initializing a new <see cref="IDatabase"/> instance.
         /// <para>Used for creating new table schemas.</para>
         /// </summary>
@@ -82,7 +76,7 @@ namespace Parallel.Core.Database
         /// <param name="path"></param>
         /// <param name="timestamp"></param>
         /// <returns></returns>
-        Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp);
+        Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp);
 
         /// <summary>
         /// Gets a list of files by newest revision.
@@ -90,14 +84,14 @@ namespace Parallel.Core.Database
         /// <param name="path"></param>
         /// <param name="deleted"></param>
         /// <returns></returns>
-        Task<IEnumerable<SystemFile>> GetLatestFilesAsync(string path, bool deleted);
+        Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, bool deleted);
 
         /// <summary>
         /// Gets a list of revisions from a file.
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        Task<IEnumerable<SystemFile>> GetRevisedFilesAsync(string path);
+        Task<IReadOnlyList<SystemFile>> GetRevisedFilesAsync(string path);
 
         /// <summary>
         /// Gets a specific file.
@@ -124,20 +118,9 @@ namespace Parallel.Core.Database
         /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddHistoryAsync(HistoryType type, SystemFile file);
 
-        Task<IEnumerable<HistoryEvent>> GetHistoryAsync(string path, int limit);
+        Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, int limit);
 
-        Task<IEnumerable<HistoryEvent>> GetHistoryAsync(string path, HistoryType type, int limit);
-
-        #endregion
-
-        #region Objects
-
-        Task<bool> AddObjectAsync(string id, string hash, int index);
-        Task<IEnumerable<string>> GetObjectsAsync(string id);
-
-        Task<long> GetTotalObjectsAsync();
-
-        Task<bool> RemapObjectsAsync(string oldId, string newId);
+        Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType type, int limit);
 
         #endregion
     }

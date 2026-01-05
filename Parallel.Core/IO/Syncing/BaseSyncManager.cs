@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using Parallel.Core.Database;
+using Parallel.Core.Database.Contexts;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
@@ -100,8 +101,8 @@ namespace Parallel.Core.IO.Syncing
                 await StorageProvider.UploadFileAsync(file, true);
                 Log.Debug($"Uploaded file: {file.LocalPath}");
             }
-            StorageProvider?.Dispose();
 
+            StorageProvider?.Dispose();
             Log.Information($"[{LocalVault.Id}] Disconnected");
         }
 

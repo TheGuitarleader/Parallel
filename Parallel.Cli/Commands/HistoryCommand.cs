@@ -108,7 +108,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            IEnumerable<HistoryEvent> historyList = await (syncManager.Database?.GetHistoryAsync(path, limit) ?? Task.FromResult<IEnumerable<HistoryEvent>>([]));
+            IReadOnlyList<HistoryEvent> historyList = await (syncManager.Database?.GetHistoryAsync(path, limit) ?? Task.FromResult<IReadOnlyList<HistoryEvent>>([]));
             if (!historyList.Any()) CommandLine.WriteLine("No history was found!", ConsoleColor.Yellow);
             foreach (HistoryEvent historyEvent in historyList)
             {
@@ -134,7 +134,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            IEnumerable<HistoryEvent> historyList = await (syncManager.Database?.GetHistoryAsync(path, type, limit) ?? Task.FromResult<IEnumerable<HistoryEvent>>([]));
+            IReadOnlyList<HistoryEvent> historyList = await (syncManager.Database?.GetHistoryAsync(path, type, limit) ?? Task.FromResult<IReadOnlyList<HistoryEvent>>([]));
             if (!historyList.Any()) CommandLine.WriteLine("No history was found!", ConsoleColor.Yellow);
             foreach (HistoryEvent historyEvent in historyList)
             {

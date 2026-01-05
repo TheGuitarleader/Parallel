@@ -40,8 +40,8 @@ namespace Parallel.Core.IO.Syncing
                 Interlocked.Increment(ref queued);
                 if (!file.TryGenerateCheckSum()) return;
 
-                SemaphoreSlim lockedThread = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
-                await lockedThread.WaitAsync(ct);
+                SemaphoreSlim threadLock = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
+                await threadLock.WaitAsync(ct);
 
                 try
                 {
@@ -52,9 +52,6 @@ namespace Parallel.Core.IO.Syncing
                     file.RemoteSize = result;
                     if (!await (Database?.AddHistoryAsync(HistoryType.Pushed, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
                     if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error($"Failed to add file: {file.LocalPath}");
-
-                    await (Database?.AddHistoryAsync(HistoryType.Pushed, file) ?? Task.FromResult(false));
-                    await (Database?.AddFileAsync(file) ?? Task.FromResult(false));
                     progress.Report(ProgressOperation.Pushed, file);
                 }
                 catch (Exception ex)
@@ -64,7 +61,7 @@ namespace Parallel.Core.IO.Syncing
                 }
                 finally
                 {
-                    lockedThread.Release();
+                    threadLock.Release();
                     threadPool.TryRemove(file.CheckSum!, out _);
                     Interlocked.Increment(ref completed);
                     Interlocked.Decrement(ref queued);
@@ -106,8 +103,8 @@ namespace Parallel.Core.IO.Syncing
                 Interlocked.Increment(ref queued);
                 if (!file.TryGenerateCheckSum()) return;
 
-                SemaphoreSlim lockedThread = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
-                await lockedThread.WaitAsync(ct);
+                SemaphoreSlim threadLock = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
+                await threadLock.WaitAsync(ct);
 
                 try
                 {
@@ -135,7 +132,7 @@ namespace Parallel.Core.IO.Syncing
                 }
                 finally
                 {
-                    lockedThread.Release();
+                    threadLock.Release();
                     threadPool.TryRemove(file.CheckSum!, out _);
                     Interlocked.Increment(ref completed);
                     Interlocked.Decrement(ref queued);
