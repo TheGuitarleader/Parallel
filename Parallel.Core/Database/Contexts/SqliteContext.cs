@@ -53,14 +53,14 @@ namespace Parallel.Core.Database.Contexts
         /// <inheritdoc />
         public async Task<long> GetLocalSizeAsync()
         {
-            string sql = $"SELECT COALESCE(SUM(f.localsize), 0) FROM files f JOIN (SELECT localpath, MAX(lastupdate) AS max_lastupdate FROM files WHERE deleted = 0 GROUP BY localpath) latest ON f.localpath = latest.localpath AND f.lastupdate = latest.max_lastupdate;";
+            string sql = "SELECT COALESCE(SUM(f.localsize), 0) FROM files f JOIN (SELECT localpath, MAX(lastupdate) AS max_lastupdate FROM files WHERE deleted = 0 GROUP BY localpath) latest ON f.localpath = latest.localpath AND f.lastupdate = latest.max_lastupdate;";
             return await _semaphore.QuerySingleAsync<long>(sql);
         }
 
         /// <inheritdoc />
         public async Task<long> GetRemoteSizeAsync()
         {
-            string sql = $"SELECT COALESCE(SUM(f.remotesize), 0) FROM files f JOIN (SELECT localpath, MAX(lastupdate) AS max_lastupdate FROM files WHERE deleted = 0 GROUP BY localpath) latest ON f.localpath = latest.localpath AND f.lastupdate = latest.max_lastupdate;";
+            string sql = "SELECT COALESCE(SUM(f.remotesize), 0) FROM files f JOIN (SELECT checksum, MAX(lastupdate) AS max_lastupdate FROM files GROUP BY checksum) latest ON f.checksum = latest.checksum AND f.lastupdate = latest.max_lastupdate;";
             return await _semaphore.QuerySingleAsync<long>(sql);
         }
 

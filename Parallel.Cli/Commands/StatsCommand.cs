@@ -70,8 +70,6 @@ namespace Parallel.Cli.Commands
                 CommandLine.WriteLine($"Disk Free:      {Formatter.FromBytes(drive.TotalFreeSpace)} ({Math.Round(drive.TotalFreeSpace / (double)drive.TotalSize * 100, 1)}%)");
                 CommandLine.WriteLine($"Disk Total:     {Formatter.FromBytes(drive.TotalSize)}");
             }
-
-            await syncManager.DisconnectAsync();
         }
     }
 }
