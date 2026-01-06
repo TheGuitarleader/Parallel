@@ -58,7 +58,7 @@ namespace Parallel.Cli.Commands
             }
 
             CommandLine.WriteLine(vault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
-            IEnumerable<SystemFile> files = await (syncManager.Database?.GetLatestFilesAsync(fullPath, timestamp) ?? Task.FromResult<IEnumerable<SystemFile>>([]));
+            IReadOnlyList<SystemFile> files = await (syncManager.Database?.GetLatestFilesAsync(fullPath, timestamp) ?? Task.FromResult<IReadOnlyList<SystemFile>>([]));
 
             List<SystemFile> pullFiles = new List<SystemFile>();
             System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, (file) =>
