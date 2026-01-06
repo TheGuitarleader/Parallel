@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Kyle Ebbinga
 
 using System.Data;
 using Microsoft.Data.Sqlite;
@@ -38,7 +38,7 @@ namespace Parallel.Core.Database.Contexts
         {
             if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
             if (!file.TryGenerateCheckSum()) throw new ArgumentNullException(nameof(file.CheckSum));
-            
+
             string sql = @"INSERT OR REPLACE INTO files (name, localpath, remotepath, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Name, @LocalPath, @RemotePath, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
             return await _semaphore.ExecuteAsync(sql, new { file.Name, file.LocalPath, file.RemotePath, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
         }
@@ -122,7 +122,7 @@ namespace Parallel.Core.Database.Contexts
         {
             if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
             if (string.IsNullOrEmpty(file.CheckSum)) throw new ArgumentNullException(nameof(file.CheckSum));
-            
+
             string sql = @"INSERT OR REPLACE INTO history (timestamp, path, checksum, type) VALUES(@Timestamp, @Path, @CheckSum, @Type);";
             return await _semaphore.ExecuteAsync(sql, new { Timestamp = file.LastUpdate.TotalMilliseconds, Path = file.LocalPath, file.CheckSum, Type = type }) > 0;
         }
