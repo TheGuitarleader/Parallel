@@ -108,6 +108,9 @@ namespace Parallel.Core.IO.Syncing
 
                 try
                 {
+                    string? parentDir = Path.GetDirectoryName(file.LocalPath);
+                    if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
+
                     await StorageProvider.DownloadFileAsync(file, ct);
                     if (!File.Exists(file.LocalPath))
                     {

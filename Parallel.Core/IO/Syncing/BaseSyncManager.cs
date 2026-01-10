@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.Database.Contexts;
 using Parallel.Core.Diagnostics;
@@ -95,6 +96,8 @@ namespace Parallel.Core.IO.Syncing
         public async Task DisconnectAsync()
         {
             Log.Debug($"[{LocalVault.Id}] Disconnecting...");
+            RemoteVault.Save(TempConfigFile);
+
             SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
             foreach (SystemFile file in tempFiles)
             {

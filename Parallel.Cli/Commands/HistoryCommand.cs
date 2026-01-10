@@ -138,7 +138,7 @@ namespace Parallel.Cli.Commands
             if (!historyList.Any()) CommandLine.WriteLine("No history was found!", ConsoleColor.Yellow);
             foreach (HistoryEvent historyEvent in historyList)
             {
-                CommandLine.WriteLine($"[{Formatter.FromDateTime(historyEvent.CreatedAt.ToLocalTime())}] {historyEvent.Type}: {historyEvent.Fullname}", ConsoleColor.White);
+                CommandLine.WriteLine($"[{Formatter.FromDateTime(historyEvent.CreatedAt.ToLocalTime())}] {historyEvent.Type}: {historyEvent.Fullname}", ConsoleColor.Gray);
             }
         }
     }
