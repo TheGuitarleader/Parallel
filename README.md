@@ -49,9 +49,9 @@ All vaults are saved as JSON in `%AppData%\Parallel\Configuration.json` for easi
 #### 3. Back up files to vaults
 Parallel can backup all changed files on the system with:
 ```
-parallel backup
+parallel sync
 ```
-Or you can specify a path which can be a file or folder.
+You can also specify a path which can be a file or folder or a specific vault configuration.
 ```
 parallel sync --path "C:\Windows\System32"
 parallel sync -p "C:\Windows\System32\cmd.exe"
@@ -66,7 +66,7 @@ parallel restore -p "C:\Windows\System32\cmd.exe"
 Parallel keeps revisions of files. To restore files to a previous version and not the latest you can use the `--before` option and provide a valid timestamp string. See more about DateTime [parsing](https://learn.microsoft.com/en-us/dotnet/api/system.datetime.parse?view=net-10.0#StringToParse).
 ```
 parallel restore --path "C:\Windows\System32" --before "2025-12-16 5:11 PM"
-parallel restore -p "C:\Windows\System32\cmd.exe" --before "12/16/25 17:11:43"
+parallel restore -p "C:\Windows\System32\cmd.exe" --before "12/16/25"
 ```
 
 ## 🧪 Status
