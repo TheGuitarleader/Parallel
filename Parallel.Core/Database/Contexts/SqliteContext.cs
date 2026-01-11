@@ -27,6 +27,7 @@ namespace Parallel.Core.Database.Contexts
             Log.Information("Creating index database...");
             await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, UNIQUE (localpath, checksum));");
             await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `checksum` TEXT NOT NULL, `type` INTEGER NOT NULL, PRIMARY KEY(`timestamp`));");
+            await _semaphore.ExecuteAsync("CREATE INDEX idx_objects_path_update ON objects(localpath, lastupdate DESC, deleted);");
         }
 
         #region Objects
@@ -92,10 +93,10 @@ namespace Parallel.Core.Database.Contexts
         }
 
         /// <inheritdoc />
-        public async Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, bool deleted)
+        public async Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted)
         {
-            string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND deleted = @deleted ORDER BY lastupdate DESC) GROUP BY localpath;";
-            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", deleted });
+            string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastupdate DESC) GROUP BY localpath;";
+            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
         }
 
         /// <inheritdoc />

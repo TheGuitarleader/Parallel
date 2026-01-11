@@ -24,9 +24,9 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress, bool overwrite)
+        public override async Task<int> BackupFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress, bool overwrite)
         {
-            if (files.Length == 0) return 0;
+            if (!files.Any()) return 0;
             int queued = 0, completed = 0, total = 0;
 
             ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
@@ -50,9 +50,9 @@ namespace Parallel.Core.IO.Syncing
                     long result = await StorageProvider.UploadFileAsync(file, overwrite, ct);
 
                     file.RemoteSize = result;
-                    if (!await (Database?.AddHistoryAsync(HistoryType.Pushed, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
+                    if (!await (Database?.AddHistoryAsync(HistoryType.Synced, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
                     if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error($"Failed to add file: {file.LocalPath}");
-                    progress.Report(ProgressOperation.Pushed, file);
+                    progress.Report(ProgressOperation.Synced, file);
                 }
                 catch (Exception ex)
                 {
@@ -92,17 +92,15 @@ namespace Parallel.Core.IO.Syncing
         }
 
         /// <inheritdoc/>
-        public override async Task<int> PullFilesAsync(SystemFile[] files, IProgressReporter progress)
+        public override async Task<int> RestoreFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress)
         {
-            if (files.Length == 0) return 0;
-            int queued = 0, completed = 0, total = files.Length;
+            if (!files.Any()) return 0;
+            int queued = 0, completed = 0, total = files.Count;
 
             ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
             Task worker = System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
                 Interlocked.Increment(ref queued);
-                if (!file.TryGenerateCheckSum()) return;
-
                 SemaphoreSlim threadLock = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
                 await threadLock.WaitAsync(ct);
 
@@ -111,6 +109,7 @@ namespace Parallel.Core.IO.Syncing
                     string? parentDir = Path.GetDirectoryName(file.LocalPath);
                     if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
 
+                    Log.Debug($"Restoring file: {file.LocalPath} ({file.CheckSum})");
                     await StorageProvider.DownloadFileAsync(file, ct);
                     if (!File.Exists(file.LocalPath))
                     {
@@ -125,8 +124,8 @@ namespace Parallel.Core.IO.Syncing
                     fileInfo.LastWriteTime = file.LastWrite.ToLocalTime();
                     fileInfo.Attributes = attributes;
 
-                    if (!await (Database?.AddHistoryAsync(HistoryType.Pulled, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
-                    progress.Report(ProgressOperation.Pulled, file);
+                    if (!await (Database?.AddHistoryAsync(HistoryType.Restored, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
+                    progress.Report(ProgressOperation.Restored, file);
                 }
                 catch (Exception ex)
                 {

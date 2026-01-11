@@ -17,8 +17,8 @@ namespace Parallel.Cli.Commands
         private readonly Command _archiveCmd = new("archive", "Shows the history related to file deletions.");
         private readonly Command _cleanCmd = new("clean", "Shows the history related to file cleaning.");
         private readonly Command _cloneCmd = new("clone", "Shows the history related to file cloning.");
-        private readonly Command _pullCmd = new("pull", "Shows the history related to file pulling.");
-        private readonly Command _pushCmd = new("push", "Shows the history related to file pushing.");
+        private readonly Command _syncCmd = new("sync", "Shows the history related to file syncing.");
+        private readonly Command _restoreCmd = new("pull", "Shows the history related to file restoring.");
         private readonly Command _pruneCmd = new("prune", "Shows the history related to file pruning.");
 
         private readonly Option<string> _sourceOpt = new(["--path", "-p"], "The source path to push.");
@@ -30,8 +30,8 @@ namespace Parallel.Cli.Commands
             this.AddCommand(_archiveCmd);
             this.AddCommand(_cleanCmd);
             this.AddCommand(_cloneCmd);
-            this.AddCommand(_pullCmd);
-            this.AddCommand(_pushCmd);
+            this.AddCommand(_syncCmd);
+            this.AddCommand(_restoreCmd);
             this.AddCommand(_pruneCmd);
             this.AddOption(_sourceOpt);
             this.AddOption(_configOpt);
@@ -65,20 +65,20 @@ namespace Parallel.Cli.Commands
                 await DisplayHistoryAsync(HistoryType.Cloned, path, config, limit);
             }, _sourceOpt, _configOpt, _limitOpt);
 
-            _pullCmd.AddOption(_sourceOpt);
-            _pullCmd.AddOption(_configOpt);
-            _pullCmd.AddOption(_limitOpt);
-            _pullCmd.SetHandler(async (path, config, limit) =>
+            _syncCmd.AddOption(_sourceOpt);
+            _syncCmd.AddOption(_configOpt);
+            _syncCmd.AddOption(_limitOpt);
+            _syncCmd.SetHandler(async (path, config, limit) =>
             {
-                await DisplayHistoryAsync(HistoryType.Pulled, path, config, limit);
+                await DisplayHistoryAsync(HistoryType.Synced, path, config, limit);
             }, _sourceOpt, _configOpt, _limitOpt);
 
-            _pushCmd.AddOption(_sourceOpt);
-            _pushCmd.AddOption(_configOpt);
-            _pushCmd.AddOption(_limitOpt);
-            _pushCmd.SetHandler(async (path, config, limit) =>
+            _restoreCmd.AddOption(_sourceOpt);
+            _restoreCmd.AddOption(_configOpt);
+            _restoreCmd.AddOption(_limitOpt);
+            _restoreCmd.SetHandler(async (path, config, limit) =>
             {
-                await DisplayHistoryAsync(HistoryType.Pushed, path, config, limit);
+                await DisplayHistoryAsync(HistoryType.Restored, path, config, limit);
             }, _sourceOpt, _configOpt, _limitOpt);
 
             _pruneCmd.AddOption(_sourceOpt);

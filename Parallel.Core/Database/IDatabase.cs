@@ -34,14 +34,14 @@ namespace Parallel.Core.Database
         Pruned,
 
         /// <summary>
-        /// A file that was pulled from the vault.
+        /// A file that was restored from the vault.
         /// </summary>
-        Pulled,
+        Restored,
 
         /// <summary>
-        /// A file that was pushed to the vault.
+        /// A file that was synced to the vault.
         /// </summary>
-        Pushed
+        Synced
     }
 
     /// <summary>
@@ -82,9 +82,10 @@ namespace Parallel.Core.Database
         /// Gets a list of files by newest revision.
         /// </summary>
         /// <param name="path"></param>
+        /// <param name="timestamp"></param>
         /// <param name="deleted"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, bool deleted);
+        Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted);
 
         /// <summary>
         /// Gets a list of revisions from a file.

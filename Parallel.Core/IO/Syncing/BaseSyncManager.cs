@@ -36,7 +36,7 @@ namespace Parallel.Core.IO.Syncing
         ///
         /// </summary>
         /// <param name="localVault"></param>
-        public BaseSyncManager(LocalVaultConfig localVault)
+        protected BaseSyncManager(LocalVaultConfig localVault)
         {
             LocalVault = localVault;
             RemoteVault = new RemoteVaultConfig(localVault);
@@ -98,7 +98,7 @@ namespace Parallel.Core.IO.Syncing
             Log.Debug($"[{LocalVault.Id}] Disconnecting...");
             RemoteVault.Save(TempConfigFile);
 
-            SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
+            SystemFile[] tempFiles = [new(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
             foreach (SystemFile file in tempFiles)
             {
                 await StorageProvider.UploadFileAsync(file, true);
@@ -110,9 +110,9 @@ namespace Parallel.Core.IO.Syncing
         }
 
         /// <inheritdoc />
-        public abstract Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress, bool overwrite);
+        public abstract Task<int> BackupFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress, bool overwrite);
 
         /// <inheritdoc />
-        public abstract Task<int> PullFilesAsync(SystemFile[] files, IProgressReporter progress);
+        public abstract Task<int> RestoreFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress);
     }
 }

@@ -104,6 +104,13 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
+        public async Task CloneFileAsync(string source, string target)
+        {
+            if (await ExistsAsync(source)) _client.ChangePermissions(source, 644);
+            _client.RenameFile(source, target);
+        }
+
+        /// <inheritdoc />
         public async Task<long> UploadFileAsync(SystemFile file, bool overwrite = false, CancellationToken ct = default)
         {
             if (await ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
