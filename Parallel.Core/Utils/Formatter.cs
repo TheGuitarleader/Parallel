@@ -77,5 +77,10 @@ namespace Parallel.Core.Utils
         {
             return dateTime.ToString("dd:HH:mm:ss.fff");
         }
+
+        public static string FromCheckSum(string? checkSum)
+        {
+            return checkSum == null ? string.Empty : $"{checkSum[..8]}...";
+        }
     }
 }

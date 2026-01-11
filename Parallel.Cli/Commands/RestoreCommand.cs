@@ -113,21 +113,19 @@ namespace Parallel.Cli.Commands
             IReadOnlyList<SystemFile> files = await (syncManager.Database?.GetLatestFilesAsync(fullPath, timestamp, archive) ?? Task.FromResult<IReadOnlyList<SystemFile>>([]));
 
             List<SystemFile> restoreFiles = new List<SystemFile>();
-            System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, (remoteFile) =>
+            System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, (file) =>
             {
-                string outputPath = remoteFile.LocalPath;
+                string outputPath = file.LocalPath;
                 if (!string.IsNullOrEmpty(output))
                 {
-                    string relative = Path.GetRelativePath(path, remoteFile.LocalPath);
+                    string relative = Path.GetRelativePath(path, file.LocalPath);
                     string newPath = Path.Combine(output, relative);
-                    Console.WriteLine(newPath);
-                    //remoteFile.LocalPath = newPath;
+                    file.LocalPath = newPath;
                 }
 
-                //SystemFile localFile = new SystemFile(outputPath);
-                //if (File.Exists(outputPath) && localFile.LastUpdate.TotalMilliseconds > remoteFile.LastUpdate.TotalMilliseconds && !force) return;
-                Console.WriteLine(JObject.FromObject(remoteFile));
-                restoreFiles.Add(remoteFile);
+                if (File.Exists(outputPath) && !FileScanner.HasChanged(file, new SystemFile(outputPath)) && !force) return;
+                Log.Debug($"Restoring: {outputPath} ({Formatter.FromCheckSum(file.CheckSum)})");
+                restoreFiles.Add(file);
             });
 
             if (restoreFiles.Count == 0)
@@ -136,7 +134,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            CommandLine.WriteLine(syncManager.RemoteVault, $"Restoring {restoreFiles.Count:N0} files before {Formatter.FromDateTime(timestamp.ToLocalTime())}...", ConsoleColor.DarkGray);
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Restoring {restoreFiles.Count:N0} files...", ConsoleColor.DarkGray);
             _totalFiles += await syncManager.RestoreFilesAsync(restoreFiles, new ProgressReport(syncManager.RemoteVault, restoreFiles.Count));
             CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully restored {_totalFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
         }
