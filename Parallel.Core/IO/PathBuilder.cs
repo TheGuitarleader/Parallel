@@ -3,7 +3,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Storage;
