@@ -154,5 +154,47 @@ namespace Parallel.Core.IO.Syncing
             await Task.WhenAll(worker, monitor).ConfigureAwait(false);
             return completed;
         }
+
+        /// <inheritdoc/>
+        public override async Task<int> PruneFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress)
+        {
+            if (!files.Any()) return 0;
+            int queued = 0, completed = 0, total = files.Count;
+
+            Task worker = System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            {
+                Interlocked.Increment(ref queued);
+
+                try
+                {
+                    await (Database != null ? Database.RemoveFileAsync(file) : Task.CompletedTask);
+                    if (!await (Database?.AddHistoryAsync(HistoryType.Pruned, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
+                    await StorageProvider.DeleteFileAsync(file.RemotePath);
+                    progress.Report(ProgressOperation.Pruned, file);
+                }
+                catch (Exception ex)
+                {
+                    progress.Failed(file, ex.GetBaseException().ToString());
+                }
+                finally
+                {
+                    Interlocked.Increment(ref completed);
+                    Interlocked.Decrement(ref queued);
+                }
+            });
+
+            Task monitor = Task.Run(async () =>
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                while (!worker.IsCompleted)
+                {
+                    Log.Debug($"WORKER STATS @ ETA {Converter.ToRemainingTimeSpan(sw.Elapsed, completed, total)}: queued={queued}, completed={completed}, total={total}");
+                    await Task.Delay(10000);
+                }
+            });
+
+            await Task.WhenAll(worker, monitor).ConfigureAwait(false);
+            return completed;
+        }
     }
 }

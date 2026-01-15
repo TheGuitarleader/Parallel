@@ -56,7 +56,6 @@ namespace Parallel.Core.Storage
         /// <inheritdoc />
         public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
         {
-            Log.Debug($"Downloading file: {file.RemotePath}");
             await using FileStream openStream = File.OpenRead(file.RemotePath);
             await using FileStream createStream = File.Create(file.LocalPath);
             await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
@@ -101,7 +100,6 @@ namespace Parallel.Core.Storage
         /// <inheritdoc />
         public async Task<long> UploadFileAsync(SystemFile file, bool overwrite = false, CancellationToken ct = default)
         {
-            Log.Debug($"Uploading file: {file.RemotePath}");
             if (await ExistsAsync(file.RemotePath))
             {
                 if (!overwrite)

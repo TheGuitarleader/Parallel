@@ -46,7 +46,7 @@ namespace Parallel.Core.Database.Contexts
         /// <inheritdoc />
         public async Task RemoveFileAsync(SystemFile file)
         {
-            string sql = $"DELETE FROM objects WHERE localpath = @LocalPath AND checksum = @Checksum;";
+            string sql = $"DELETE FROM objects WHERE localpath = @LocalPath AND checksum = @CheckSum;";
             await _semaphore.ExecuteAsync(sql, new { file.LocalPath, file.CheckSum });
         }
 
@@ -100,10 +100,10 @@ namespace Parallel.Core.Database.Contexts
         }
 
         /// <inheritdoc />
-        public async Task<IReadOnlyList<SystemFile>> GetRevisedFilesAsync(string path)
+        public async Task<IReadOnlyList<SystemFile>> GetFilesAsync(string path, DateTime timestamp, bool deleted)
         {
-            string sql = "SELECT * FROM objects WHERE localpath LIKE @Path OR remotepath LIKE @Path ORDER BY lastupdate DESC";
-            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%" });
+            string sql = "SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastupdate ASC";
+            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
         }
 
         /// <inheritdoc />

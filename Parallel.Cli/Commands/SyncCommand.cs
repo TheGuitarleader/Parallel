@@ -14,7 +14,6 @@ namespace Parallel.Cli.Commands
     public class SyncCommand : Command
     {
         private Stopwatch _sw = new Stopwatch();
-        private int _totalFiles = 0;
 
         private readonly Argument<string> _sourceArg = new("path", "The path to add or remove.");
         private readonly Option<string> _sourceOpt = new(["--path", "-p"], "The source path to back up.");
@@ -145,8 +144,8 @@ namespace Parallel.Cli.Commands
             }
 
             CommandLine.WriteLine(syncManager.RemoteVault, $"Syncing up {files.Length:N0} files...", ConsoleColor.DarkGray);
-            _totalFiles += await syncManager.BackupFilesAsync(files, new ProgressReport(syncManager.RemoteVault, successFiles), force);
-            CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully synced {_totalFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
+            int backedUpFiles = await syncManager.BackupFilesAsync(files, new ProgressReport(syncManager.RemoteVault, successFiles), force);
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully synced {backedUpFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
         }
 
         #endregion

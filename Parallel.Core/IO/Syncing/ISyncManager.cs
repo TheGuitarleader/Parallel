@@ -44,7 +44,7 @@ namespace Parallel.Core.IO.Syncing
         Task DisconnectAsync();
 
         /// <summary>
-        /// Pushes an array of files to a vault.
+        /// Backs up an array of files to a vault.
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
@@ -52,10 +52,18 @@ namespace Parallel.Core.IO.Syncing
         Task<int> BackupFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress, bool overwrite);
 
         /// <summary>
-        /// Pulls an array of files from a vault.
+        /// Restores an array of files from a vault.
         /// </summary>
         /// <param name="files"></param>
         /// <param name="progress"></param>
         Task<int> RestoreFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress);
+
+        /// <summary>
+        /// Deletes files from a vault.
+        /// </summary>
+        /// <param name="files"></param>
+        /// <param name="progress"></param>
+        /// <returns></returns>
+        Task<int> PruneFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress);
     }
 }

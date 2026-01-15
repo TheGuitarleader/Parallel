@@ -87,11 +87,13 @@ namespace Parallel.Core.Database
         Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted);
 
         /// <summary>
-        /// Gets a list of revisions from a file.
+        /// Gets a list of files.
         /// </summary>
         /// <param name="path"></param>
+        /// <param name="timestamp"></param>
+        /// <param name="deleted"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<SystemFile>> GetRevisedFilesAsync(string path);
+        Task<IReadOnlyList<SystemFile>> GetFilesAsync(string path, DateTime timestamp, bool deleted);
 
         /// <summary>
         /// Gets a specific file.

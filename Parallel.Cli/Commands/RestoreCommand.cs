@@ -109,7 +109,7 @@ namespace Parallel.Cli.Commands
         private async Task RestoreInternalAsync(ISyncManager syncManager, string path, DateTime timestamp, string? output, bool archive, bool force)
         {
             string fullPath = Path.GetFullPath(path);
-            CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for files in {fullPath}...", ConsoleColor.DarkGray);
             IReadOnlyList<SystemFile> files = await (syncManager.Database?.GetLatestFilesAsync(fullPath, timestamp, archive) ?? Task.FromResult<IReadOnlyList<SystemFile>>([]));
 
             List<SystemFile> restoreFiles = new List<SystemFile>();
