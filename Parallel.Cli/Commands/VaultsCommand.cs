@@ -51,8 +51,6 @@ namespace Parallel.Cli.Commands
                 }
                 else if (spc.Service == FileService.Cloud)
                 {
-                    spc.RootDirectory = CommandLine.ReadString("Bucket Name") ?? string.Empty;
-
                     string? bucketInput = CommandLine.ReadString("Bucket Name (Leave empty for default)");
                     string bucketName = string.IsNullOrEmpty(bucketInput) ? "parallel" : bucketInput;
                     spc.RootDirectory = bucketName;
