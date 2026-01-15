@@ -11,7 +11,8 @@ namespace Parallel.Core.Diagnostics
         Synced,
         Downloading,
         Uploading,
-        Hashing
+        Hashing,
+        Pruned
     }
 
     /// <summary>
