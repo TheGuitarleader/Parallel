@@ -3,7 +3,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Storage;
@@ -98,7 +97,11 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetRootDirectory(LocalVaultConfig localVault)
         {
-            return Combine(localVault.Credentials.RootDirectory, "Parallel", localVault.Id);
+            return localVault.Credentials.Service switch
+            {
+                FileService.Cloud => Combine(localVault.Id),
+                _ => Combine(localVault.Credentials.RootDirectory, "Parallel", localVault.Id)
+            };
         }
 
         /// <summary>

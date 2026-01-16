@@ -36,7 +36,6 @@ namespace Parallel.Core.Database.Contexts
 
             try
             {
-                Log.Debug($"Executing SQL: {sql}");
                 using IDbConnection connection = CreateConnection();
                 return await connection.ExecuteAsync(sql, parameters);
             }
@@ -52,7 +51,6 @@ namespace Parallel.Core.Database.Contexts
 
             try
             {
-                Log.Debug($"Querying SQL: {sql}");
                 using IDbConnection connection = CreateConnection();
                 return await connection.QuerySingleOrDefaultAsync<T>(sql, parameters);
             }
@@ -68,7 +66,6 @@ namespace Parallel.Core.Database.Contexts
 
             try
             {
-                Log.Debug($"Querying SQL: {sql}");
                 using IDbConnection connection = CreateConnection();
                 return (await connection.QueryAsync<T>(sql, parameters)).AsList();
             }

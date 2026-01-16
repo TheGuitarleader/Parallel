@@ -1,9 +1,8 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
 using Parallel.Core.Settings;
-using Parallel.Core.Storage;
 
-namespace Parallel.Core.IO.FileSystem
+namespace Parallel.Core.Storage
 {
     /// <summary>
     /// The supported file service types.
@@ -35,13 +34,14 @@ namespace Parallel.Core.IO.FileSystem
         /// Creates a new file system association.
         /// </summary>
         /// <param name="vaultConfig">The vault needed for the associated file system.</param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static IStorageProvider CreateNew(LocalVaultConfig vaultConfig)
         {
-            return vaultConfig?.Credentials.Service switch
+            return vaultConfig.Credentials.Service switch
             {
                 FileService.Local => new LocalStorageProvider(vaultConfig),
                 FileService.Remote => new SshStorageProvider(vaultConfig),
-                //FileService.Cloud => new AmazonS3FileSystem(credentials),
+                FileService.Cloud => new S3StorageProvider(vaultConfig),
                 _ => throw new ArgumentOutOfRangeException()
             };
         }

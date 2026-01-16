@@ -91,6 +91,13 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
+        public async Task CloneFileAsync(string source, string target)
+        {
+            if (await ExistsAsync(source)) File.SetAttributes(source, ~FileAttributes.ReadOnly & File.GetAttributes(source));
+            File.Copy(source, target, true);
+        }
+
+        /// <inheritdoc />
         public async Task<long> UploadFileAsync(SystemFile file, bool overwrite = false, CancellationToken ct = default)
         {
             if (await ExistsAsync(file.RemotePath))

@@ -133,7 +133,7 @@ namespace Parallel.Core.Settings
         /// </summary>
         /// <param name="vault"></param>
         /// <returns></returns>
-        public static LocalVaultConfig? GetVault(string vault)
+        public static LocalVaultConfig? GetVault(string? vault)
         {
             return Load().Vaults.FirstOrDefault(v => v.Id.Equals(vault, StringComparison.OrdinalIgnoreCase) || v.Name.Equals(vault, StringComparison.OrdinalIgnoreCase));
         }

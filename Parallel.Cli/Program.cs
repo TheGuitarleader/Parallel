@@ -18,6 +18,10 @@ namespace Parallel.Cli
 
         public static async Task Main(string[] args)
         {
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                e.Cancel = true;
+            };
             if (!ParallelConfig.CanStartCliInstance())
             {
                 CommandLine.WriteLine("An instance of Parallel is already running!", ConsoleColor.Yellow);
@@ -34,13 +38,13 @@ namespace Parallel.Cli
 
             Log.Information($"{assembly.Name} [Version {assembly.Version}]");
             RootCommand rootCommand = new("Parallel file manager - Easily back up and synchronize massive amounts of files, and free up drive space.");
-            Type[] types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsSubclassOf(typeof(Command)) && t.IsClass).ToArray();
-            foreach (Type? type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);
+            IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsSubclassOf(typeof(Command)) && t.IsClass && !t.IsAbstract);
+            foreach (Type type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);
             await rootCommand.InvokeAsync(args);
 
             // Clean successful logs
             await Log.CloseAndFlushAsync();
-            if (EventTracker.Warnings.Count > 0 || EventTracker.Errors.Count > 0)
+            if (EventTracker.Errors.Count > 0)
             {
                 string logDir = Path.Combine(PathBuilder.ProgramData, "Logs");
                 if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);

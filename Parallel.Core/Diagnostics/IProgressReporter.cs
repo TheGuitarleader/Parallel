@@ -7,12 +7,12 @@ namespace Parallel.Core.Diagnostics
     public enum ProgressOperation
     {
         Archived,
-        Pulled,
-        Pushed,
+        Restored,
         Synced,
         Downloading,
         Uploading,
-        Hashing
+        Hashing,
+        Pruned
     }
 
     /// <summary>

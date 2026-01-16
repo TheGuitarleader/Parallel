@@ -3,10 +3,10 @@
 using System.CommandLine;
 using Parallel.Cli.Utils;
 using Parallel.Core.Database;
-using Parallel.Core.IO.FileSystem;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Security;
 using Parallel.Core.Settings;
+using Parallel.Core.Storage;
 using Parallel.Core.Utils;
 
 namespace Parallel.Cli.Commands
@@ -51,9 +51,14 @@ namespace Parallel.Cli.Commands
                 }
                 else if (spc.Service == FileService.Cloud)
                 {
-                    spc.Address = CommandLine.ReadString("Bucket Name");
+                    string? bucketInput = CommandLine.ReadString("Bucket Name (Leave empty for default)");
+                    string bucketName = string.IsNullOrEmpty(bucketInput) ? "parallel" : bucketInput;
+                    spc.RootDirectory = bucketName;
+
+                    spc.Address = CommandLine.ReadString("Endpoint");
                     spc.Username = CommandLine.ReadString("Access Key");
                     spc.Password = CommandLine.ReadPassword("Secret Key");
+                    spc.ForceStyle = CommandLine.ReadBool("Force Path Style? (y/n)", true);
                 }
                 else
                 {
@@ -63,16 +68,17 @@ namespace Parallel.Cli.Commands
                     spc.Password = CommandLine.ReadPassword("Password");
                 }
 
-                string? inputId = CommandLine.ReadString("Id");
-                string profileId = string.IsNullOrWhiteSpace(inputId) ? HashGenerator.GenerateHash(8, true) : inputId;
+                string? inputId = CommandLine.ReadString("Id (Leave empty for random)");
+                string profileId = string.IsNullOrEmpty(inputId) ? HashGenerator.GenerateHash(8, true) : inputId;
 
-                string? inputName = CommandLine.ReadString("Name");
-                string profileName = string.IsNullOrWhiteSpace(inputName) ? "Default" : inputName;
+                string? inputName = CommandLine.ReadString("Name (Leave empty for default)");
+                string profileName = string.IsNullOrEmpty(inputName) ? "Default" : inputName;
 
                 spc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
                 spc.EncryptionKey = spc.Encrypt ? HashGenerator.GenerateHash(32, true) : null;
 
                 LocalVaultConfig localVault = new(profileId, profileName, spc);
+                localVault.Enabled = CommandLine.ReadBool("Enabled? (y/n)", true);
                 Program.Settings.Vaults.Add(localVault);
                 Program.Settings.Save();
 

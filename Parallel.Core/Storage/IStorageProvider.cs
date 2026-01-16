@@ -63,6 +63,14 @@ namespace Parallel.Core.Storage
         Task<SystemFile?> GetFileAsync(string path);
 
         /// <summary>
+        /// Renames a file in the associated storage provider.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        Task CloneFileAsync(string source, string target);
+
+        /// <summary>
         /// Uploads a file to the associated storage provider.
         /// </summary>
         /// <param name="file"></param>

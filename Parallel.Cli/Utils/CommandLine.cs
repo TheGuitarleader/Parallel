@@ -85,9 +85,9 @@ namespace Parallel.Cli.Utils
             Console.ResetColor();
         }
 
-        public static void WriteLine(LocalVaultConfig localVault, object value, ConsoleColor color = ConsoleColor.Gray)
+        public static void WriteLine(LocalVaultConfig? localVault, object value, ConsoleColor color = ConsoleColor.Gray)
         {
-            string baseLog = $"[{localVault.Id}] {value}";
+            string baseLog = $"[{localVault?.Id}] {value}";
             switch (color)
             {
                 default:

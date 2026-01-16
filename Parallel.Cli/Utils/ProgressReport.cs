@@ -38,7 +38,7 @@ namespace Parallel.Cli.Utils
         /// <inheritdoc />
         public void Failed(SystemFile file, string message)
         {
-            CommandLine.WriteLine(_localVault, $"Failed to upload file: '{file.LocalPath}' (Reason: {message})", ConsoleColor.Red);
+            CommandLine.WriteLine(_localVault, $"Operation failed: '{file.LocalPath}' (Reason: {message})", ConsoleColor.Red);
         }
     }
 }

@@ -104,11 +104,27 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
+        public async Task CloneFileAsync(string source, string target)
+        {
+            if (await ExistsAsync(source)) _client.ChangePermissions(source, 644);
+            _client.RenameFile(source, target);
+        }
+
+        /// <inheritdoc />
         public async Task<long> UploadFileAsync(SystemFile file, bool overwrite = false, CancellationToken ct = default)
         {
-            if (await ExistsAsync(file.RemotePath)) _client.ChangePermissions(file.RemotePath, 644);
-            await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
+            if (await ExistsAsync(file.RemotePath))
+            {
+                if (!overwrite)
+                {
+                    Log.Debug($"Skipping file: {file.RemotePath}");
+                    return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
+                }
 
+                _client.ChangePermissions(file.RemotePath, 644);
+            }
+
+            await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
             await using SftpFileStream createStream = _client.Create(file.RemotePath);
             await using FileStream openStream = File.OpenRead(file.LocalPath);
             await using GZipStream gzipStream = new(createStream, CompressionLevel.SmallestSize);

@@ -1,9 +1,9 @@
 ﻿// Copyright 2025 Kyle Ebbinga
 
+using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.Database.Contexts;
 using Parallel.Core.Diagnostics;
-using Parallel.Core.IO.FileSystem;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
 using Parallel.Core.Storage;
@@ -35,7 +35,7 @@ namespace Parallel.Core.IO.Syncing
         ///
         /// </summary>
         /// <param name="localVault"></param>
-        public BaseSyncManager(LocalVaultConfig localVault)
+        protected BaseSyncManager(LocalVaultConfig localVault)
         {
             LocalVault = localVault;
             RemoteVault = new RemoteVaultConfig(localVault);
@@ -95,7 +95,9 @@ namespace Parallel.Core.IO.Syncing
         public async Task DisconnectAsync()
         {
             Log.Debug($"[{LocalVault.Id}] Disconnecting...");
-            SystemFile[] tempFiles = [new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
+            RemoteVault.Save(TempConfigFile);
+
+            SystemFile[] tempFiles = [new(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
             foreach (SystemFile file in tempFiles)
             {
                 await StorageProvider.UploadFileAsync(file, true);
@@ -107,9 +109,12 @@ namespace Parallel.Core.IO.Syncing
         }
 
         /// <inheritdoc />
-        public abstract Task<int> PushFilesAsync(SystemFile[] files, IProgressReporter progress, bool overwrite);
+        public abstract Task<int> BackupFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress, bool overwrite);
 
         /// <inheritdoc />
-        public abstract Task<int> PullFilesAsync(SystemFile[] files, IProgressReporter progress);
+        public abstract Task<int> RestoreFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress);
+
+        /// <inheritdoc />
+        public abstract Task<int> PruneFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress);
     }
 }

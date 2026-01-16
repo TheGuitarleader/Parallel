@@ -3,9 +3,9 @@
 using System.CommandLine;
 using Parallel.Cli.Utils;
 using Parallel.Core.Database;
-using Parallel.Core.IO.FileSystem;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Settings;
+using Parallel.Core.Storage;
 using Parallel.Core.Utils;
 
 namespace Parallel.Cli.Commands

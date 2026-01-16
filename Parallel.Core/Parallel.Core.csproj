@@ -35,6 +35,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="AWSSDK.S3" Version="4.0.17"/>
         <PackageReference Include="Dapper" Version="2.1.66"/>
         <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0-preview.3.25171.6"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>

@@ -46,8 +46,8 @@ namespace Parallel.Core.IO.Scanning
             ConcurrentBag<SystemFile> changedFiles = new();
 
             HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
-            IEnumerable<SystemFile> remoteFiles = _db is null ? [] : await _db.GetLatestFilesAsync(path, false);
-            System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile, ct) =>
+            IEnumerable<SystemFile> remoteFiles = _db is null ? [] : await _db.GetLatestFilesAsync(path, DateTime.UtcNow, false);
+            System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile) =>
             {
                 if (File.Exists(remoteFile.LocalPath))
                 {
