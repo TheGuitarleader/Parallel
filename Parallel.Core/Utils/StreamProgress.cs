@@ -6,7 +6,8 @@ namespace Parallel.Core.Utils
     {
         private readonly Stream _inner;
         private readonly Action<long> _reportBytes;
-        private long _totalRead;
+        private long _totalWrite = 0;
+        private long _totalRead = 0;
 
         public StreamProgress(Stream inner, Action<long> reportBytes)
         {
@@ -38,6 +39,21 @@ namespace Parallel.Core.Utils
             return read;
         }
 
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _inner.Write(buffer, offset, count);
+            _totalWrite += count;
+            _reportBytes?.Invoke(_totalWrite);
+        }
+
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            await _inner.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
+            _totalWrite += count;
+            _reportBytes?.Invoke(_totalWrite);
+        }
+
         #region Stream required overrides
 
         public override bool CanRead => _inner.CanRead;
@@ -64,11 +80,6 @@ namespace Parallel.Core.Utils
         public override void SetLength(long value)
         {
             _inner.SetLength(value);
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            _inner.Write(buffer, offset, count);
         }
 
         #endregion

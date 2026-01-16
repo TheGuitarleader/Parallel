@@ -34,7 +34,7 @@ namespace Parallel.Core.IO.Syncing
             SystemFile[] deleteFiles = files.Except(uploadFiles).ToArray();
             total = uploadFiles.Length;
 
-            Log.Information($"Pushing {uploadFiles.Length:N0} files...");
+            Log.Information($"Uploading {uploadFiles.Length:N0} files...");
             Task worker = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
             {
                 Interlocked.Increment(ref queued);
@@ -48,11 +48,13 @@ namespace Parallel.Core.IO.Syncing
                     Log.Debug($"Pushing -> {file.LocalPath}");
                     file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!);
                     long result = await StorageProvider.UploadFileAsync(file, overwrite, ct);
-
-                    file.RemoteSize = result;
-                    if (!await (Database?.AddHistoryAsync(HistoryType.Synced, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
-                    if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error($"Failed to add file: {file.LocalPath}");
-                    progress.Report(ProgressOperation.Synced, file);
+                    if (result > 0)
+                    {
+                        file.RemoteSize = result;
+                        if (!await (Database?.AddHistoryAsync(HistoryType.Synced, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
+                        if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error($"Failed to add file: {file.LocalPath}");
+                        progress.Report(ProgressOperation.Synced, file);
+                    }
                 }
                 catch (Exception ex)
                 {

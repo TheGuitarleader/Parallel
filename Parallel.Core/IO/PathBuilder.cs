@@ -97,7 +97,11 @@ namespace Parallel.Core.IO
         /// <returns></returns>
         public static string GetRootDirectory(LocalVaultConfig localVault)
         {
-            return Combine(localVault.Credentials.RootDirectory, "Parallel", localVault.Id);
+            return localVault.Credentials.Service switch
+            {
+                FileService.Cloud => Combine(localVault.Id),
+                _ => Combine(localVault.Credentials.RootDirectory, "Parallel", localVault.Id)
+            };
         }
 
         /// <summary>

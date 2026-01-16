@@ -1,9 +1,16 @@
 ﻿// Copyright 2026 Kyle Ebbinga
 
+using System.IO.Compression;
+using System.IO.Pipelines;
 using Amazon.Runtime;
 using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Transfer;
 using Parallel.Core.Models;
+using Parallel.Core.Security;
 using Parallel.Core.Settings;
+using Parallel.Core.Utils;
+using Renci.SshNet.Sftp;
 
 namespace Parallel.Core.Storage
 {
@@ -13,6 +20,7 @@ namespace Parallel.Core.Storage
     public class S3StorageProvider : IStorageProvider
     {
         private readonly IAmazonS3 _client;
+        private readonly string _bucket;
 
         /// <summary>
         /// Represents an <see cref="IStorageProvider"/> for interacting with an S3 provider.
@@ -26,7 +34,8 @@ namespace Parallel.Core.Storage
                 ForcePathStyle = localVault.Credentials.ForceStyle
             };
 
-            _client = new AmazonS3Client(localVault.Credentials.Username, localVault.Credentials.Password, config);
+            _client = new AmazonS3Client(localVault.Credentials.Username, Encryption.Decode(localVault.Credentials.Password), config);
+            _bucket = localVault.Credentials.RootDirectory.ToLower();
         }
 
         public void Dispose()
@@ -35,9 +44,15 @@ namespace Parallel.Core.Storage
             GC.SuppressFinalize(this);
         }
 
-        public Task CreateDirectoryAsync(string path)
+        public async Task CreateDirectoryAsync(string path)
         {
-            throw new NotImplementedException();
+            if (!path.EndsWith("/")) path += "/";
+            await _client.PutObjectAsync(new PutObjectRequest
+            {
+                BucketName = _bucket,
+                Key = path,
+                ContentBody = string.Empty
+            });
         }
 
         public Task DeleteDirectoryAsync(string path)
@@ -45,29 +60,55 @@ namespace Parallel.Core.Storage
             throw new NotImplementedException();
         }
 
-        public Task DeleteFileAsync(string path)
+        public async Task DeleteFileAsync(string path)
         {
-            throw new NotImplementedException();
+            if (!await ExistsAsync(path)) return;
+            await _client.DeleteObjectAsync(_bucket, path);
         }
 
-        public Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
+        public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, file.RemotePath, ct);
+            await using FileStream createStream = File.Create(file.LocalPath);
+            await using GZipStream gzipStream = new GZipStream(response.ResponseStream, CompressionMode.Decompress);
+            await gzipStream.CopyToAsync(createStream, ct);
         }
 
-        public Task<bool> ExistsAsync(string path)
+        public async Task<bool> ExistsAsync(string path)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _client.GetObjectMetadataAsync(_bucket, path);
+                return true;
+            }
+            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return false;
+            }
         }
 
         public Task<string> GetDirectoryName(string path)
         {
-            throw new NotImplementedException();
+            int index = path.LastIndexOf('/');
+            return Task.FromResult(index >= 0 ? path[..index] : string.Empty);
         }
 
-        public Task<SystemFile?> GetFileAsync(string path)
+        public async Task<SystemFile?> GetFileAsync(string path)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (!await ExistsAsync(path)) return null;
+                GetObjectMetadataResponse metadata = await _client.GetObjectMetadataAsync(_bucket, path);
+                return new SystemFile(path)
+                {
+                    RemotePath = path,
+                    RemoteSize = metadata.ContentLength
+                };
+            }
+            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
         }
 
         public Task CloneFileAsync(string source, string target)
@@ -75,9 +116,37 @@ namespace Parallel.Core.Storage
             throw new NotImplementedException();
         }
 
-        public Task<long> UploadFileAsync(SystemFile file, bool overwrite, CancellationToken ct = default)
+        public async Task<long> UploadFileAsync(SystemFile file, bool overwrite, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            if (!overwrite && await ExistsAsync(file.RemotePath))
+            {
+                Log.Debug($"Skipping file: {file.RemotePath}");
+                return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
+            }
+
+            await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
+            Pipe pipe = new Pipe();
+            TransferUtility utility = new TransferUtility(_client);
+            Task uploadTask = utility.UploadAsync(new TransferUtilityUploadRequest
+            {
+                BucketName = _bucket,
+                Key = file.RemotePath,
+                InputStream = pipe.Reader.AsStream(),
+                ContentType = "application/octet-stream"
+            }, ct);
+
+            long totalBytes = 0;
+            await using StreamProgress countingStream = new StreamProgress(pipe.Writer.AsStream(), b => totalBytes = b);
+            await using FileStream openStream = File.OpenRead(file.LocalPath);
+            await using (GZipStream gzipStream = new(countingStream, CompressionLevel.SmallestSize))
+            {
+                await openStream.CopyToAsync(gzipStream, ct);
+                await gzipStream.FlushAsync(ct);
+            }
+
+            await pipe.Writer.CompleteAsync();
+            await uploadTask.ConfigureAwait(false);
+            return totalBytes;
         }
     }
 }

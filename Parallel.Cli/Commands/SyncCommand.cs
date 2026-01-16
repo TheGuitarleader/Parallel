@@ -116,18 +116,17 @@ namespace Parallel.Cli.Commands
         private async Task BackupInternalAsync(ISyncManager syncManager, string path, bool force)
         {
             // Normalize paths for safe comparison
-            string fullPath = Path.GetFullPath(path);
             string[] backupFolders = syncManager.RemoteVault.BackupDirectories.ToArray();
             string[] ignoredFolders = syncManager.RemoteVault.IgnoreDirectories.ToArray();
 
-            bool isFile = PathBuilder.IsFile(fullPath);
-            if (!PathBuilder.IsDirectory(fullPath) && !isFile)
+            bool isFile = PathBuilder.IsFile(path);
+            if (!PathBuilder.IsDirectory(path) && !isFile)
             {
                 CommandLine.WriteLine(syncManager.RemoteVault, $"The provided path is invalid!", ConsoleColor.Yellow);
                 return;
             }
 
-            if (!backupFolders.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase)) || FileScanner.IsIgnored(fullPath, ignoredFolders))
+            if (!backupFolders.Any(dir => path.StartsWith(dir, StringComparison.OrdinalIgnoreCase)) || FileScanner.IsIgnored(path, ignoredFolders))
             {
                 CommandLine.WriteLine(syncManager.RemoteVault, $"The provided {(isFile ? "file" : "folder")} is set to be ignored!", ConsoleColor.Yellow);
                 return;
