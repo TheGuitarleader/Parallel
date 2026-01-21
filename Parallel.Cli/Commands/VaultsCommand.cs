@@ -46,7 +46,6 @@ namespace Parallel.Cli.Commands
 
                 if (spc.Service == FileService.Local)
                 {
-                    CommandLine.WriteLine("It is NOT RECOMMENDED to use a network drive!", ConsoleColor.Yellow);
                     spc.RootDirectory = CommandLine.ReadString("Root") ?? string.Empty;
                 }
                 else if (spc.Service == FileService.Cloud)
@@ -71,8 +70,8 @@ namespace Parallel.Cli.Commands
                 string? inputId = CommandLine.ReadString("Id (Leave empty for random)");
                 string profileId = string.IsNullOrEmpty(inputId) ? HashGenerator.GenerateHash(8, true) : inputId;
 
-                string? inputName = CommandLine.ReadString("Name (Leave empty for default)");
-                string profileName = string.IsNullOrEmpty(inputName) ? "Default" : inputName;
+                string? inputName = CommandLine.ReadString("Name (Leave empty for machine name)");
+                string profileName = string.IsNullOrEmpty(inputName) ? Environment.MachineName : inputName;
 
                 spc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
                 spc.EncryptionKey = spc.Encrypt ? HashGenerator.GenerateHash(32, true) : null;
