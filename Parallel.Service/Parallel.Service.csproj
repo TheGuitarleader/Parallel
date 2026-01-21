@@ -4,14 +4,26 @@
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <AssemblyName>Parallel Service</AssemblyName>
+        <Version>0.0.0.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
-        <Protobuf Include="Protos\greet.proto" GrpcServices="Server"/>
+        <Protobuf Include="Protos\health.proto" GrpcServices="Server"/>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Grpc.AspNetCore" Version="2.64.0"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.2"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
+        <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0"/>
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1"/>
+        <PackageReference Include="Serilog.Sinks.File" Version="8.0.0-dev-02318"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Parallel.Core\Parallel.Core.csproj"/>
     </ItemGroup>
 
 </Project>

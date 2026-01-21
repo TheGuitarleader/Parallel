@@ -3,11 +3,11 @@ using Parallel.Service;
 
 namespace Parallel.Service.Services;
 
-public class GreeterService : Greeter.GreeterBase
+public class GrpcService : Greeter.GreeterBase
 {
-    private readonly ILogger<GreeterService> _logger;
+    private readonly ILogger<GrpcService> _logger;
 
-    public GreeterService(ILogger<GreeterService> logger)
+    public GrpcService(ILogger<GrpcService> logger)
     {
         _logger = logger;
     }
