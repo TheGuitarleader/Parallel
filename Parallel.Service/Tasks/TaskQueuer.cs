@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Entex Interactive, LLC
+﻿// Copyright 2026 Kyle Ebbinga
 
 using System.Collections.Concurrent;
 
@@ -13,9 +13,14 @@ namespace Parallel.Service.Tasks
         private readonly SemaphoreSlim _signal = new(0);
 
         /// <summary>
-        /// Gets the number of elements contained in the <see cref="TaskQueuer"/>
+        /// Gets the number of elements contained in the <see cref="TaskQueuer"/>.
         /// </summary>
         public int Count => _queue.Count;
+
+        /// <summary>
+        /// Gets a value that indicates whether the <see cref="TaskQueuer"/> is empty.
+        /// </summary>
+        public bool IsEmpty => _queue.IsEmpty;
 
         public ValueTask AddAsync(Func<CancellationToken, Task> task)
         {

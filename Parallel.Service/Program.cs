@@ -1,3 +1,5 @@
+// Copyright 2026 Kyle Ebbinga
+
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Parallel.Core.IO;
@@ -13,7 +15,7 @@ namespace Parallel.Service
     {
         private static readonly LogEventTracker EventTracker = new LogEventTracker();
         internal static readonly string LogFile = Path.Combine(PathBuilder.ProgramData, "Logs", "latest.txt");
-        
+
         public static async Task Main(string[] args)
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -46,6 +48,7 @@ namespace Parallel.Service
 
             // Add background services
             builder.Services.AddHostedService<TaskWorkerService>();
+            builder.Services.AddHostedService<TestService>();
 
             WebApplication app = builder.Build();
             app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
@@ -57,6 +60,7 @@ namespace Parallel.Service
             {
                 settings.Save();
             });
+
             await app.RunAsync();
         }
     }

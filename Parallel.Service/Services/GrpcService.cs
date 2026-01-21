@@ -1,3 +1,5 @@
+// Copyright 2026 Kyle Ebbinga
+
 using Grpc.Core;
 using Parallel.Service;
 

@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Entex Interactive, LLC
+﻿// Copyright 2026 Kyle Ebbinga
 
 using Parallel.Service.Tasks;
 using Serilog;
@@ -25,9 +25,9 @@ namespace Parallel.Service.Services
                     Func<CancellationToken, Task> task = await _queuer.WaitAsync(stoppingToken);
                     await task(stoppingToken);
                 }
-                catch (OperationCanceledException ex)
+                catch (OperationCanceledException)
                 {
-                    _logger.LogWarning($"Task cancelled (Reason: {ex.Message})");
+                    // graceful shutdown
                 }
                 catch (Exception ex)
                 {
@@ -35,9 +35,15 @@ namespace Parallel.Service.Services
                 }
                 finally
                 {
-                    _logger.LogDebug($"Remaining tasks in queue: {_queuer.Count}");
+                    _logger.LogDebug($"Remaining tasks: {_queuer.Count:N0}");
                 }
             }
+        }
+
+        public override Task StopAsync(CancellationToken cancellationToken)
+        {
+            if (!_queuer.IsEmpty) _logger.LogInformation($"Shutdown requested cancelling {_queuer.Count:N0} tasks...");
+            return base.StopAsync(cancellationToken);
         }
     }
 }
