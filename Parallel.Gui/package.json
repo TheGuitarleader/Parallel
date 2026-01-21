@@ -1,0 +1,30 @@
+{
+  "name": "parallel.gui",
+  "version": "0.0.0",
+  "description": "Parallel GUI client",
+  "homepage": "https://github.com/TheGuitarleader/Parallel#readme",
+  "bugs": {
+    "url": "https://github.com/TheGuitarleader/Parallel/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheGuitarleader/Parallel.git"
+  },
+  "license": "GPL-3.0",
+  "author": "Kyle Ebbinga",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "start": "npx electron main.js"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
+    "electron": "^40.0.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  }
+}

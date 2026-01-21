@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parallel.Core", "Parallel.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parallel.Cli", "Parallel.Cli\Parallel.Cli.csproj", "{4BFE65E9-9534-4C85-B59F-1F64A998C76D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parallel.Service", "Parallel.Service\Parallel.Service.csproj", "{A657482C-8202-4972-94D5-62DC5EE3E674}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,12 @@ Global
 		{4BFE65E9-9534-4C85-B59F-1F64A998C76D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4BFE65E9-9534-4C85-B59F-1F64A998C76D}.Analyze|Any CPU.ActiveCfg = Analyze|Any CPU
 		{4BFE65E9-9534-4C85-B59F-1F64A998C76D}.Analyze|Any CPU.Build.0 = Analyze|Any CPU
+		{A657482C-8202-4972-94D5-62DC5EE3E674}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A657482C-8202-4972-94D5-62DC5EE3E674}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A657482C-8202-4972-94D5-62DC5EE3E674}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A657482C-8202-4972-94D5-62DC5EE3E674}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A657482C-8202-4972-94D5-62DC5EE3E674}.Analyze|Any CPU.ActiveCfg = Debug|Any CPU
+		{A657482C-8202-4972-94D5-62DC5EE3E674}.Analyze|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
