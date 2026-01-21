@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
 function createWindow() {
@@ -12,10 +12,10 @@ function createWindow() {
     });
 
     // Load React frontend
-    win.loadFile(path.join(__dirname, '../public/index.html'));
+    win.loadFile('./public/index.html');
 
     // Optional: Open DevTools for debugging
-    // win.webContents.openDevTools();
+    //win.webContents.openDevTools();
 }
 
 app.whenReady().then(createWindow);
