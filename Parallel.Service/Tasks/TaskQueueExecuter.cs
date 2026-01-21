@@ -5,12 +5,12 @@ using Serilog;
 
 namespace Parallel.Service.Services
 {
-    public class TaskWorkerService : BackgroundService
+    public class TaskQueueExecuter : BackgroundService
     {
-        private readonly ILogger<TaskWorkerService> _logger;
+        private readonly ILogger<TaskQueueExecuter> _logger;
         private readonly TaskQueuer _queuer;
 
-        public TaskWorkerService(ILogger<TaskWorkerService> logger, TaskQueuer queuer)
+        public TaskQueueExecuter(ILogger<TaskQueueExecuter> logger, TaskQueuer queuer)
         {
             _logger = logger;
             _queuer = queuer;

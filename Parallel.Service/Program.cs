@@ -42,17 +42,18 @@ namespace Parallel.Service
 
             // Add other services
             builder.Services.AddGrpc();
+            builder.Services.AddGrpcReflection();
             builder.Services.AddSingleton(ParallelConfig.Load());
             builder.Services.AddSingleton<ProcessMonitor>();
             builder.Services.AddSingleton<TaskQueuer>();
 
             // Add background services
-            builder.Services.AddHostedService<TaskWorkerService>();
-            builder.Services.AddHostedService<TestService>();
+            builder.Services.AddHostedService<TaskQueueExecuter>();
 
             WebApplication app = builder.Build();
             app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
             app.MapGrpcService<GrpcService>();
+            app.MapGrpcReflectionService();
 
             IHostApplicationLifetime lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
             ParallelConfig settings = app.Services.GetRequiredService<ParallelConfig>();

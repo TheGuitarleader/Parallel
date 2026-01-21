@@ -16,6 +16,7 @@ public class GrpcService : Greeter.GreeterBase
 
     public override Task<HelloReply> SayHello(HelloRequest request, ServerCallContext context)
     {
+        _logger.LogDebug("Received HelloRequest");
         return Task.FromResult(new HelloReply
         {
             Message = "Hello " + request.Name

@@ -9,11 +9,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Protobuf Include="Protos\health.proto" GrpcServices="Server"/>
+        <Protobuf Include="Protos\greeter.proto" GrpcServices="Server"/>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Grpc.AspNetCore" Version="2.64.0"/>
+        <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.76.0"/>
+        <PackageReference Include="Grpc.Reflection" Version="2.76.0"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="10.0.2"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.2"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
