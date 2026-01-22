@@ -8,7 +8,8 @@ const __dirname = path.dirname(__filename)
 function createWindow() {
     const win = new BrowserWindow({
         width: 1000,
-        height: 700
+        height: 700,
+        icon: path.join(__dirname, 'assets', 'icon.ico'),
     })
 
     if (process.env.ELECTRON_START_URL) {

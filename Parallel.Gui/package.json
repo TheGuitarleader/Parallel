@@ -1,19 +1,22 @@
 {
-  "name": "parallel.gui",
+  "name": "parallel-desktop",
   "displayName": "Parallel Desktop",
   "private": true,
   "version": "0.0.0",
-  "main": "main.js",
+  "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "vite",
-    "build": "tsc -b && vite build",
-    "dev" : "set ELECTRON_START_URL=http://localhost:5173 && electron .",
-    "prod": "electron .",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "vite-start": "vite",
+    "vite-build": "tsc -b && vite build",
+    "electron-build": "npm run vite-build && electron-builder",
+    "electron-dev": "set ELECTRON_START_URL=http://localhost:5173 && electron .",
+    "electron-run": "electron ."
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.3",
+    "@grpc/proto-loader": "^0.8.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -26,6 +29,7 @@
     "autoprefixer": "^10.4.23",
     "babel-plugin-react-compiler": "^1.0.0",
     "electron": "^40.0.0",
+    "electron-builder": "^26.4.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -34,6 +38,7 @@
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vite-plugin-electron": "^0.29.0"
   }
 }
