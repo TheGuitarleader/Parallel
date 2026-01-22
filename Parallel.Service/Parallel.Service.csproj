@@ -6,7 +6,12 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <AssemblyName>Parallel Service</AssemblyName>
         <Version>0.0.0.0</Version>
+        <ApplicationIcon>parallel-red.ico</ApplicationIcon>
     </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="parallel-red.ico"/>
+    </ItemGroup>
 
     <ItemGroup>
         <Protobuf Include="Protos\greeter.proto" GrpcServices="Server"/>

@@ -22,8 +22,8 @@ namespace Parallel.Service.Services
             {
                 try
                 {
-                    Func<CancellationToken, Task> task = await _queuer.WaitAsync(stoppingToken);
-                    await task(stoppingToken);
+                    Func<Task> task = await _queuer.WaitAsync(stoppingToken);
+                    await task();
                 }
                 catch (OperationCanceledException)
                 {
@@ -33,16 +33,12 @@ namespace Parallel.Service.Services
                 {
                     _logger.LogError($"Task execution failed: '{ex.Source}' (Reason: {ex.Message})");
                 }
-                finally
-                {
-                    _logger.LogDebug($"Remaining tasks: {_queuer.Count:N0}");
-                }
             }
         }
 
         public override Task StopAsync(CancellationToken cancellationToken)
         {
-            if (!_queuer.IsEmpty) _logger.LogInformation($"Shutdown requested cancelling {_queuer.Count:N0} tasks...");
+            if (!_queuer.IsEmpty) _logger.LogInformation($"Shutdown requested. Cancelling {_queuer.Count:N0} tasks...");
             return base.StopAsync(cancellationToken);
         }
     }

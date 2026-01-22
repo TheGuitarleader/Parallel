@@ -143,9 +143,9 @@ namespace Parallel.Core.Settings
             return Process.GetProcessesByName("Parallel").Length <= 1;
         }
 
-        public static bool CanStartGuiInstance()
+        public static LocalVaultConfig[] GetEnabledVaults()
         {
-            return Process.GetProcessesByName("Parallel Desktop").Length <= 1;
+            return Load().Vaults.Where(v => v.Enabled.Equals(true)).ToArray();
         }
     }
 }

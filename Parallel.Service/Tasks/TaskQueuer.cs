@@ -1,6 +1,8 @@
 ﻿// Copyright 2026 Kyle Ebbinga
 
 using System.Collections.Concurrent;
+using Parallel.Service.Services;
+using Serilog;
 
 namespace Parallel.Service.Tasks
 {
@@ -9,33 +11,35 @@ namespace Parallel.Service.Tasks
     /// </summary>
     public class TaskQueuer
     {
-        private readonly ConcurrentQueue<Func<CancellationToken, Task>> _queue = new();
+        private readonly ConcurrentStack<Func<Task>> _stack = new();
         private readonly SemaphoreSlim _signal = new(0);
 
         /// <summary>
         /// Gets the number of elements contained in the <see cref="TaskQueuer"/>.
         /// </summary>
-        public int Count => _queue.Count;
+        public int Count => _stack.Count;
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="TaskQueuer"/> is empty.
         /// </summary>
-        public bool IsEmpty => _queue.IsEmpty;
+        public bool IsEmpty => _stack.IsEmpty;
 
-        public ValueTask AddAsync(Func<CancellationToken, Task> task)
+        /// <summary>
+        /// Adds a task to be executed by the <see cref="TaskQueueExecuter"/>. If a task with the same key is already queued, the new task is ignored.
+        /// </summary>
+        /// <param name="task">The task to be executed.</param>
+        public void Enqueue(Func<Task> task)
         {
             ArgumentNullException.ThrowIfNull(task);
-
-            _queue.Enqueue(task);
+            _stack.Push(task);
             _signal.Release();
-            return ValueTask.CompletedTask;
         }
 
-        public async Task<Func<CancellationToken, Task>> WaitAsync(CancellationToken ct)
+        public async Task<Func<Task>> WaitAsync(CancellationToken ct)
         {
             await _signal.WaitAsync(ct);
-            _queue.TryDequeue(out Func<CancellationToken, Task>? task);
-            return task!;
+            if (_stack.TryPop(out Func<Task>? task)) return task;
+            throw new InvalidOperationException("Signal received but no task was available.");
         }
     }
 }
