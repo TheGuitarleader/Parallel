@@ -7,6 +7,8 @@ using Parallel.Core.Settings;
 using Parallel.Core.Utils;
 using Parallel.Service.Services;
 using Parallel.Service.Tasks;
+using Newtonsoft.Json;
+using Parallel.Service.Extensions.Logging;
 using Serilog;
 
 namespace Parallel.Service
@@ -24,36 +26,50 @@ namespace Parallel.Service
             Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().WriteTo.File(LogFile).CreateLogger();
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog();
+            //builder.Logging.AddSignalR();
 
             AssemblyName assembly = Assembly.GetExecutingAssembly().GetName();
             Log.Information($"{assembly.Name} v{assembly.Version}");
 
             // Add Windows services
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 builder.Services.AddWindowsService();
             }
 
             // Add Linux systemd
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (OperatingSystem.IsLinux())
             {
                 builder.Services.AddSystemd();
             }
 
             // Add other services
-            builder.Services.AddGrpc();
-            builder.Services.AddGrpcReflection();
+            builder.Services.AddControllers();
+            builder.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+                });
+            });
+
+            builder.Services.AddSignalR().AddHubOptions<MessageHub>(options =>
+            {
+                options.EnableDetailedErrors = true;
+            });
+            
             builder.Services.AddSingleton<ProcessMonitor>();
             builder.Services.AddSingleton<TaskQueuer>();
 
             // Add background services
-            builder.Services.AddHostedService<TaskQueueExecuter>();
-            builder.Services.AddHostedService<VaultSyncService>();
+            builder.Services.AddHostedService<TaskQueueExecutor>();
+            builder.Services.AddHostedService<TestingService>();
+            //builder.Services.AddHostedService<VaultSyncService>();
 
             WebApplication app = builder.Build();
-            app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
-            app.MapGrpcService<GrpcService>();
-            app.MapGrpcReflectionService();
+            app.UseCors();
+            app.MapControllers();
+            app.MapHub<MessageHub>("/hub");
             await app.RunAsync();
         }
     }

@@ -147,5 +147,10 @@ namespace Parallel.Core.Settings
         {
             return Load().Vaults.Where(v => v.Enabled.Equals(true)).ToArray();
         }
+
+        public static bool IsService()
+        {
+            return AppDomain.CurrentDomain.FriendlyName.Contains("service", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }
