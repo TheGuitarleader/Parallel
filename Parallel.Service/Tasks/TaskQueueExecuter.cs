@@ -1,16 +1,13 @@
 ﻿// Copyright 2026 Kyle Ebbinga
 
-using Parallel.Service.Tasks;
-using Serilog;
-
-namespace Parallel.Service.Services
+namespace Parallel.Service.Tasks
 {
-    public class TaskQueueExecuter : BackgroundService
+    public class TaskQueueExecutor : BackgroundService
     {
-        private readonly ILogger<TaskQueueExecuter> _logger;
+        private readonly ILogger<TaskQueueExecutor> _logger;
         private readonly TaskQueuer _queuer;
 
-        public TaskQueueExecuter(ILogger<TaskQueueExecuter> logger, TaskQueuer queuer)
+        public TaskQueueExecutor(ILogger<TaskQueueExecutor> logger, TaskQueuer queuer)
         {
             _logger = logger;
             _queuer = queuer;
@@ -31,7 +28,7 @@ namespace Parallel.Service.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Task execution failed: '{ex.Source}' (Reason: {ex.Message})");
+                    _logger.LogError(ex, $"Task execution failed!");
                 }
             }
         }

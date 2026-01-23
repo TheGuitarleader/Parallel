@@ -25,7 +25,7 @@ namespace Parallel.Service.Tasks
         public bool IsEmpty => _stack.IsEmpty;
 
         /// <summary>
-        /// Adds a task to be executed by the <see cref="TaskQueueExecuter"/>. If a task with the same key is already queued, the new task is ignored.
+        /// Adds a task to be executed by the <see cref="TaskQueueExecutor"/>.
         /// </summary>
         /// <param name="task">The task to be executed.</param>
         public void Enqueue(Func<Task> task)
