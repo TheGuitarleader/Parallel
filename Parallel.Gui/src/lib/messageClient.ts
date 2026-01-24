@@ -1,6 +1,7 @@
 ﻿import * as signalR from "@microsoft/signalr";
 
 export class MessageClient {
+    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     private connectionChangedCallbacks: ((isConnected: boolean) => void)[] = [];
     private connection: signalR.HubConnection;
 
@@ -13,8 +14,23 @@ export class MessageClient {
     }
 
     async connect() {
-        if (this.connection.state != signalR.HubConnectionState.Disconnected) return;
-        await this.connection.start();
+        if (this.connection.state !== signalR.HubConnectionState.Disconnected) return;
+        try {
+            await this.connection.start();
+            if(this.reconnectTimer) {
+                clearTimeout(this.reconnectTimer);
+                this.reconnectTimer = null;
+            }
+        }
+        catch(err) {
+            console.error(err);
+            if (!this.reconnectTimer) {
+                this.reconnectTimer = setTimeout(() => {
+                    this.reconnectTimer = null;
+                    this.connect();
+                }, 3000);
+            }
+        }
 
         // Notify all registered callbacks.
         this.connectionChangedCallbacks.forEach(cb => cb(this.isConnected()));

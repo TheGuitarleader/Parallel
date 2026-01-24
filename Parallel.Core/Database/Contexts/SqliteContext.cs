@@ -89,21 +89,21 @@ namespace Parallel.Core.Database.Contexts
         public async Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp)
         {
             string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time ORDER BY lastupdate DESC) GROUP BY localpath;";
-            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", Time = new UnixTime(timestamp).TotalMilliseconds });
+            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds });
         }
 
         /// <inheritdoc />
         public async Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted)
         {
             string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastupdate DESC) GROUP BY localpath;";
-            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
+            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
         }
 
         /// <inheritdoc />
         public async Task<IReadOnlyList<SystemFile>> GetFilesAsync(string path, DateTime timestamp, bool deleted)
         {
             string sql = "SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastupdate ASC";
-            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"%{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
+            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
         }
 
         /// <inheritdoc />
@@ -111,6 +111,20 @@ namespace Parallel.Core.Database.Contexts
         {
             string sql = $"SELECT (name, localpath, remotepath, lastwrite, lastupdate, localsize, remotesize, type, hidden, readonly, deleted, checksum) FROM objects WHERE localpath LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
             return await _semaphore.QuerySingleAsync<SystemFile>(sql, new { path });
+        }
+        
+        /// <inheritdoc />
+        public async Task<IReadOnlyList<string>> ListDirectoriesAsync(string path)
+        {
+            string sql = "SELECT DISTINCT parentdir FROM objects WHERE parentdir LIKE @Path ORDER BY parentdir ASC";
+            return await _semaphore.QueryAsync<string>(sql, new { Path = $"{path}%" });
+        }
+        
+        /// <inheritdoc />
+        public async Task<IReadOnlyList<SystemFile>> ListFilesAsync(string path)
+        {
+            string sql = "SELECT * FROM objects WHERE parentdir = @Path ORDER BY localpath ASC, lastupdate DESC";
+            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = path });
         }
 
         #endregion

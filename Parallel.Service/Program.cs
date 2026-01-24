@@ -8,6 +8,7 @@ using Parallel.Core.Utils;
 using Parallel.Service.Services;
 using Parallel.Service.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Parallel.Service.Extensions.Logging;
 using Serilog;
 
@@ -44,7 +45,11 @@ namespace Parallel.Service
             }
 
             // Add other services
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddNewtonsoftJson(options =>
+            {
+                options.SerializerSettings.Converters.Add(new StringEnumConverter());
+            });
+            
             builder.Services.AddCors(options =>
             {
                 options.AddDefaultPolicy(policy =>

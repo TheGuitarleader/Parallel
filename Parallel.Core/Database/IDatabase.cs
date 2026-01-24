@@ -85,7 +85,7 @@ namespace Parallel.Core.Database
         /// <param name="deleted"></param>
         /// <returns></returns>
         Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted);
-
+        
         /// <summary>
         /// Gets a list of files.
         /// </summary>
@@ -107,6 +107,18 @@ namespace Parallel.Core.Database
         Task<long> GetTotalSizeAsync();
         Task<long> GetTotalFilesAsync();
         Task<long> GetTotalFilesAsync(bool deleted);
+
+        /// <summary>
+        /// Gets a list of directories in ascending order.
+        /// </summary>
+        /// <param name="path"></param>
+        Task<IReadOnlyList<string>> ListDirectoriesAsync(string path);
+        
+        /// <summary>
+        /// Gets a list of files in a directory in ascending order. If multiple files exist, those will be in order of most recent.
+        /// </summary>
+        /// <param name="path"></param>
+        Task<IReadOnlyList<SystemFile>> ListFilesAsync(string path);
 
         #endregion
 

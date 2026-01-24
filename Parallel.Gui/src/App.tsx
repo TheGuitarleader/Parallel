@@ -1,50 +1,71 @@
-import { useState } from "react";
-import { Sidebar } from "./components/sidebar.tsx";
-import { Footer } from "./components/footer.tsx";
-import { HomePage } from "./pages/home.tsx";
-import { LogsPage } from "./pages/logging.tsx";
-import { ExplorerPage } from "./pages/explorer.tsx";
-import { SettingsPage } from "./pages/settings.tsx";
+import { StatusBar } from "./components/status-bar";
+import {Header} from "./components/header.tsx";
+import {useEffect, useState} from "react";
+import {API_URL} from "@/lib/config.ts";
+import type {Vault} from "@/lib/types.ts";
+import {RefreshCw} from "lucide-react";
 
 // Main App component - this is the root of our application
-export default function App() {
-    // State to track which page we're currently on
-    const [currentPage, setCurrentPage] = useState("home");
+export default function App(){
+    const [activeVaultId, setActiveVaultId] = useState<string | null>(null)
+    const [vaults, setVaults] = useState<Vault[]>([])
+    const [loading, setLoading] = useState(true)
 
-    // Function to render the correct page based on currentPage state
-    const renderPage = () => {
-        switch (currentPage) {
-            case "home":
-                return <HomePage />;
-            case "explorer":
-                return <ExplorerPage />;
-            case "logging":
-                return <LogsPage />;
-            case "settings":
-                return <SettingsPage />;
-            default:
-                return <HomePage />;
+    useEffect(() => {
+        const loadVaults = async () => {
+            try {
+                const res = await fetch(`${API_URL}/vaults`, {
+                    credentials: "include"
+                })
+
+                if (!res.ok) {
+                    throw new Error("Failed to fetch vaults")
+                }
+
+                const data: Vault[] = await res.json()
+                setVaults(data)
+
+                // Select first vault by default
+                if (data.length > 0) {
+                    setActiveVaultId(data[0].id)
+                }
+            } catch (err) {
+                console.error(err)
+            } finally {
+                setLoading(false)
+            }
         }
-    };
+
+        loadVaults()
+    }, [])
+
+    const handleSetVault = (id: string) => {
+        setActiveVaultId(id)
+    }
 
     return (
-        // Apply dark mode class to the entire app
-        <div className="dark h-screen w-screen flex bg-background text-foreground overflow-hidden">
-            {/* Sidebar - we pass currentPage and setCurrentPage as props */}
-            <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+        <div className="h-screen flex flex-col bg-background">
+            <Header
+                activeVaultId={activeVaultId}
+                vaults={vaults}
+                onSetVault={handleSetVault}
+            />
 
-            {/* Main content area with footer */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <main className="flex-1 overflow-y-auto">
-                    <div className="max-w-5xl mx-auto p-8">
-                        {/* This renders the current page */}
-                        {renderPage()}
-                    </div>
-                </main>
+            {loading ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-background">
+                    <RefreshCw className="w-10 h-10 text-primary animate-spin" />
+                    <span className="text-2xl font-semibold text-primary animate-pulse">Loading...</span>
+                </div>
+            ) : (
+                <div className="flex-1 overflow-hidden">
+                </div>
+            )}
 
-                {/* Footer only across the page content */}
-                <Footer />
+            <div className="flex-1 overflow-hidden">
+
             </div>
+
+            <StatusBar />
         </div>
     );
 }

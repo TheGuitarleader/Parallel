@@ -1,83 +1,91 @@
-﻿@custom-variant dark (&:is(.dark *));
+﻿@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-    --font-size: 16px;
-    --background: #ffffff;
-    --foreground: oklch(0.145 0 0);
-    --card: #ffffff;
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: #030213;
-    --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.95 0.0058 264.53);
-    --secondary-foreground: #030213;
-    --muted: #ececf0;
-    --muted-foreground: #717182;
-    --accent: #e9ebef;
-    --accent-foreground: #030213;
-    --destructive: #d4183d;
-    --destructive-foreground: #ffffff;
-    --border: rgba(0, 0, 0, 0.1);
-    --input: transparent;
-    --input-background: #f3f3f5;
-    --switch-background: #cbced4;
-    --font-weight-medium: 500;
-    --font-weight-normal: 400;
-    --ring: oklch(0.708 0 0);
+    --background: oklch(0.13 0.005 260);
+    --foreground: oklch(0.95 0 0);
+    --card: oklch(0.16 0.005 260);
+    --card-foreground: oklch(0.95 0 0);
+    --popover: oklch(0.18 0.005 260);
+    --popover-foreground: oklch(0.95 0 0);
+    --primary: #c00000;
+    --primary-foreground: oklch(0.98 0 0);
+    --secondary: oklch(0.22 0.005 260);
+    --secondary-foreground: oklch(0.9 0 0);
+    --muted: oklch(0.2 0.005 260);
+    --muted-foreground: oklch(0.65 0 0);
+    --accent: oklch(0.25 0.01 260);
+    --accent-foreground: oklch(0.95 0 0);
+    --destructive: oklch(0.55 0.2 25);
+    --destructive-foreground: oklch(0.95 0 0);
+    --border: oklch(0.25 0.005 260);
+    --input: oklch(0.2 0.005 260);
+    --ring: #c00000;
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);
     --chart-3: oklch(0.398 0.07 227.392);
     --chart-4: oklch(0.828 0.189 84.429);
     --chart-5: oklch(0.769 0.188 70.08);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: #030213;
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --radius: 0.5rem;
+    --sidebar: oklch(0.11 0.005 260);
+    --sidebar-foreground: oklch(0.95 0 0);
+    --sidebar-primary: #c00000;
+    --sidebar-primary-foreground: oklch(0.98 0 0);
+    --sidebar-accent: oklch(0.2 0.005 260);
+    --sidebar-accent-foreground: oklch(0.95 0 0);
+    --sidebar-border: oklch(0.22 0.005 260);
+    --sidebar-ring: #c00000;
+
+    /* Status colors for file sync */
+    --status-synced: oklch(0.7 0.15 145);
+    --status-pending: oklch(0.75 0.15 85);
+    --status-deleted: oklch(0.6 0.18 25);
+    --status-modified: #c00000;
 }
 
 .dark {
-    /* Dark background with blood red primary */
-    --background: #0a0a0f;
-    --foreground: #e5e5e7;
-    --card: #141418;
-    --card-foreground: #e5e5e7;
-    --popover: #141418;
-    --popover-foreground: #e5e5e7;
+    --background: oklch(0.13 0.005 260);
+    --foreground: oklch(0.95 0 0);
+    --card: oklch(0.16 0.005 260);
+    --card-foreground: oklch(0.95 0 0);
+    --popover: oklch(0.18 0.005 260);
+    --popover-foreground: oklch(0.95 0 0);
     --primary: #c00000;
-    --primary-foreground: #ffffff;
-    --secondary: #1f1f23;
-    --secondary-foreground: #e5e5e7;
-    --muted: #1f1f23;
-    --muted-foreground: #9a9a9f;
-    --accent: #2a2a2f;
-    --accent-foreground: #e5e5e7;
-    --destructive: #c00000;
-    --destructive-foreground: #ffffff;
-    --border: #2a2a2f;
-    --input: #1f1f23;
+    --primary-foreground: oklch(0.98 0 0);
+    --secondary: oklch(0.22 0.005 260);
+    --secondary-foreground: oklch(0.9 0 0);
+    --muted: oklch(0.2 0.005 260);
+    --muted-foreground: oklch(0.65 0 0);
+    --accent: oklch(0.25 0.01 260);
+    --accent-foreground: oklch(0.95 0 0);
+    --destructive: oklch(0.55 0.2 25);
+    --destructive-foreground: oklch(0.95 0 0);
+    --border: oklch(0.25 0.005 260);
+    --input: oklch(0.2 0.005 260);
     --ring: #c00000;
-    --font-weight-medium: 500;
-    --font-weight-normal: 400;
-    --chart-1: #c00000;
-    --chart-2: #e84a5f;
-    --chart-3: #ff6b6b;
-    --chart-4: #a71429;
-    --chart-5: #8b0000;
-    --sidebar: #0f0f14;
-    --sidebar-foreground: #e5e5e7;
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: oklch(0.11 0.005 260);
+    --sidebar-foreground: oklch(0.95 0 0);
     --sidebar-primary: #c00000;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #1f1f23;
-    --sidebar-accent-foreground: #e5e5e7;
-    --sidebar-border: #2a2a2f;
+    --sidebar-primary-foreground: oklch(0.98 0 0);
+    --sidebar-accent: oklch(0.2 0.005 260);
+    --sidebar-accent-foreground: oklch(0.95 0 0);
+    --sidebar-border: oklch(0.22 0.005 260);
     --sidebar-ring: #c00000;
+
+    /* Status colors for file sync */
+    --status-synced: oklch(0.7 0.15 145);
+    --status-pending: oklch(0.75 0.15 85);
+    --status-deleted: oklch(0.6 0.18 25);
+    --status-modified: #c00000;
 }
+
 
 @theme inline {
     --color-background: var(--background);
@@ -98,8 +106,6 @@
     --color-destructive-foreground: var(--destructive-foreground);
     --color-border: var(--border);
     --color-input: var(--input);
-    --color-input-background: var(--input-background);
-    --color-switch-background: var(--switch-background);
     --color-ring: var(--ring);
     --color-chart-1: var(--chart-1);
     --color-chart-2: var(--chart-2);
@@ -118,6 +124,10 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+    --color-status-synced: var(--status-synced);
+    --color-status-pending: var(--status-pending);
+    --color-status-deleted: var(--status-deleted);
+    --color-status-modified: var(--status-modified);
 }
 
 @layer base {
@@ -133,10 +143,10 @@
         background-image: none; /* remove any subtle gradients */
     }
 
-    /**
-    * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-    * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
-    */
+    .header {
+        -webkit-app-region: drag;
+        user-select: none; /* prevents text selection when dragging */
+    }
 
     html {
         font-size: var(--font-size);

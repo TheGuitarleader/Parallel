@@ -1,10 +1,11 @@
 ﻿import { useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger} from './ui/tooltip.tsx';
-import {Clock, HardDrive, Wifi, WifiOff} from "lucide-react";
+import {Clock, FolderSync, HardDrive, Wifi, WifiOff} from "lucide-react";
 import { client } from '../lib/messageClient.ts'
+import {cn} from "../lib/utils.ts";
 
-// Footer component that displays status information
-export function Footer() {
+// StatusBar component that displays status information
+export function StatusBar() {
     // State for connection status - toggles between connected/offline
     const [isConnected, setIsConnected] = useState(false);
     useEffect(() => {
@@ -28,14 +29,14 @@ export function Footer() {
             setStorageSize(size)
         }
 
-        client.on("TotalStorageUpdate", updateStorageSize)
+        client.on("StorageSizeUpdate", updateStorageSize)
         return () => {
-            client.off("TotalStorageUpdate", updateStorageSize)
+            client.off("StorageSizeUpdate", updateStorageSize)
         }
     }, [])
 
     // State change for the last sync time
-    const [timestamp, setTimestamp] = useState("Not synced yet");
+    const [timestamp, setTimestamp] = useState("Never");
     useEffect(() => {
         const updateLastSync = (time: string) => {
             console.log(time)
@@ -51,26 +52,35 @@ export function Footer() {
 
     return (
         <footer className="h-10 bg-sidebar border-t border-border flex items-center justify-between px-4 text-sm">
-            {/* Left side - Connection Status */}
-            <div className="flex items-center gap-2">
-                <button className="flex items-center gap-2 hover:opacity-80 transition-opacity" onClick={async () => { await client.connect() }}>
-                    {isConnected ? (
-                        <Wifi className="w-4 h-4 text-green-500" />
-                    ) : (
-                        <WifiOff className="w-4 h-4 text-red-500" />
-                    )}
-
-                    <span className={isConnected ? "text-green-500" : "text-red-500"}>
-                        {isConnected ? "Connected" : "Offline"}
-                    </span>
-                </button>
+            <div className={cn(
+                "flex items-center gap-2 cursor-default",
+                isConnected ? "text-status-synced" : "text-status-deleted"
+            )}>
+                {isConnected ? (
+                    <Wifi className="w-4.5 h-4.5" />
+                ) : (
+                    <WifiOff className="w-4.5 h-4.5" />
+                )}
+                <span className="hidden sm:inline">
+                  {isConnected ? "Connected" : "Disconnected"}
+                </span>
             </div>
 
-            {/* Right side - Storage and Timestamp */}
             <div className="flex items-center gap-6 text-muted-foreground">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2 cursor-help">
+                        <div className="flex items-center gap-1.5 cursor-pointer">
+                            <FolderSync className="w-3.5 h-3.5" />
+                            <span>123,456</span>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                        <p>Total files synced</p>
+                    </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1.5 cursor-pointer">
                             <HardDrive className="w-3.5 h-3.5" />
                             <span>{storageSize}</span>
                         </div>
@@ -79,10 +89,9 @@ export function Footer() {
                         <p>Total storage size</p>
                     </TooltipContent>
                 </Tooltip>
-
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2 cursor-help">
+                        <div className="flex items-center gap-1.5 cursor-pointer">
                             <Clock className="w-3.5 h-3.5" />
                             <span>{timestamp}</span>
                         </div>

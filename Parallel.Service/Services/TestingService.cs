@@ -20,11 +20,11 @@ namespace Parallel.Service.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            long bytes = 0;
             while (!stoppingToken.IsCancellationRequested)
             {
                 _monitor.Refresh();
-                await _hub.Clients.All.SendAsync("TotalStorageUpdate", Formatter.FromBytes(bytes += 500), stoppingToken);
+                long bytes = Random.Shared.NextInt64(0, 1024 * 1024 * 1024);
+                await _hub.Clients.All.SendAsync("StorageSizeUpdate", Formatter.FromBytes(bytes), stoppingToken);
                 await _hub.Clients.All.SendAsync("LastSyncUpdate", Formatter.FromDateTime(DateTime.UtcNow), stoppingToken);
                 await Task.Delay(1500, stoppingToken);
             }
