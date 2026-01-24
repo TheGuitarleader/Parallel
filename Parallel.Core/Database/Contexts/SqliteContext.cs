@@ -157,9 +157,10 @@ namespace Parallel.Core.Database.Contexts
 
         #endregion
 
-        public Task<DateTime> GetLastSyncTimeAsync()
+        public async Task<DateTime> GetLastSyncTimeAsync()
         {
-            throw new NotImplementedException();
+            string sql = "SELECT lastupdate FROM objects ORDER BY lastupdate DESC LIMIT 1;";
+            return UnixTime.FromMilliseconds(await _semaphore.QuerySingleAsync<long>(sql)).ToLocalTime();
         }
     }
 }

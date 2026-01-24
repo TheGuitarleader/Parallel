@@ -4,37 +4,56 @@ import {useEffect, useState} from "react";
 import {API_URL} from "@/lib/config.ts";
 import type {VaultConfig} from "@/lib/types.ts";
 import {RefreshCw} from "lucide-react";
+import {VaultDialog} from "@/components/vault-dialog.tsx";
+import {client} from "@/lib/messageClient.ts";
+
+
 
 // Main App component - this is the root of our application
 export default function App(){
-    const [activeVaultId, setActiveVaultId] = useState<string | null>(null)
-    const [editingVault, setEditingVault] = useState<VaultConfig | null>(null)
-    const [vaultDialogOpen, setVaultDialogOpen] = useState(false)
-    const [vaults, setVaults] = useState<VaultConfig[]>([])
     const [loading, setLoading] = useState(true)
+    const [isConnected, setIsConnected] = useState(false);
+    const [vaults, setVaults] = useState<VaultConfig[]>([])
+    const [activeVaultId, setActiveVaultId] = useState<string | null>(null)
+    const [vaultDialogOpen, setVaultDialogOpen] = useState(false)
+    const [editingVault, setEditingVault] = useState<VaultConfig | null>(null)
+    const loadVaults = async () => {
+        try {
+            console.log("Loading Vaults...");
+
+            const res = await fetch(`${API_URL}/vaults`, { credentials: "include" })
+            if (!res.ok) console.error("Failed to fetch vaults")
+
+            const data: VaultConfig[] = await res.json()
+            setVaults(data)
+
+            // Select first vault by default
+            if (data.length > 0) {
+                setActiveVaultId(data[0].id)
+            }
+        } catch (err) {
+            console.error(err)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     useEffect(() => {
-        const loadVaults = async () => {
+        (async () => {
             try {
-                const res = await fetch(`${API_URL}/vaults`, { credentials: "include" })
-                if (!res.ok) console.error("Failed to fetch vaults")
-
-                const data: VaultConfig[] = await res.json()
-                setVaults(data)
-
-                // Select first vault by default
-                if (data.length > 0) {
-                    setActiveVaultId(data[0].id)
-                }
+                await client.connect()
+                setIsConnected(client.isConnected())
             } catch (err) {
-                console.error(err)
-            } finally {
-                setLoading(false)
+                console.error("SignalR connection failed:", err)
+                setIsConnected(false)
             }
-        }
+        })()
 
-        loadVaults()
-    }, [])
+        client.connectionChanged((connected) => {
+            if(connected) loadVaults()
+            setIsConnected(connected)
+        })
+    }, []);
 
     const handleSetVault = (id: string) => {
         setActiveVaultId(id)
@@ -46,8 +65,18 @@ export default function App(){
     }
 
     const handleEditVault = (vault: VaultConfig) => {
+        console.log(vault)
         setEditingVault(vault)
         setVaultDialogOpen(true)
+    }
+
+    const handleSaveVault = (vault: VaultConfig) => {
+        if (editingVault) {
+            setVaults(prev => prev.map(v => v.id === vault.id ? vault : v))
+        } else {
+            setVaults(prev => [...prev, vault])
+            setActiveVaultId(vault.id)
+        }
     }
 
     return (
@@ -58,9 +87,9 @@ export default function App(){
                 onSetVault={handleSetVault}
                 onAddVault={handleAddVault}
                 onEditVault={handleEditVault}
-                onMinimize={() => window.electronAPI.minimize()}
-                onMaximize={() => window.electronAPI.maximize()}
-                onClose={() => window.electronAPI.close()}
+                onMinimize={() => window.electronAPI?.minimize()}
+                onMaximize={() => window.electronAPI?.maximize()}
+                onClose={() => window.electronAPI?.close()}
             />
 
             {loading ? (
@@ -79,6 +108,14 @@ export default function App(){
 
             <Footer
                 activeVaultId={activeVaultId}
+                isConnected={isConnected}
+            />
+
+            <VaultDialog
+                open={vaultDialogOpen}
+                onOpenChange={setVaultDialogOpen}
+                onSave={handleSaveVault}
+                editVault={editingVault}
             />
         </div>
     );

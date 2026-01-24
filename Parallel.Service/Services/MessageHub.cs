@@ -1,6 +1,5 @@
 // Copyright 2026 Kyle Ebbinga
 
-using Grpc.Core;
 using Microsoft.AspNetCore.SignalR;
 using Parallel.Service;
 

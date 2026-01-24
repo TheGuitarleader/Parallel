@@ -122,6 +122,8 @@ namespace Parallel.Core.Database
 
         #endregion
 
+        Task<DateTime> GetLastSyncTimeAsync();
+
         #region History
 
         /// <summary>

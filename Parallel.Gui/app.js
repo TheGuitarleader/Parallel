@@ -1,6 +1,7 @@
 ﻿import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import * as os from "node:os";
 
 let win = null;
 const __filename = fileURLToPath(import.meta.url)
@@ -43,6 +44,9 @@ app.on('window-all-closed', () => {
 });
 
 // IPCs
+ipcMain.handle('hostname', () => {
+    return os.hostname();
+});
 ipcMain.on("window:minimize", () => win.minimize())
 ipcMain.on("window:maximize", () => {
     if (win.isMaximized()) win.unmaximize()

@@ -46,7 +46,7 @@ namespace Parallel.Service.Controllers
             long totalFiles = await (db?.GetTotalFilesAsync() ?? Task.FromResult(0L));
             long totalLocalFiles = await (db?.GetTotalFilesAsync(false) ?? Task.FromResult(0L));
             long totalDeletedFiles = await (db?.GetTotalFilesAsync(true) ?? Task.FromResult(0L));
-            return Json(new { localSize, remoteSize, totalSize, totalFiles, totalLocalFiles, totalDeletedFiles });
+            return Json(new { lastSync, localSize, remoteSize, totalSize, totalFiles, totalLocalFiles, totalDeletedFiles });
         }
 
         [HttpGet, Route("{id}/directories")]

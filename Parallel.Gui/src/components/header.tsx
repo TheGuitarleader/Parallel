@@ -64,7 +64,6 @@ export function Header({
             {/* Vault tabs */}
             <div className="flex items-center gap-1 px-2 pb-2 overflow-x-auto">
                 {vaults.map(vault => {
-                    console.log(vault)
                     const Icon = vaultServiceIcons[vault.credentials.service] ?? HardDrive
                     const isActive = vault.id === activeVaultId
 

@@ -9,6 +9,7 @@ using Parallel.Service.Services;
 using Parallel.Service.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 using Parallel.Service.Extensions.Logging;
 using Serilog;
 
@@ -47,17 +48,17 @@ namespace Parallel.Service
             // Add other services
             builder.Services.AddControllers().AddNewtonsoftJson(options =>
             {
-                options.SerializerSettings.Converters.Add(new StringEnumConverter());
+                options.SerializerSettings.Converters.Add(new StringEnumConverter { NamingStrategy = new CamelCaseNamingStrategy() });
             });
             
             builder.Services.AddCors(options =>
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+                    policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 });
             });
-
+           
             builder.Services.AddSignalR().AddHubOptions<MessageHub>(options =>
             {
                 options.EnableDetailedErrors = true;
@@ -72,6 +73,7 @@ namespace Parallel.Service
             //builder.Services.AddHostedService<VaultSyncService>();
 
             WebApplication app = builder.Build();
+            app.UseRouting();
             app.UseCors();
             app.MapControllers();
             app.MapHub<MessageHub>("/hub");

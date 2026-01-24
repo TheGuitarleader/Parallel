@@ -1,33 +1,18 @@
 ﻿import { useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger} from './ui/tooltip.tsx';
 import {CheckCircle2, Clock, HardDrive, History, Trash2, Wifi, WifiOff} from "lucide-react";
-import { client } from '../lib/messageClient.ts'
 import {cn} from "../lib/utils.ts";
 import {API_URL} from "@/lib/config.ts";
 import type {VaultStats} from "@/lib/types.ts";
-import {formatBytes, formatNum} from "@/lib/convert.ts";
+import {formatBytes, formatNum} from "@/lib/converter.ts";
 
 interface StatusBarProps {
-    activeVaultId: string;
+    activeVaultId: string | null;
+    isConnected: boolean;
 }
 
 // Footer component that displays status information
-export function Footer({ activeVaultId } : StatusBarProps) {
-    const [isConnected, setIsConnected] = useState(false);
-    useEffect(() => {
-        (async () => {
-            try {
-                await client.connect()
-                setIsConnected(client.isConnected())
-            } catch (err) {
-                console.error("SignalR connection failed:", err)
-                setIsConnected(false)
-            }
-        })()
-
-        client.connectionChanged((connected) => setIsConnected(connected))
-    }, []);
-
+export function Footer({ activeVaultId, isConnected } : StatusBarProps) {
     const [syncedFiles, setSyncedFiles] = useState("0");
     const [revisedFiles, setRevisedFiles] = useState("0");
     const [deletedFiles, setDeletedFiles] = useState("0");
@@ -35,15 +20,17 @@ export function Footer({ activeVaultId } : StatusBarProps) {
     const [timestamp, setTimestamp] = useState("Never");
     useEffect(() => {
         (async () => {
+            if(activeVaultId == null) return;
             const res = await fetch(`${API_URL}/vaults/${activeVaultId}/stats`, { credentials: "include" })
             if (res.ok) {
                 const data: VaultStats = await res.json()
                 const revisions = data.totalFiles - (data.totalLocalFiles + data.totalDeletedFiles)
 
-                setSyncedFiles(formatNum(data.totalLocalFiles))
+                setSyncedFiles(formatNum(data.totalFiles))
                 setRevisedFiles(formatNum(revisions))
                 setDeletedFiles(formatNum(data.totalDeletedFiles))
                 setStorageSize(formatBytes(data.localSize))
+                setTimestamp(data.lastSync)
             }
             else {
                 setSyncedFiles("0")
@@ -118,7 +105,7 @@ export function Footer({ activeVaultId } : StatusBarProps) {
             <div className="flex items-center gap-6 text-muted-foreground">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1.5 cursor-pointer">
+                        <div className="flex items-center gap-1.5 cursor-default">
                             <HardDrive className="w-3.5 h-3.5" />
                             <span>{storageSize}</span>
                         </div>
@@ -129,7 +116,7 @@ export function Footer({ activeVaultId } : StatusBarProps) {
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1.5 cursor-pointer">
+                        <div className="flex items-center gap-1.5 cursor-default">
                             <Clock className="w-3.5 h-3.5" />
                             <span>{timestamp}</span>
                         </div>
