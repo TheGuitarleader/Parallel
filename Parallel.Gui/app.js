@@ -2,16 +2,22 @@
 import path from 'path'
 import { fileURLToPath } from 'url'
 
+let win = null;
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 function createWindow() {
-    const win = new BrowserWindow({
+    win = new BrowserWindow({
         width: 1000,
         height: 700,
         frame: false,
         transparent: false,
         icon: path.join(__dirname, 'assets', 'icon.ico'),
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true,
+            nodeIntegration: false
+        }
     })
 
     if (process.env.ELECTRON_START_URL) {
@@ -23,6 +29,7 @@ function createWindow() {
     }
 
     win.webContents.openDevTools({ mode: 'detach' });
+    win.on("closed", () => { win = null });
 }
 
 app.whenReady().then(createWindow);
@@ -34,3 +41,11 @@ app.on('activate', () => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
 });
+
+// IPCs
+ipcMain.on("window:minimize", () => win.minimize())
+ipcMain.on("window:maximize", () => {
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
+})
+ipcMain.on("window:close", () => win.close())

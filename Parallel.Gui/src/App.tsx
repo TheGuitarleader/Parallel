@@ -49,6 +49,9 @@ export default function App(){
                 activeVaultId={activeVaultId}
                 vaults={vaults}
                 onSetVault={handleSetVault}
+                onMinimize={() => window.electronAPI.minimize()}
+                onMaximize={() => window.electronAPI.maximize()}
+                onClose={() => window.electronAPI.close()}
             />
 
             {loading ? (

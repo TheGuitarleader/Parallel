@@ -1,7 +1,9 @@
 ﻿const { contextBridge, ipcRenderer } = require('electron');
 
-console.log("Preload loaded!");
+console.log("Preloaded!")
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    sayHello: (name) => ipcRenderer.invoke('say-hello', name)
+    minimize: () => ipcRenderer.send("window:minimize"),
+    maximize: () => ipcRenderer.send("window:maximize"),
+    close: () => ipcRenderer.send("window:close")
 });
