@@ -1,12 +1,14 @@
-﻿import {Plus, Pencil, Database, Minus, Square, X} from "lucide-react"
+﻿import {Plus, Pencil, Minus, Square, X, HardDrive} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {type Vault, vaultServiceIcons} from "@/lib/types.ts";
+import {type VaultConfig, vaultServiceIcons} from "@/lib/types.ts";
 
 interface HeaderProps {
     activeVaultId: string | null
-    vaults: Vault[]
+    vaults: VaultConfig[]
     onSetVault: (id: string) => void
+    onAddVault: () => void
+    onEditVault: (vault: VaultConfig) => void
     onClose: () => void
     onMinimize: () => void
     onMaximize: () => void
@@ -16,17 +18,12 @@ export function Header({
     activeVaultId,
     vaults,
     onSetVault,
+    onAddVault,
+    onEditVault,
     onClose,
     onMinimize,
     onMaximize,
 }: HeaderProps) {
-    const onEditVault = (vault: Vault) => {
-        console.log("Edit vault:", vault)
-    }
-
-    const onAddVault = () => {
-        console.log("Add vault")
-    }
 
     return (
         <header className="bg-card border-b border-border">
@@ -67,7 +64,8 @@ export function Header({
             {/* Vault tabs */}
             <div className="flex items-center gap-1 px-2 pb-2 overflow-x-auto">
                 {vaults.map(vault => {
-                    const Icon = vaultServiceIcons[vault.credentials.service] ?? Database
+                    console.log(vault)
+                    const Icon = vaultServiceIcons[vault.credentials.service] ?? HardDrive
                     const isActive = vault.id === activeVaultId
 
                     return (
@@ -106,11 +104,10 @@ export function Header({
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 gap-1 text-muted-foreground hover:text-foreground"
+                    className="h-7 gap-1 text-muted-foreground hover:text-foreground"
                     onClick={onAddVault}
                 >
                     <Plus className="w-4 h-4" />
-                    <span className="text-xs">Add Vault</span>
                 </Button>
             </div>
         </header>

@@ -1,28 +1,25 @@
-import { StatusBar } from "./components/status-bar";
+import { Footer } from "./components/footer.tsx";
 import {Header} from "./components/header.tsx";
 import {useEffect, useState} from "react";
 import {API_URL} from "@/lib/config.ts";
-import type {Vault} from "@/lib/types.ts";
+import type {VaultConfig} from "@/lib/types.ts";
 import {RefreshCw} from "lucide-react";
 
 // Main App component - this is the root of our application
 export default function App(){
     const [activeVaultId, setActiveVaultId] = useState<string | null>(null)
-    const [vaults, setVaults] = useState<Vault[]>([])
+    const [editingVault, setEditingVault] = useState<VaultConfig | null>(null)
+    const [vaultDialogOpen, setVaultDialogOpen] = useState(false)
+    const [vaults, setVaults] = useState<VaultConfig[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const loadVaults = async () => {
             try {
-                const res = await fetch(`${API_URL}/vaults`, {
-                    credentials: "include"
-                })
+                const res = await fetch(`${API_URL}/vaults`, { credentials: "include" })
+                if (!res.ok) console.error("Failed to fetch vaults")
 
-                if (!res.ok) {
-                    throw new Error("Failed to fetch vaults")
-                }
-
-                const data: Vault[] = await res.json()
+                const data: VaultConfig[] = await res.json()
                 setVaults(data)
 
                 // Select first vault by default
@@ -43,12 +40,24 @@ export default function App(){
         setActiveVaultId(id)
     }
 
+    const handleAddVault = () => {
+        setEditingVault(null)
+        setVaultDialogOpen(true)
+    }
+
+    const handleEditVault = (vault: VaultConfig) => {
+        setEditingVault(vault)
+        setVaultDialogOpen(true)
+    }
+
     return (
         <div className="h-screen flex flex-col bg-background">
             <Header
                 activeVaultId={activeVaultId}
                 vaults={vaults}
                 onSetVault={handleSetVault}
+                onAddVault={handleAddVault}
+                onEditVault={handleEditVault}
                 onMinimize={() => window.electronAPI.minimize()}
                 onMaximize={() => window.electronAPI.maximize()}
                 onClose={() => window.electronAPI.close()}
@@ -68,7 +77,9 @@ export default function App(){
 
             </div>
 
-            <StatusBar />
+            <Footer
+                activeVaultId={activeVaultId}
+            />
         </div>
     );
 }

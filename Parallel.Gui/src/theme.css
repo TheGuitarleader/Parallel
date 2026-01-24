@@ -148,10 +148,6 @@
         user-select: none; /* prevents text selection when dragging */
     }
 
-    html {
-        font-size: var(--font-size);
-    }
-
     h1 {
         font-size: var(--text-2xl);
         font-weight: var(--font-weight-medium);

@@ -1,6 +1,6 @@
 ﻿import {Cloud, HardDrive, Server} from "lucide-react";
 
-export type Vault = {
+export type VaultConfig = {
     id: string
     name: string
     enabled: boolean
@@ -16,8 +16,18 @@ export type Vault = {
     }
 }
 
+export type VaultStats = {
+    lastSync: string
+    localSize: number
+    remoteSize: number
+    totalSize: number
+    totalFiles: number
+    totalLocalFiles: number
+    totalDeletedFiles: number
+}
+
 export const vaultServiceIcons: Record<string, React.ElementType> = {
     Local: HardDrive,
-    SSH: Server,
-    S3: Cloud
+    Remote: Server,
+    Cloud: Cloud
 }

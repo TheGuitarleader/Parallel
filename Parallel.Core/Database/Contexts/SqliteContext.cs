@@ -156,5 +156,10 @@ namespace Parallel.Core.Database.Contexts
         }
 
         #endregion
+
+        public Task<DateTime> GetLastSyncTimeAsync()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
