@@ -30,7 +30,7 @@ export type VaultStats = {
 }
 
 export const vaultServiceIcons: Record<string, React.ElementType> = {
-    Local: HardDrive,
-    Remote: Server,
-    Cloud: Cloud
+    local: HardDrive,
+    remote: Server,
+    cloud: Cloud
 }

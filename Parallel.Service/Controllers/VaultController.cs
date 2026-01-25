@@ -39,7 +39,9 @@ namespace Parallel.Service.Controllers
             if (!System.IO.File.Exists(tempDbFile)) return BadRequest();
 
             SqliteContext db = new SqliteContext(tempDbFile);
-            string lastSync = Formatter.FromDateTime(await (db?.GetLastSyncTimeAsync() ?? Task.FromResult(DateTime.MinValue)));
+            DateTime lastSyncTime = await (db?.GetLastSyncTimeAsync() ?? Task.FromResult(DateTime.MinValue));
+
+            string lastSync = Formatter.FromTimeSpan(DateTime.UtcNow.Subtract(lastSyncTime));
             long localSize = await (db?.GetLocalSizeAsync() ?? Task.FromResult(0L));
             long remoteSize = await (db?.GetRemoteSizeAsync() ?? Task.FromResult(0L));
             long totalSize = await (db?.GetTotalSizeAsync() ?? Task.FromResult(0L));
