@@ -3,7 +3,6 @@ import {Header} from "./components/header.tsx";
 import {useEffect, useState} from "react";
 import {API_URL} from "@/lib/config.ts";
 import type {VaultConfig} from "@/lib/types.ts";
-import {RefreshCw} from "lucide-react";
 import {VaultDialog} from "@/components/vault-dialog.tsx";
 import {client} from "@/lib/messageClient.ts";
 
@@ -94,8 +93,7 @@ export default function App(){
 
             {loading ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-background">
-                    <RefreshCw className="w-10 h-10 text-primary animate-spin" />
-                    <span className="text-2xl font-semibold text-primary animate-pulse">Loading...</span>
+                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
                 </div>
             ) : (
                 <div className="flex-1 overflow-hidden">

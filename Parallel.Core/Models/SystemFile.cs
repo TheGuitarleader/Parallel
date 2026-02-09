@@ -104,6 +104,21 @@ namespace Parallel.Core.Models
             LocalPath = localPath;
             RemotePath = remotePath;
         }
+        
+        public SystemFile(string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
+        {
+            Name = name;
+            LocalPath = localpath;
+            RemotePath = remotepath;
+            LastWrite = UnixTime.FromMilliseconds(lastwrite);
+            LastUpdate = UnixTime.FromMilliseconds(lastupdate);
+            LocalSize = localsize;
+            RemoteSize = remotesize;
+            Hidden = Converter.ToBool(hidden);
+            ReadOnly = Converter.ToBool(readOnly);
+            Deleted = Converter.ToBool(deleted);
+            CheckSum = checksum;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemFile"/> class.

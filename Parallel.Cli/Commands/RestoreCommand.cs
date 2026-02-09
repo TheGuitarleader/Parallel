@@ -108,9 +108,8 @@ namespace Parallel.Cli.Commands
 
         private async Task RestoreInternalAsync(ISyncManager syncManager, string path, DateTime timestamp, string? output, bool archive, bool force)
         {
-            string fullPath = Path.GetFullPath(path);
-            CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for files in {fullPath}...", ConsoleColor.DarkGray);
-            IReadOnlyList<SystemFile> files = await (syncManager.Database?.GetLatestFilesAsync(fullPath, timestamp, archive) ?? Task.FromResult<IReadOnlyList<SystemFile>>([]));
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
+            IReadOnlyList<SystemFile> files = await (syncManager.Database?.GetLatestFilesAsync(path, timestamp, archive) ?? Task.FromResult<IReadOnlyList<SystemFile>>([]));
 
             List<SystemFile> restoreFiles = new List<SystemFile>();
             System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, (file) =>
@@ -118,9 +117,7 @@ namespace Parallel.Cli.Commands
                 string outputPath = file.LocalPath;
                 if (!string.IsNullOrEmpty(output))
                 {
-                    string relative = Path.GetRelativePath(path, file.LocalPath);
-                    string newPath = Path.Combine(output, relative);
-                    file.LocalPath = newPath;
+                    file.LocalPath = PathBuilder.ReplacePath(file.LocalPath, path, output);
                 }
 
                 if (File.Exists(outputPath) && !FileScanner.HasChanged(file, new SystemFile(outputPath)) && !force) return;
@@ -130,7 +127,7 @@ namespace Parallel.Cli.Commands
 
             if (restoreFiles.Count == 0)
             {
-                CommandLine.WriteLine(syncManager.RemoteVault, $"The provided {(PathBuilder.IsFile(fullPath) ? "file" : "folder")} is already up to date.", ConsoleColor.Green);
+                CommandLine.WriteLine(syncManager.RemoteVault, $"The provided {(PathBuilder.IsFile(path) ? "file" : "folder")} is already up to date.", ConsoleColor.Green);
                 return;
             }
 

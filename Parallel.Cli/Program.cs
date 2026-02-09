@@ -18,10 +18,6 @@ namespace Parallel.Cli
 
         public static async Task Main(string[] args)
         {
-            Console.CancelKeyPress += (sender, e) =>
-            {
-                e.Cancel = true;
-            };
             if (!ParallelConfig.CanStartCliInstance())
             {
                 CommandLine.WriteLine("An instance of Parallel is already running!", ConsoleColor.Yellow);

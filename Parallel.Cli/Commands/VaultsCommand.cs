@@ -46,6 +46,7 @@ namespace Parallel.Cli.Commands
 
                 if (spc.Service == FileService.Local)
                 {
+                    CommandLine.WriteLine("Local vaults are NOT cross-platform!", ConsoleColor.Yellow);
                     spc.RootDirectory = CommandLine.ReadString("Root") ?? string.Empty;
                 }
                 else if (spc.Service == FileService.Cloud)

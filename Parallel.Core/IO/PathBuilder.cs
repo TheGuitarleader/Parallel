@@ -181,5 +181,19 @@ namespace Parallel.Core.IO
         {
             return Combine(GetObjectsDirectory(vaultConfig), hash.Substring(0, 2), hash.Substring(2, 2), hash);
         }
+
+        public static string ReplacePath(string fullPath, string sourceRoot, string outputRoot)
+        {
+            // Normalize to forward slashes
+            fullPath = fullPath.Replace('\\', '/');
+            sourceRoot = sourceRoot.Replace('\\', '/');
+
+            if (!fullPath.StartsWith(sourceRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Path is outside source root");
+            }
+
+            return outputRoot + fullPath.Substring(sourceRoot.Length);
+        }
     }
 }
