@@ -14,7 +14,7 @@ namespace Parallel.Service.Controllers
         {
             DateTime startTime = _monitor.StartTime.ToUniversalTime();
             double uptimeMs = _monitor.Uptime.TotalMilliseconds;
-            return Json(_monitor.Uptime);
+            return Json(new { startTime, uptimeMs });
         }
     }
 }

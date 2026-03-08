@@ -10,12 +10,24 @@ using Parallel.Service.Utils;
 
 namespace Parallel.Service.Services
 {
+    public class VaultWorker
+    {
+        public ISyncManager SyncManager { get; }
+        public CancellationTokenSource Cts { get; }
+
+        public VaultWorker(FileSyncManager syncManager, CancellationTokenSource cts)
+        {
+            SyncManager = syncManager;
+            Cts = cts;
+        }
+    }
+    
     /// <summary>
     /// Represents the service for syncing files with <see cref="RemoteVaultConfig"/>s.
     /// </summary>
     public class VaultSyncService : BackgroundService
     {
-        private readonly Dictionary<string, ServiceTask> _vaults = new();
+        private readonly Dictionary<string, VaultWorker> _vaults = new();
         private readonly ILogger<VaultSyncService> _logger;
         private readonly TaskQueuer _queuer;
 
@@ -36,23 +48,23 @@ namespace Parallel.Service.Services
                 // Adds newly enabled vaults to be synced.
                 foreach (LocalVaultConfig vault in enabledVaults)
                 {
-                    if (_vaults.ContainsKey(vault.Id)) continue;
-
                     CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-                    Task task = SyncVaultAsync(new FileSyncManager(vault), cts.Token);
-                    _vaults[vault.Id] = new ServiceTask(task, cts);
-
+                    VaultWorker worker = new VaultWorker(new FileSyncManager(vault), cts);
+                    
+                    if(!_vaults.TryAdd(vault.Id, worker)) continue;
+                    _ = SyncVaultAsync(worker.SyncManager, worker.Cts.Token);
+                    
                     _logger.LogInformation($"Added vault to be synced: {vault.Id}");
                 }
 
                 // Removes disabled vaults from being synced
                 foreach (string id in disabledVaults)
                 {
-                    if (!_vaults.TryGetValue(id, out ServiceTask task)) continue;
-                    await ServiceTask.Cts.CancelAsync();
+                    if (!_vaults.TryGetValue(id, out VaultWorker? worker)) continue;
+                    await worker.Cts.CancelAsync();
                     _vaults.Remove(id);
 
-                    _logger.LogInformation($"Removed vault from syncing: {id}");
+                    _logger.LogInformation("Removed vault from syncing: {VaultId}", id);
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
@@ -63,7 +75,8 @@ namespace Parallel.Service.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _queuer.Enqueue(async () =>
+                string key = $"vault:sync:{syncManager.LocalVault.Id}";
+                _queuer.Enqueue(key, async () =>
                 {
                     if (!await syncManager.ConnectAsync())
                     {
@@ -89,7 +102,6 @@ namespace Parallel.Service.Services
                         // Prunes old files from the vault.
                         foreach (string path in syncManager.RemoteVault.PruneDirectories)
                         {
-
                         }
                     }
                     finally
