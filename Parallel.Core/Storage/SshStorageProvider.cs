@@ -27,7 +27,12 @@ namespace Parallel.Core.Storage
         {
             _connectionInfo = new ConnectionInfo(localVault.Credentials.Address, localVault.Credentials.Username, new PasswordAuthenticationMethod(localVault.Credentials.Username, Encryption.Decode(localVault.Credentials.Password)));
             _client = new SftpClient(_connectionInfo);
-            _client.Connect();
+        }
+
+        private bool InsureConnection()
+        {
+            if(!_client.IsConnected) _client.Connect();
+            return _client.IsConnected;
         }
 
 
@@ -115,12 +120,7 @@ namespace Parallel.Core.Storage
         {
             if (await ExistsAsync(file.RemotePath))
             {
-                if (!overwrite)
-                {
-                    Log.Debug($"Skipping file: {file.RemotePath}");
-                    return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
-                }
-
+                if (!overwrite) return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
                 _client.ChangePermissions(file.RemotePath, 644);
             }
 

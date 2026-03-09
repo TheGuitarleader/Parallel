@@ -12,12 +12,12 @@ namespace Parallel.Service.Services
 {
     public class VaultWorker
     {
-        public ISyncManager SyncManager { get; }
         public CancellationTokenSource Cts { get; }
+        public Task WorkerTask { get; }
 
-        public VaultWorker(FileSyncManager syncManager, CancellationTokenSource cts)
+        public VaultWorker(Task task, CancellationTokenSource cts)
         {
-            SyncManager = syncManager;
+            WorkerTask = task;
             Cts = cts;
         }
     }
@@ -27,7 +27,7 @@ namespace Parallel.Service.Services
     /// </summary>
     public class VaultSyncService : BackgroundService
     {
-        private readonly Dictionary<string, VaultWorker> _vaults = new();
+        private readonly ConcurrentDictionary<string, VaultWorker> _vaults = new();
         private readonly ILogger<VaultSyncService> _logger;
         private readonly TaskQueuer _queuer;
 
@@ -48,21 +48,25 @@ namespace Parallel.Service.Services
                 // Adds newly enabled vaults to be synced.
                 foreach (LocalVaultConfig vault in enabledVaults)
                 {
+                    if (_vaults.ContainsKey(vault.Id)) continue;
+                    
+                    _logger.LogDebug("Adding vault to syncing...");
                     CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-                    VaultWorker worker = new VaultWorker(new FileSyncManager(vault), cts);
+                    Task workerTask = TestVaultSyncAsync(new FileSyncManager(vault), cts.Token);
+                    VaultWorker worker = new VaultWorker(workerTask, cts);
                     
                     if(!_vaults.TryAdd(vault.Id, worker)) continue;
-                    _ = SyncVaultAsync(worker.SyncManager, worker.Cts.Token);
-                    
-                    _logger.LogInformation($"Added vault to be synced: {vault.Id}");
+                    _logger.LogInformation("Added vault to be synced: {VaultId}", vault.Id);
                 }
 
                 // Removes disabled vaults from being synced
                 foreach (string id in disabledVaults)
                 {
+                    _logger.LogDebug("Removing vault from syncing...");
                     if (!_vaults.TryGetValue(id, out VaultWorker? worker)) continue;
                     await worker.Cts.CancelAsync();
-                    _vaults.Remove(id);
+                    await worker.WorkerTask;
+                    _vaults.TryRemove(id, out _);
 
                     _logger.LogInformation("Removed vault from syncing: {VaultId}", id);
                 }
@@ -71,7 +75,30 @@ namespace Parallel.Service.Services
             }
         }
 
-        private async Task SyncVaultAsync(ISyncManager syncManager, CancellationToken stoppingToken)
+        private async Task TestVaultSyncAsync(FileSyncManager syncManager, CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                string key = $"vault:sync:{syncManager.LocalVault.Id}";
+                _queuer.Enqueue(key, async () =>
+                {
+                    if (await syncManager.ConnectAsync())
+                    {
+                        _logger.LogInformation($"Connected to vault: {syncManager.LocalVault.Id}");
+                    }
+                    else
+                    {
+                        _logger.LogError($"Failed to connect to vault: {syncManager.LocalVault.Id}");
+                    }
+                });
+                
+                TimeSpan next = TimeSpan.FromMinutes(syncManager.RemoteVault.SyncInterval);
+                _logger.LogDebug("Next vault sync for {VaultId} is at {Time}", syncManager.LocalVault.Id, DateTime.UtcNow.Add(next).ToLocalTime().ToString("G"));
+                await Task.Delay(next, stoppingToken);
+            }
+        }
+
+        private async Task SyncVaultAsync(FileSyncManager syncManager, CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {

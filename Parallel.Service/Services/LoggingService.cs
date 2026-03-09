@@ -22,12 +22,11 @@ namespace Parallel.Service.Services
                 await Task.Delay(GetTimeUntilNextDay(), stoppingToken);
                 await Log.CloseAndFlushAsync();
 
-                if (_logEventTracker.Errors.Count > 0)
-                {
-                    string logDir = Path.Combine(PathBuilder.ProgramData, "Logs");
-                    if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
-                    File.Move(Program.LogFile, Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log"));
-                }
+                if (_logEventTracker.Warnings.IsEmpty && _logEventTracker.Errors.IsEmpty) continue;
+                
+                string logDir = Path.Combine(PathBuilder.ProgramData, "Logs");
+                if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
+                File.Move(Program.LogFile, Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log"));
             }
         }
 

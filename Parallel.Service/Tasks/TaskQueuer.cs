@@ -39,18 +39,29 @@ namespace Parallel.Service.Tasks
         public void Enqueue(string key, Func<Task> task)
         {
             ArgumentNullException.ThrowIfNull(task);
+            Func<Task> safeTask = async () =>
+            {
+                try
+                {
+                    await task();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "A queued task failed");
+                }
+            };
+            
             _tasks.AddOrUpdate(key, k =>
             {
-                QueuedTask st = new QueuedTask(key, task);
+                QueuedTask st = new QueuedTask(key, safeTask);
                 _queue.Enqueue(st);
+                _signal.Release();
                 return st;
             }, (k, existing) =>
             {
                 Interlocked.Increment(ref existing.Priority);
                 return existing;
             });
-            
-            _signal.Release();
         }
 
         public async Task<Func<Task>> WaitAsync(CancellationToken ct)
@@ -62,7 +73,7 @@ namespace Parallel.Service.Tasks
                 QueuedTask next = _tasks.Values.OrderByDescending(t => t.Priority + (DateTime.UtcNow - t.EnqueuedAt).TotalSeconds * 0.1).First();
                 if (ReferenceEquals(candidate, next))
                 {
-                    _logger.LogDebug($"Starting task with key: {candidate.Key}, remaining: {_queue.Count - 1}");
+                    _logger.LogDebug($"Starting task with key: '{candidate.Key}', remaining: {_queue.Count - 1}");
                     _tasks.TryRemove(candidate.Key, out _);
                     return candidate.TaskFunc;
                 }

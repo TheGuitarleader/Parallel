@@ -10,11 +10,11 @@ namespace Parallel.Service.Controllers
     public class SystemController(ProcessMonitor _monitor) : Controller
     {
         [HttpGet, Route("health")]
-        public async Task<ActionResult> GetHealthAsync()
+        public Task<ActionResult> GetHealthAsync()
         {
             DateTime startTime = _monitor.StartTime.ToUniversalTime();
             double uptimeMs = _monitor.Uptime.TotalMilliseconds;
-            return Json(new { startTime, uptimeMs });
+            return Task.FromResult<ActionResult>(Json(new { startTime, uptimeMs }));
         }
     }
 }

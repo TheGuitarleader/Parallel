@@ -14,14 +14,19 @@ namespace Parallel.Core.IO.Syncing
     public interface ISyncManager
     {
         /// <summary>
+        /// Gets the identifier.
+        /// </summary>
+        string Id { get; }
+        
+        /// <summary>
         /// Gets the local vault configuration.
         /// </summary>
-        public LocalVaultConfig LocalVault { get; }
+        LocalVaultConfig LocalVault { get; }
 
         /// <summary>
         /// Gets the remote vault configuration.
         /// </summary>
-        public RemoteVaultConfig RemoteVault { get; }
+        RemoteVaultConfig RemoteVault { get; }
 
         /// <summary>
         /// The associated database connection.
@@ -31,7 +36,7 @@ namespace Parallel.Core.IO.Syncing
         /// <summary>
         /// The associated file system connection.
         /// </summary>
-        public IStorageProvider StorageProvider { get; set; }
+        IStorageProvider StorageProvider { get; set; }
 
         /// <summary>
         /// Establishes a connection to the associated <see cref="IStorageProvider"/> and downloads the needed files.

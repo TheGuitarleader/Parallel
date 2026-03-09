@@ -11,7 +11,7 @@ namespace Parallel.Service.Extensions.Logging
         /// <returns>Reference to the supplied <paramref name="builder"/>.</returns>
         public static ILoggingBuilder AddSignalR(this ILoggingBuilder builder)
         {
-            if (builder == null) throw new ArgumentNullException(nameof(builder));
+            ArgumentNullException.ThrowIfNull(builder);
             builder.Services.AddSingleton<ILoggerProvider, SignalRLoggerProvider>();
             builder.AddFilter<SignalRLoggerProvider>(null, LogLevel.Trace);
             return builder;

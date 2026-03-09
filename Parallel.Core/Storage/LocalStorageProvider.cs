@@ -102,12 +102,7 @@ namespace Parallel.Core.Storage
         {
             if (await ExistsAsync(file.RemotePath))
             {
-                if (!overwrite)
-                {
-                    Log.Debug($"Skipping file: {file.RemotePath}");
-                    return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
-                }
-
+                if (!overwrite) return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
                 File.SetAttributes(file.RemotePath, ~FileAttributes.ReadOnly & File.GetAttributes(file.RemotePath));
             }
 

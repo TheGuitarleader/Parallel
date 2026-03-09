@@ -17,18 +17,30 @@ namespace Parallel.Service.Tasks
         {
             while (!stoppingToken.IsCancellationRequested)
             {
+                Func<Task>? task = null;
+
                 try
                 {
-                    Func<Task> task = await _queuer.WaitAsync(stoppingToken);
-                    await task();
+                    task = await _queuer.WaitAsync(stoppingToken);
                 }
                 catch (OperationCanceledException)
                 {
                     // graceful shutdown
+                    break;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Task execution failed!");
+                    _logger.LogError(ex, "Failed waiting for queued task");
+                    continue;
+                }
+                
+                try
+                {
+                    await task();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Queued task failed");
                 }
             }
         }

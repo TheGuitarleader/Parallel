@@ -8,7 +8,7 @@ namespace Parallel.Service.Extensions.Logging
     [ProviderAlias("SignalRLogger")]
     public class SignalRLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
-        private IExternalScopeProvider _scopeProvider = default!;
+        private IExternalScopeProvider _scopeProvider = null!;
         private readonly IServiceProvider _services;
 
         public SignalRLoggerProvider(IServiceProvider services)

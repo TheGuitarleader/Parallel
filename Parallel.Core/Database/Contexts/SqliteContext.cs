@@ -2,6 +2,7 @@
 
 using System.Data;
 using Microsoft.Data.Sqlite;
+using Newtonsoft.Json.Linq;
 using Parallel.Core.Models;
 using Parallel.Core.Utils;
 
@@ -26,7 +27,7 @@ namespace Parallel.Core.Database.Contexts
         {
             Log.Information("Creating index database...");
             await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `parentdir` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, UNIQUE (localpath, checksum));");
-            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `checksum` TEXT NOT NULL, `type` INTEGER NOT NULL, PRIMARY KEY(`timestamp`));");
+            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `type` INTEGER NOT NULL, PRIMARY KEY(`timestamp`));");
             await _semaphore.ExecuteAsync("CREATE INDEX idx_objects_path_update ON objects(localpath, lastupdate DESC, deleted);");
         }
 
@@ -38,7 +39,7 @@ namespace Parallel.Core.Database.Contexts
         {
             if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
             if (!file.TryGenerateCheckSum()) throw new ArgumentNullException(nameof(file.CheckSum));
-
+            
             string sql = @"INSERT OR REPLACE INTO objects (name, localpath, remotepath, parentdir, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Name, @LocalPath, @RemotePath, @ParentDirectory, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
             return await _semaphore.ExecuteAsync(sql, new { file.Name, file.LocalPath, file.RemotePath, file.ParentDirectory, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
         }
@@ -88,14 +89,15 @@ namespace Parallel.Core.Database.Contexts
         /// <inheritdoc />
         public async Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp)
         {
-            string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time ORDER BY lastupdate DESC) GROUP BY localpath;";
+            string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time ORDER BY lastwrite DESC) GROUP BY localpath;";
             return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds });
         }
 
         /// <inheritdoc />
         public async Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted)
         {
-            string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastupdate DESC) GROUP BY localpath;";
+            Log.Debug($"SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE '{path}%' AND lastupdate <= {new UnixTime(timestamp).TotalMilliseconds} AND deleted = {deleted} ORDER BY lastwrite DESC) GROUP BY localpath;");
+            string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastwrite DESC) GROUP BY localpath;";
             return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
         }
 
@@ -135,10 +137,9 @@ namespace Parallel.Core.Database.Contexts
         public async Task<bool> AddHistoryAsync(HistoryType type, SystemFile file)
         {
             if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
-            if (string.IsNullOrEmpty(file.CheckSum)) throw new ArgumentNullException(nameof(file.CheckSum));
 
-            string sql = @"INSERT OR REPLACE INTO history (timestamp, path, checksum, type) VALUES(@Timestamp, @Path, @CheckSum, @Type);";
-            return await _semaphore.ExecuteAsync(sql, new { Timestamp = file.LastUpdate.TotalMilliseconds, Path = file.LocalPath, file.CheckSum, Type = type }) > 0;
+            string sql = @"INSERT OR REPLACE INTO history (timestamp, path, type) VALUES(@Timestamp, @Path, @Type);";
+            return await _semaphore.ExecuteAsync(sql, new { Timestamp = file.LastUpdate.TotalMilliseconds, Path = file.LocalPath, Type = type }) > 0;
         }
 
         /// <inheritdoc />

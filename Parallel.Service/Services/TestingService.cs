@@ -36,13 +36,8 @@ namespace Parallel.Service.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _queuer.Enqueue("loop1", async () =>
-                {
-                    _logger.LogInformation($"loop1 @ {_sw.Elapsed}");
-                    await Task.Delay(1000, stoppingToken);
-                });
-                
-                await Task.Delay(800, stoppingToken);
+                _queuer.Enqueue("loop-1", async () => throw new Exception("loop-1"));
+                await Task.Delay(8000, stoppingToken);
             }
         }
         
@@ -50,10 +45,9 @@ namespace Parallel.Service.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _queuer.Enqueue("loop2", async () =>
+                _queuer.Enqueue("loop-2", async () =>
                 {
-                    _logger.LogInformation($"loop2 @ {_sw.Elapsed}");
-                    await Task.Delay(2000, stoppingToken);
+                    //await Task.Run((() => throw new Exception("loop-2")), stoppingToken);
                 });
                 
                 await Task.Delay(1000, stoppingToken);
@@ -64,13 +58,13 @@ namespace Parallel.Service.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _queuer.Enqueue("loop3", async () =>
+                _queuer.Enqueue("loop-3", async () =>
                 {
-                    _logger.LogInformation($"loop3 @ {_sw.Elapsed}");
+                    //_logger.LogInformation($"loop3 @ {_sw.Elapsed}");
                     await Task.Delay(3000, stoppingToken);
                 });
                 
-                await Task.Delay(100, stoppingToken);
+                await Task.Delay(1000, stoppingToken);
             }
         }
     }

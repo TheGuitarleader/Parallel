@@ -70,7 +70,7 @@ namespace Parallel.Service
             // Add background services
             builder.Services.AddHostedService<TaskQueueExecutor>();
             builder.Services.AddHostedService<TestingService>();
-            //builder.Services.AddHostedService<VaultSyncService>();
+            builder.Services.AddHostedService<VaultSyncService>();
 
             WebApplication app = builder.Build();
             app.UseRouting();
