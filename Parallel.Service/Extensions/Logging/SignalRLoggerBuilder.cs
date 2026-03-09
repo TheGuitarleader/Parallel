@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 namespace Parallel.Service.Extensions.Logging
 {

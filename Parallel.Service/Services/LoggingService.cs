@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using Parallel.Core.IO;
 using Parallel.Core.Utils;
@@ -23,7 +23,7 @@ namespace Parallel.Service.Services
                 await Log.CloseAndFlushAsync();
 
                 if (_logEventTracker.Warnings.IsEmpty && _logEventTracker.Errors.IsEmpty) continue;
-                
+
                 string logDir = Path.Combine(PathBuilder.ProgramData, "Logs");
                 if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
                 File.Move(Program.LogFile, Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log"));

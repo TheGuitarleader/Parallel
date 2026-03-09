@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -22,7 +22,7 @@ namespace Parallel.Core.Settings
         /// <para>Default: 60 minutes</para>
         /// </summary>
         public int SyncInterval { get; set; } = 60;
-        
+
         /// <summary>
         /// The amount of time, in days, to hold a file before it can be pruned.
         /// <para>Default: 180 days (6 months)</para>

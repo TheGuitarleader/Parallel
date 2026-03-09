@@ -6,6 +6,7 @@ export class MessageClient {
     private connection: signalR.HubConnection;
 
     constructor(url: string) {
+        console.log(url);
         this.connection = new signalR.HubConnectionBuilder().withUrl(url).withAutomaticReconnect().build();
     }
 

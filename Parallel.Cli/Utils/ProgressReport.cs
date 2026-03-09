@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Diagnostics;
 using Parallel.Core.Diagnostics;
@@ -24,7 +24,9 @@ namespace Parallel.Cli.Utils
 
         public void Report(ProgressOperation operation, SystemFile file)
         {
-            int percent = _current++ * 100 / _total;
+            Interlocked.Increment(ref _current);
+
+            int percent = _current * 100 / _total;
             CommandLine.WriteLine($"[{_localVault.Id}] ({percent}%) {operation}: {file.LocalPath}");
             //CommandLine.ProgressBar(_current++, _total, _sw.Elapsed);
         }

@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using Parallel.Core.IO;
 using System;
@@ -85,7 +85,7 @@ namespace Parallel.Core.Database
         /// <param name="deleted"></param>
         /// <returns></returns>
         Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted);
-        
+
         /// <summary>
         /// Gets a list of files.
         /// </summary>
@@ -113,7 +113,7 @@ namespace Parallel.Core.Database
         /// </summary>
         /// <param name="path"></param>
         Task<IReadOnlyList<string>> ListDirectoriesAsync(string path);
-        
+
         /// <summary>
         /// Gets a list of files in a directory in ascending order. If multiple files exist, those will be in order of most recent.
         /// </summary>

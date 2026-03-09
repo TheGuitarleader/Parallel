@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
@@ -18,7 +18,7 @@ namespace Parallel.Core.IO.Syncing
         protected string TempDirectory = PathBuilder.TempDirectory;
         protected string TempConfigFile => Path.Combine(TempDirectory, $"{LocalVault.Id}.json");
         protected string TempDbFile => Path.Combine(TempDirectory, $"{LocalVault.Id}.db");
-        
+
         /// <inheritdoc />
         public string Id => LocalVault.Id;
 

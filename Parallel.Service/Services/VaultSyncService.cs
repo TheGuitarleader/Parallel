@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Collections.Concurrent;
 using Parallel.Core.IO.Scanning;
@@ -21,7 +21,7 @@ namespace Parallel.Service.Services
             Cts = cts;
         }
     }
-    
+
     /// <summary>
     /// Represents the service for syncing files with <see cref="RemoteVaultConfig"/>s.
     /// </summary>
@@ -49,13 +49,13 @@ namespace Parallel.Service.Services
                 foreach (LocalVaultConfig vault in enabledVaults)
                 {
                     if (_vaults.ContainsKey(vault.Id)) continue;
-                    
+
                     _logger.LogDebug("Adding vault to syncing...");
                     CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                     Task workerTask = TestVaultSyncAsync(new FileSyncManager(vault), cts.Token);
                     VaultWorker worker = new VaultWorker(workerTask, cts);
-                    
-                    if(!_vaults.TryAdd(vault.Id, worker)) continue;
+
+                    if (!_vaults.TryAdd(vault.Id, worker)) continue;
                     _logger.LogInformation("Added vault to be synced: {VaultId}", vault.Id);
                 }
 
@@ -91,7 +91,7 @@ namespace Parallel.Service.Services
                         _logger.LogError($"Failed to connect to vault: {syncManager.LocalVault.Id}");
                     }
                 });
-                
+
                 TimeSpan next = TimeSpan.FromMinutes(syncManager.RemoteVault.SyncInterval);
                 _logger.LogDebug("Next vault sync for {VaultId} is at {Time}", syncManager.LocalVault.Id, DateTime.UtcNow.Add(next).ToLocalTime().ToString("G"));
                 await Task.Delay(next, stoppingToken);

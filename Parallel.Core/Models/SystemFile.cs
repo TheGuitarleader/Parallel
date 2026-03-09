@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Data;
 using System.Security.Cryptography;
@@ -104,7 +104,7 @@ namespace Parallel.Core.Models
             LocalPath = localPath;
             RemotePath = remotePath;
         }
-        
+
         public SystemFile(string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
         {
             Name = name;

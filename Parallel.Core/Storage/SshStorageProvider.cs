@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Diagnostics;
 using System.IO.Compression;
@@ -31,7 +31,7 @@ namespace Parallel.Core.Storage
 
         private void InsureConnection()
         {
-            if(!_client.IsConnected) _client.Connect();
+            if (!_client.IsConnected) _client.Connect();
         }
 
 
@@ -47,7 +47,7 @@ namespace Parallel.Core.Storage
         public async Task CreateDirectoryAsync(string path)
         {
             InsureConnection();
-            
+
             string parentDir = string.Empty;
             foreach (string subPath in path.Split('/'))
             {
@@ -73,7 +73,7 @@ namespace Parallel.Core.Storage
         public async Task DeleteFileAsync(string path)
         {
             InsureConnection();
-            
+
             if (!await ExistsAsync(path)) return;
             await _client.DeleteAsync(path);
         }
@@ -82,7 +82,7 @@ namespace Parallel.Core.Storage
         public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
         {
             InsureConnection();
-            
+
             await using SftpFileStream openStream = _client.OpenRead(file.RemotePath);
             await using FileStream createStream = File.Create(file.LocalPath);
             await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
@@ -93,7 +93,7 @@ namespace Parallel.Core.Storage
         public async Task<bool> ExistsAsync(string path)
         {
             InsureConnection();
-            
+
             return await _client.ExistsAsync(path);
         }
 

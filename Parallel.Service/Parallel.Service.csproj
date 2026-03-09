@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.12" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.12"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="10.0.2"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.2"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>

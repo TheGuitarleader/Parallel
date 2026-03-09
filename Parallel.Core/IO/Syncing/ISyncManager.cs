@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using Parallel.Core.Database;
 using Parallel.Core.Diagnostics;
@@ -17,7 +17,7 @@ namespace Parallel.Core.IO.Syncing
         /// Gets the identifier.
         /// </summary>
         string Id { get; }
-        
+
         /// <summary>
         /// Gets the local vault configuration.
         /// </summary>

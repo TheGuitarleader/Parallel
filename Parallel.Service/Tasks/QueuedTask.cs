@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 namespace Parallel.Service.Tasks
 {
@@ -11,12 +11,12 @@ namespace Parallel.Service.Tasks
         /// The time the task was created.
         /// </summary>
         public DateTime EnqueuedAt { get; }
-        
+
         /// <summary>
         /// The actual <see cref="Task"/> to execute.
         /// </summary>
         public Func<Task> TaskFunc { get; }
-        
+
         /// <summary>
         /// The unique key to use deduplication.
         /// </summary>

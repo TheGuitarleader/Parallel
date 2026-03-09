@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
@@ -40,7 +40,7 @@ namespace Parallel.Service.Services
                 await Task.Delay(8000, stoppingToken);
             }
         }
-        
+
         private async Task LoopTask2Async(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -49,11 +49,11 @@ namespace Parallel.Service.Services
                 {
                     //await Task.Run((() => throw new Exception("loop-2")), stoppingToken);
                 });
-                
+
                 await Task.Delay(1000, stoppingToken);
             }
         }
-        
+
         private async Task LoopTask3Async(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -63,7 +63,7 @@ namespace Parallel.Service.Services
                     //_logger.LogInformation($"loop3 @ {_sw.Elapsed}");
                     await Task.Delay(3000, stoppingToken);
                 });
-                
+
                 await Task.Delay(1000, stoppingToken);
             }
         }

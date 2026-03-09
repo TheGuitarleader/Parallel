@@ -1,4 +1,4 @@
-// Copyright 2026 Kyle Ebbinga
+// Copyright 2026 Entex Interactive, LLC
 
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -50,7 +50,7 @@ namespace Parallel.Service
             {
                 options.SerializerSettings.Converters.Add(new StringEnumConverter { NamingStrategy = new CamelCaseNamingStrategy() });
             });
-            
+
             builder.Services.AddCors(options =>
             {
                 options.AddDefaultPolicy(policy =>
@@ -58,12 +58,12 @@ namespace Parallel.Service
                     policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 });
             });
-           
+
             builder.Services.AddSignalR().AddHubOptions<MessageHub>(options =>
             {
                 options.EnableDetailedErrors = true;
             });
-            
+
             builder.Services.AddSingleton<ProcessMonitor>();
             builder.Services.AddSingleton<TaskQueuer>();
 

@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Collections.Concurrent;
 using Parallel.Service.Services;
@@ -50,7 +50,7 @@ namespace Parallel.Service.Tasks
                     _logger.LogError(ex, "Exception throw executing task: {key}", key);
                 }
             };
-            
+
             _tasks.AddOrUpdate(key, k =>
             {
                 QueuedTask st = new QueuedTask(key, safeTask);

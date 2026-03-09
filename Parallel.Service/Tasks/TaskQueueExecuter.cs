@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 namespace Parallel.Service.Tasks
 {
@@ -33,7 +33,7 @@ namespace Parallel.Service.Tasks
                     _logger.LogError(ex, "Failed waiting for queued task");
                     continue;
                 }
-                
+
                 try
                 {
                     await task();

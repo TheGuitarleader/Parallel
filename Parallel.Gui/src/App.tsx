@@ -6,8 +6,6 @@ import type {VaultConfig} from "@/lib/types.ts";
 import {VaultDialog} from "@/components/vault-dialog.tsx";
 import {client} from "@/lib/messageClient.ts";
 
-
-
 // Main App component - this is the root of our application
 export default function App(){
     const [loading, setLoading] = useState(true)
