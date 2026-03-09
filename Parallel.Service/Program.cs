@@ -1,4 +1,4 @@
-// Copyright 2026 Entex Interactive, LLC
+// Copyright 2026 Kyle Ebbinga
 
 using System.Reflection;
 using System.Runtime.InteropServices;
