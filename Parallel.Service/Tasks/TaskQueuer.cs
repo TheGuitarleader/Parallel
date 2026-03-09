@@ -47,7 +47,7 @@ namespace Parallel.Service.Tasks
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "A queued task failed");
+                    _logger.LogError(ex, "Exception throw executing task: {key}", key);
                 }
             };
             
