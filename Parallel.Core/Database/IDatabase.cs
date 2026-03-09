@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using Parallel.Core.IO;
 using System;
@@ -108,7 +108,21 @@ namespace Parallel.Core.Database
         Task<long> GetTotalFilesAsync();
         Task<long> GetTotalFilesAsync(bool deleted);
 
+        /// <summary>
+        /// Gets a list of directories in ascending order.
+        /// </summary>
+        /// <param name="path"></param>
+        Task<IReadOnlyList<string>> ListDirectoriesAsync(string path);
+
+        /// <summary>
+        /// Gets a list of files in a directory in ascending order. If multiple files exist, those will be in order of most recent.
+        /// </summary>
+        /// <param name="path"></param>
+        Task<IReadOnlyList<SystemFile>> ListFilesAsync(string path);
+
         #endregion
+
+        Task<DateTime> GetLastSyncTimeAsync();
 
         #region History
 

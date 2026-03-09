@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -17,6 +17,12 @@ namespace Parallel.Core.Settings
     /// </summary>
     public class RemoteVaultConfig : LocalVaultConfig
     {
+        /// <summary>
+        /// The amount of time, in minutes, to sync the system.
+        /// <para>Default: 60 minutes</para>
+        /// </summary>
+        public int SyncInterval { get; set; } = 60;
+
         /// <summary>
         /// The amount of time, in days, to hold a file before it can be pruned.
         /// <para>Default: 180 days (6 months)</para>
@@ -41,7 +47,6 @@ namespace Parallel.Core.Settings
         /// <para>Default: Empty</para>
         /// </summary>
         public HashSet<string> PruneDirectories { get; } = [];
-
 
         public RemoteVaultConfig(LocalVaultConfig localVault) : base(localVault.Id, localVault.Name, localVault.Credentials) { }
 
@@ -73,14 +78,14 @@ namespace Parallel.Core.Settings
             HashSet<string> list = new HashSet<string>();
 
             // Ignore folders on Windows machines
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 list.Add("$RECYCLE.BIN/"); // For NTFS file systems
                 list.Add("*.lnk"); // Shortcuts to other paths
             }
 
             // Ignore folders on Linux machines
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (OperatingSystem.IsLinux())
             {
                 list.Add("lost+found/"); // File system recovery directory
                 list.Add(".Trash/"); // User's trash folder
@@ -88,7 +93,7 @@ namespace Parallel.Core.Settings
             }
 
             // Ignore folders on Apple machines
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 list.Add(".Trash/"); // User's trash folder
                 list.Add("*.DS_Store"); // macOS Finder metadata

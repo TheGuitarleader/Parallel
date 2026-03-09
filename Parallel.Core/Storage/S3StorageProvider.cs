@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.IO.Compression;
 using System.IO.Pipelines;
@@ -19,7 +19,7 @@ namespace Parallel.Core.Storage
     /// </summary>
     public class S3StorageProvider : IStorageProvider
     {
-        private readonly IAmazonS3 _client;
+        private readonly AmazonS3Client _client;
         private readonly string _bucket;
 
         /// <summary>

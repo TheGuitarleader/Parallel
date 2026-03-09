@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 namespace Parallel.Core.Utils
 {
@@ -37,7 +37,7 @@ namespace Parallel.Core.Utils
         /// <returns>A <see cref="DateTime"/> formatted as an MM/DD/YYYY HH:MM TT.</returns>
         public static string FromDateTime(DateTime dateTime)
         {
-            return dateTime.ToLocalTime().ToString("MM/dd/yyyy hh:mm:sstt");
+            return dateTime.ToLocalTime().ToString("MM/dd/yyyy hh:mmtt");
         }
 
         public static string FromTimeSpan(TimeSpan timeSpan)

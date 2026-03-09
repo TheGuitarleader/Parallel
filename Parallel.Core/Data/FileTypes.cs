@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System;
 using System.Collections.Generic;

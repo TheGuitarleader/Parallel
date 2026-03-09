@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Net;
 
@@ -48,6 +48,5 @@ namespace Parallel.Core.Utils
             if (double.IsInfinity(remainingMs) || remainingMs >= TimeSpan.MaxValue.TotalMilliseconds) return TimeSpan.MaxValue;
             return TimeSpan.FromMilliseconds(remainingMs);
         }
-
     }
 }

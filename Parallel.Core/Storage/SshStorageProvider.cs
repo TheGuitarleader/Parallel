@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Diagnostics;
 using System.IO.Compression;
@@ -27,7 +27,11 @@ namespace Parallel.Core.Storage
         {
             _connectionInfo = new ConnectionInfo(localVault.Credentials.Address, localVault.Credentials.Username, new PasswordAuthenticationMethod(localVault.Credentials.Username, Encryption.Decode(localVault.Credentials.Password)));
             _client = new SftpClient(_connectionInfo);
-            _client.Connect();
+        }
+
+        private void InsureConnection()
+        {
+            if (!_client.IsConnected) _client.Connect();
         }
 
 
@@ -42,16 +46,15 @@ namespace Parallel.Core.Storage
         /// <inheritdoc/>
         public async Task CreateDirectoryAsync(string path)
         {
-            if (_client.IsConnected)
+            InsureConnection();
+
+            string parentDir = string.Empty;
+            foreach (string subPath in path.Split('/'))
             {
-                string parentDir = string.Empty;
-                foreach (string subPath in path.Split('/'))
+                parentDir += $"/{subPath}";
+                if (!await _client.ExistsAsync(parentDir))
                 {
-                    parentDir += $"/{subPath}";
-                    if (!await _client.ExistsAsync(parentDir))
-                    {
-                        await _client.CreateDirectoryAsync(parentDir);
-                    }
+                    await _client.CreateDirectoryAsync(parentDir);
                 }
             }
         }
@@ -59,6 +62,7 @@ namespace Parallel.Core.Storage
         /// <inheritdoc/>
         public async Task DeleteDirectoryAsync(string path)
         {
+            InsureConnection();
             if (await ExistsAsync(path))
             {
                 await _client.DeleteDirectoryAsync(path);
@@ -68,6 +72,8 @@ namespace Parallel.Core.Storage
         /// <inheritdoc/>
         public async Task DeleteFileAsync(string path)
         {
+            InsureConnection();
+
             if (!await ExistsAsync(path)) return;
             await _client.DeleteAsync(path);
         }
@@ -75,6 +81,8 @@ namespace Parallel.Core.Storage
         /// <inheritdoc />
         public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
         {
+            InsureConnection();
+
             await using SftpFileStream openStream = _client.OpenRead(file.RemotePath);
             await using FileStream createStream = File.Create(file.LocalPath);
             await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
@@ -84,12 +92,15 @@ namespace Parallel.Core.Storage
         /// <inheritdoc />
         public async Task<bool> ExistsAsync(string path)
         {
-            return _client.IsConnected && await _client.ExistsAsync(path);
+            InsureConnection();
+
+            return await _client.ExistsAsync(path);
         }
 
         /// <inheritdoc/>
         public Task<string> GetDirectoryName(string path)
         {
+            InsureConnection();
             string[] subDirs = path.Split('/');
             return Task.FromResult(string.Join("/", subDirs.Take(subDirs.Length - 1)));
         }
@@ -97,6 +108,7 @@ namespace Parallel.Core.Storage
         /// <inheritdoc/>
         public async Task<SystemFile?> GetFileAsync(string path)
         {
+            InsureConnection();
             if (!await ExistsAsync(path)) return null;
 
             ISftpFile sf = _client.Get(path);
@@ -106,6 +118,7 @@ namespace Parallel.Core.Storage
         /// <inheritdoc />
         public async Task CloneFileAsync(string source, string target)
         {
+            InsureConnection();
             if (await ExistsAsync(source)) _client.ChangePermissions(source, 644);
             _client.RenameFile(source, target);
         }
@@ -113,14 +126,10 @@ namespace Parallel.Core.Storage
         /// <inheritdoc />
         public async Task<long> UploadFileAsync(SystemFile file, bool overwrite = false, CancellationToken ct = default)
         {
+            InsureConnection();
             if (await ExistsAsync(file.RemotePath))
             {
-                if (!overwrite)
-                {
-                    Log.Debug($"Skipping file: {file.RemotePath}");
-                    return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
-                }
-
+                if (!overwrite) return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
                 _client.ChangePermissions(file.RemotePath, 644);
             }
 

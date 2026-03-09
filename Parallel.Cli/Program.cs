@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.CommandLine;
 using System.Diagnostics;
@@ -18,10 +18,6 @@ namespace Parallel.Cli
 
         public static async Task Main(string[] args)
         {
-            Console.CancelKeyPress += (sender, e) =>
-            {
-                e.Cancel = true;
-            };
             if (!ParallelConfig.CanStartCliInstance())
             {
                 CommandLine.WriteLine("An instance of Parallel is already running!", ConsoleColor.Yellow);

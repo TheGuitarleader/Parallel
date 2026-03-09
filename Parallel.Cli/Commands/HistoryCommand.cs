@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.CommandLine;
 using Parallel.Cli.Utils;
@@ -138,7 +138,7 @@ namespace Parallel.Cli.Commands
             if (!historyList.Any()) CommandLine.WriteLine("No history was found!", ConsoleColor.Yellow);
             foreach (HistoryEvent historyEvent in historyList)
             {
-                CommandLine.WriteLine($"[{Formatter.FromDateTime(historyEvent.CreatedAt.ToLocalTime())}] {historyEvent.Type}: {historyEvent.Fullname}", ConsoleColor.Gray);
+                CommandLine.WriteLine($"[{Formatter.FromDateTime(historyEvent.CreatedAt.ToLocalTime())}] {historyEvent.Type}: {historyEvent.Fullname}");
             }
         }
     }

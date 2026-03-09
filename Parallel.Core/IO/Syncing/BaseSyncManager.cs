@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
@@ -20,6 +20,9 @@ namespace Parallel.Core.IO.Syncing
         protected string TempDbFile => Path.Combine(TempDirectory, $"{LocalVault.Id}.db");
 
         /// <inheritdoc />
+        public string Id => LocalVault.Id;
+
+        /// <inheritdoc />
         public LocalVaultConfig LocalVault { get; private set; }
 
         /// <inheritdoc />
@@ -32,7 +35,7 @@ namespace Parallel.Core.IO.Syncing
         public IStorageProvider StorageProvider { get; set; }
 
         /// <summary>
-        ///
+        /// 
         /// </summary>
         /// <param name="localVault"></param>
         protected BaseSyncManager(LocalVaultConfig localVault)
@@ -81,7 +84,9 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await StorageProvider.DownloadFileAsync(new SystemFile(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault)));
+                string remoteDbFile = PathBuilder.GetDatabaseFile(LocalVault);
+                await StorageProvider.DownloadFileAsync(new SystemFile(TempDbFile, remoteDbFile));
+                await StorageProvider.CloneFileAsync(remoteDbFile, remoteDbFile + ".old");
                 Database = new SqliteContext(TempDbFile);
 
                 Log.Debug($"Downloaded file: {TempDbFile}");

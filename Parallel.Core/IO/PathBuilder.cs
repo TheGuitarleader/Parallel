@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using System.Runtime.InteropServices;
 using System.Text;
@@ -180,6 +180,20 @@ namespace Parallel.Core.IO
         public static string GetObjectPath(LocalVaultConfig vaultConfig, string hash)
         {
             return Combine(GetObjectsDirectory(vaultConfig), hash.Substring(0, 2), hash.Substring(2, 2), hash);
+        }
+
+        public static string ReplacePath(string fullPath, string sourceRoot, string outputRoot)
+        {
+            // Normalize to forward slashes
+            fullPath = fullPath.Replace('\\', '/');
+            sourceRoot = sourceRoot.Replace('\\', '/');
+
+            if (!fullPath.StartsWith(sourceRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Path is outside source root");
+            }
+
+            return outputRoot + fullPath.Substring(sourceRoot.Length);
         }
     }
 }

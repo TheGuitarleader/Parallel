@@ -1,0 +1,70 @@
+﻿import * as signalR from "@microsoft/signalr";
+
+export class MessageClient {
+    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    private connectionChangedCallbacks: ((isConnected: boolean) => void)[] = [];
+    private connection: signalR.HubConnection;
+
+    constructor(url: string) {
+        console.log(url);
+        this.connection = new signalR.HubConnectionBuilder().withUrl(url).withAutomaticReconnect().build();
+    }
+
+    isConnected() {
+        return this.connection.state === signalR.HubConnectionState.Connected;
+    }
+
+    async connect() {
+        if (this.connection.state !== signalR.HubConnectionState.Disconnected) return;
+        try {
+            await this.connection.start();
+            if(this.reconnectTimer) {
+                clearTimeout(this.reconnectTimer);
+                this.reconnectTimer = null;
+            }
+        }
+        catch(err) {
+            console.error(err);
+            if (!this.reconnectTimer) {
+                this.reconnectTimer = setTimeout(() => {
+                    this.reconnectTimer = null;
+                    this.connect();
+                }, 3000);
+            }
+        }
+
+        // Notify all registered callbacks.
+        this.connectionChangedCallbacks.forEach(cb => cb(this.isConnected()));
+    }
+
+    async disconnect() {
+        if (this.connection.state === signalR.HubConnectionState.Disconnected) return;
+        await this.connection.stop();
+    }
+
+    // Wrapper for .on() — callback receives a string
+    on(eventName: string, callback: (message: string) => void) {
+        this.connection.on(eventName, callback);
+    }
+
+    off(eventName: string, callback?: (message: string) => void) {
+        if (callback) this.connection.off(eventName, callback);
+        else this.connection.off(eventName); // remove all listeners for that event
+    }
+
+    connectionChanged = (callback: (isConnected: boolean) => void) => {
+        this.connectionChangedCallbacks.push(callback);
+        callback(this.isConnected());
+
+        this.connection.onreconnected(() => callback(this.isConnected()));
+        this.connection.onclose(() => callback(this.isConnected()));
+    }
+
+    // Optional: helper for sending messages
+    async send(eventName: string, message: string) {
+        await this.connect();
+        await this.connection.invoke(eventName, message);
+    }
+}
+
+export const client = new MessageClient("http://127.0.0.1:5000/hub");

@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Kyle Ebbinga
+﻿// Copyright 2026 Entex Interactive, LLC
 
 using Parallel.Core.Database;
 using Parallel.Core.Utils;
@@ -10,13 +10,11 @@ namespace Parallel.Core.Models
         public HistoryType Type { get; set; }
         public UnixTime CreatedAt { get; set; }
         public string Fullname { get; set; }
-        public string CheckSum { get; set; }
 
-        public HistoryEvent(long timestamp, string path, string checksum, long type)
+        public HistoryEvent(long timestamp, string path, long type)
         {
             CreatedAt = UnixTime.FromMilliseconds(timestamp);
             Fullname = path;
-            CheckSum = checksum;
             Type = (HistoryType)type;
         }
     }
