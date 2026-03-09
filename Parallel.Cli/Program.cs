@@ -34,7 +34,7 @@ namespace Parallel.Cli
 
             Log.Information($"{assembly.Name} [Version {assembly.Version}]");
             RootCommand rootCommand = new("Parallel file manager - Easily back up and synchronize massive amounts of files, and free up drive space.");
-            IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsSubclassOf(typeof(Command)) && t.IsClass && !t.IsAbstract);
+            IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(Command).IsAssignableFrom(t) && !t.IsAbstract);
             foreach (Type type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);
             await rootCommand.InvokeAsync(args);
 
@@ -42,7 +42,7 @@ namespace Parallel.Cli
             await Log.CloseAndFlushAsync();
             if (EventTracker.Errors.Count > 0)
             {
-                string logDir = Path.Combine(PathBuilder.ProgramData, "Logs");
+                string logDir = Path.Combine(PathBuilder.TempDirectory, "Logs");
                 if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
                 await File.WriteAllTextAsync(Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.json"), JsonConvert.SerializeObject(EventTracker, Formatting.Indented));
             }
