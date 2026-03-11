@@ -66,7 +66,7 @@ namespace Parallel.Core.IO.Syncing
             }
             else
             {
-                await StorageProvider.DownloadFileAsync(new SystemFile(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)));
+                await StorageProvider.DownloadFileAsync(PathBuilder.GetConfigurationFile(LocalVault), TempConfigFile);
                 RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
                 if (config == null) return false;
                 RemoteVault = config;
@@ -85,8 +85,8 @@ namespace Parallel.Core.IO.Syncing
             else
             {
                 string remoteDbFile = PathBuilder.GetDatabaseFile(LocalVault);
-                await StorageProvider.DownloadFileAsync(new SystemFile(TempDbFile, remoteDbFile));
                 await StorageProvider.CloneFileAsync(remoteDbFile, remoteDbFile + ".old");
+                await StorageProvider.DownloadFileAsync(remoteDbFile, TempDbFile);
                 Database = new SqliteContext(TempDbFile);
 
                 Log.Debug($"Downloaded file: {TempDbFile}");
@@ -102,12 +102,8 @@ namespace Parallel.Core.IO.Syncing
             Log.Debug($"[{LocalVault.Id}] Disconnecting...");
             RemoteVault.Save(TempConfigFile);
 
-            SystemFile[] tempFiles = [new(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault)), new(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault))];
-            foreach (SystemFile file in tempFiles)
-            {
-                await StorageProvider.UploadFileAsync(file, true);
-                Log.Debug($"Uploaded file: {file.LocalPath}");
-            }
+            await StorageProvider.UploadFileAsync(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault), true);
+            await StorageProvider.UploadFileAsync(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault), true);
 
             StorageProvider?.Dispose();
             Log.Information($"[{LocalVault.Id}] Disconnected");

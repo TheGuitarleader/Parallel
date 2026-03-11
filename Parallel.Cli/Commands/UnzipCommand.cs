@@ -42,6 +42,9 @@ namespace Parallel.Cli.Commands
                 {
                     gZip.CopyTo(createFile);
                 }
+                
+                File.SetAttributes(file, File.GetAttributes(file) & ~FileAttributes.ReadOnly);
+                File.Delete(file);
             });
 
             CommandLine.WriteLine($"Successfully unzipped {files.Length:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);

@@ -41,27 +41,25 @@ namespace Parallel.Core.IO.Syncing
                 if (!file.TryGenerateCheckSum()) return;
 
                 SemaphoreSlim threadLock = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
+                string remotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!);
                 await threadLock.WaitAsync(ct);
 
                 try
                 {
                     Log.Debug($"Pushing -> {file.LocalPath}");
-                    file.RemotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!);
-                    file.RemoteSize = await StorageProvider.UploadFileAsync(file, overwrite, ct);
-                    
+                    file.RemoteSize = await StorageProvider.UploadFileAsync(file.LocalPath, remotePath, overwrite, ct);
                     if (!await (Database?.AddHistoryAsync(HistoryType.Synced, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
                     if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error($"Failed to add file: {file.LocalPath}");
                     progress.Report(ProgressOperation.Synced, file);
                 }
                 catch (Exception ex)
                 {
-                    await StorageProvider.DeleteFileAsync(file.RemotePath);
+                    await StorageProvider.DeleteFileAsync(remotePath);
                     progress.Failed(file, ex.GetBaseException().ToString());
                 }
                 finally
                 {
                     threadLock.Release();
-                    //threadPool.TryRemove(file.CheckSum!, out _);
                     Interlocked.Increment(ref completed);
                     Interlocked.Decrement(ref queued);
                 }
@@ -109,7 +107,7 @@ namespace Parallel.Core.IO.Syncing
                     if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
 
                     Log.Debug($"Restoring file: {file.LocalPath} ({file.CheckSum})");
-                    await StorageProvider.DownloadFileAsync(file, ct);
+                    await StorageProvider.DownloadFileAsync(PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!), file.LocalPath, ct);
                     if (!File.Exists(file.LocalPath))
                     {
                         progress.Failed(file, "File not found!");
@@ -168,7 +166,7 @@ namespace Parallel.Core.IO.Syncing
                 {
                     await (Database != null ? Database.RemoveFileAsync(file) : Task.CompletedTask);
                     if (!await (Database?.AddHistoryAsync(HistoryType.Pruned, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
-                    await StorageProvider.DeleteFileAsync(file.RemotePath);
+                    await StorageProvider.DeleteFileAsync(PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!));
                     progress.Report(ProgressOperation.Pruned, file);
                 }
                 catch (Exception ex)
