@@ -57,8 +57,8 @@ namespace Parallel.Cli.Commands
             CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
             CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles:N0}");
             CommandLine.WriteLine($"Revisions:      {totalFiles - (totalLocalFiles + totalDeletedFiles):N0}");
-            CommandLine.WriteLine($"Total Size:     {Formatter.FromBytes(totalSize)}");
-            CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
+            CommandLine.WriteLine($"Total Size:     {Formatter.FromBytes(localSize)}");
+            CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(totalSize)}");
             CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(remoteSize)} ({(double.IsNaN(spaceSaved) ? 0 : spaceSaved)}%)");
 
             if (vault.Credentials.Service.Equals(FileService.Local))
