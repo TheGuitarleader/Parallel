@@ -61,7 +61,7 @@ namespace Parallel.Core.IO.Syncing
                 finally
                 {
                     threadLock.Release();
-                    threadPool.TryRemove(file.CheckSum!, out _);
+                    //threadPool.TryRemove(file.CheckSum!, out _);
                     Interlocked.Increment(ref completed);
                     Interlocked.Decrement(ref queued);
                 }

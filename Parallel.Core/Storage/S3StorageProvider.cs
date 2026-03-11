@@ -11,6 +11,7 @@ using Parallel.Core.Security;
 using Parallel.Core.Settings;
 using Parallel.Core.Utils;
 using Renci.SshNet.Sftp;
+using ZstdSharp;
 
 namespace Parallel.Core.Storage
 {
@@ -70,8 +71,8 @@ namespace Parallel.Core.Storage
         {
             using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, file.RemotePath, ct);
             await using FileStream createStream = File.Create(file.LocalPath);
-            await using GZipStream gzipStream = new GZipStream(response.ResponseStream, CompressionMode.Decompress);
-            await gzipStream.CopyToAsync(createStream, ct);
+            await using ZstdStream zstdStream = new ZstdStream(response.ResponseStream, ZstdStreamMode.Decompress);
+            await zstdStream.CopyToAsync(createStream, ct);
         }
 
         public async Task<bool> ExistsAsync(string path)
@@ -138,10 +139,10 @@ namespace Parallel.Core.Storage
             long totalBytes = 0;
             await using StreamProgress countingStream = new StreamProgress(pipe.Writer.AsStream(), b => totalBytes = b);
             await using FileStream openStream = File.OpenRead(file.LocalPath);
-            await using (GZipStream gzipStream = new(countingStream, CompressionLevel.SmallestSize))
+            await using (ZstdStream zstdStream = new(countingStream, ZstdStreamMode.Compress))
             {
-                await openStream.CopyToAsync(gzipStream, ct);
-                await gzipStream.FlushAsync(ct);
+                await openStream.CopyToAsync(zstdStream, ct);
+                await zstdStream.FlushAsync(ct);
             }
 
             await pipe.Writer.CompleteAsync();
