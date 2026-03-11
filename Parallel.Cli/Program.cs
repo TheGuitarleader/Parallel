@@ -33,7 +33,7 @@ namespace Parallel.Cli
 #endif
 
             Log.Information($"{assembly.Name} [Version {assembly.Version}]");
-            RootCommand rootCommand = new("Parallel file manager - Easily back up and synchronize massive amounts of files, and free up drive space.");
+            RootCommand rootCommand = new("Parallel file manager - Easily back up and synchronize massive amounts of files, save system states, and free up drive space.");
             IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(Command).IsAssignableFrom(t) && !t.IsAbstract);
             foreach (Type type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);
             await rootCommand.InvokeAsync(args);

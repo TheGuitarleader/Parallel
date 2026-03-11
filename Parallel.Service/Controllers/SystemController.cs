@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Parallel.Core.Utils;
+using Parallel.Service.Utils;
 
 namespace Parallel.Service.Controllers
 {

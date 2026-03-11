@@ -26,10 +26,9 @@ namespace Parallel.Core.Database.Contexts
         public async Task InitializeAsync()
         {
             Log.Information("Creating index database...");
-            await _semaphore.ExecuteAsync(
-                "CREATE TABLE IF NOT EXISTS `objects` (`name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `parentdir` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, UNIQUE (localpath, checksum));");
-
+            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `parentdir` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, UNIQUE (localpath, checksum));");
             await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `type` INTEGER NOT NULL, PRIMARY KEY(`timestamp`));");
+            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `snapshots` (`timestamp` LONG INTEGER NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
             await _semaphore.ExecuteAsync("CREATE INDEX idx_objects_path_update ON objects(localpath, lastupdate DESC, deleted);");
         }
 
@@ -164,6 +163,28 @@ namespace Parallel.Core.Database.Contexts
         {
             string sql = "SELECT lastupdate FROM objects ORDER BY lastupdate DESC LIMIT 1;";
             return UnixTime.FromMilliseconds(await _semaphore.QuerySingleAsync<long>(sql)).ToLocalTime();
+        }
+        
+        /// <inheritdoc />
+        public async Task<bool> AddSnapshotAsync(string snapshot)
+        {
+            if (string.IsNullOrEmpty(snapshot)) throw new ArgumentNullException(nameof(snapshot));
+            string sql = "INSERT OR REPLACE INTO snapshots (timestamp, name) VALUES(@Timestamp, @Name);";
+            return await _semaphore.ExecuteAsync(sql, new { Timestamp = UnixTime.Now.TotalMilliseconds, Name = snapshot }) > 0;
+        }
+
+        /// <inheritdoc />
+        public async Task<IReadOnlyList<string>> GetSnapshotsAsync()
+        {
+            string sql = "SELECT DISTINCT name FROM snapshots ORDER BY timestamp DESC;";
+            return await _semaphore.QueryAsync<string>(sql);
+        }
+        
+        /// <inheritdoc />
+        public async Task RemoveSnapshotAsync(string snapshot)
+        {
+            string sql = $"DELETE FROM snapshots WHERE name = @Name;";
+            await _semaphore.ExecuteAsync(sql, new { Name = snapshot });
         }
     }
 }

@@ -139,5 +139,15 @@ namespace Parallel.Core.Database
         Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType type, int limit);
 
         #endregion
+        
+        #region Snapshots
+        
+        Task<bool> AddSnapshotAsync(string snapshot);
+        
+        Task<IReadOnlyList<string>> GetSnapshotsAsync();
+
+        Task RemoveSnapshotAsync(string snapshot);
+
+        #endregion
     }
 }

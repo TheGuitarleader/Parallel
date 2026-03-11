@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
 using Parallel.Core.Utils;
 using Parallel.Service.Tasks;
+using Parallel.Service.Utils;
 
 namespace Parallel.Service.Services
 {

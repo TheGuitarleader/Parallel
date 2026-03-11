@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Parallel.Service.Extensions.Logging;
+using Parallel.Service.Utils;
 using Serilog;
 
 namespace Parallel.Service
