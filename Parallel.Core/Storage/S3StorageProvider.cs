@@ -67,10 +67,10 @@ namespace Parallel.Core.Storage
             await _client.DeleteObjectAsync(_bucket, path);
         }
 
-        public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
+        public async Task DownloadFileAsync(string source, string destination, CancellationToken ct = default)
         {
-            using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, file.RemotePath, ct);
-            await using FileStream createStream = File.Create(file.LocalPath);
+            using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, source, ct);
+            await using FileStream createStream = File.Create(destination);
             await using ZstdStream zstdStream = new ZstdStream(response.ResponseStream, ZstdStreamMode.Decompress);
             await zstdStream.CopyToAsync(createStream, ct);
         }
@@ -102,7 +102,6 @@ namespace Parallel.Core.Storage
                 GetObjectMetadataResponse metadata = await _client.GetObjectMetadataAsync(_bucket, path);
                 return new SystemFile(path)
                 {
-                    RemotePath = path,
                     RemoteSize = metadata.ContentLength
                 };
             }
@@ -117,28 +116,28 @@ namespace Parallel.Core.Storage
             throw new NotImplementedException();
         }
 
-        public async Task<long> UploadFileAsync(SystemFile file, bool overwrite, CancellationToken ct = default)
+        public async Task<long> UploadFileAsync(string source, string destination, bool overwrite, CancellationToken ct = default)
         {
-            if (!overwrite && await ExistsAsync(file.RemotePath))
+            if (!overwrite && await ExistsAsync(destination))
             {
-                Log.Debug($"Skipping file: {file.RemotePath}");
-                return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
+                Log.Debug($"Skipping file: {destination}");
+                return Convert.ToInt64((await GetFileAsync(destination))?.RemoteSize);
             }
 
-            await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
+            await CreateDirectoryAsync(await GetDirectoryName(destination));
             Pipe pipe = new Pipe();
             TransferUtility utility = new TransferUtility(_client);
             Task uploadTask = utility.UploadAsync(new TransferUtilityUploadRequest
             {
                 BucketName = _bucket,
-                Key = file.RemotePath,
+                Key = destination,
                 InputStream = pipe.Reader.AsStream(),
                 ContentType = "application/octet-stream"
             }, ct);
 
             long totalBytes = 0;
             await using StreamProgress countingStream = new StreamProgress(pipe.Writer.AsStream(), b => totalBytes = b);
-            await using FileStream openStream = File.OpenRead(file.LocalPath);
+            await using FileStream openStream = File.OpenRead(source);
             await using (ZstdStream zstdStream = new(countingStream, ZstdStreamMode.Compress))
             {
                 await openStream.CopyToAsync(zstdStream, ct);

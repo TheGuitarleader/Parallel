@@ -26,7 +26,7 @@ namespace Parallel.Core.Database.Contexts
         public async Task InitializeAsync()
         {
             Log.Information("Creating index database...");
-            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `remotepath` TEXT NOT NULL, `parentdir` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, UNIQUE (localpath, checksum));");
+            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `parentdir` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, UNIQUE (localpath, checksum));");
             await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `type` INTEGER NOT NULL, PRIMARY KEY(`timestamp`));");
             await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `snapshots` (`timestamp` LONG INTEGER NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
             await _semaphore.ExecuteAsync("CREATE INDEX idx_objects_path_update ON objects(localpath, lastupdate DESC, deleted);");
@@ -41,8 +41,8 @@ namespace Parallel.Core.Database.Contexts
             if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
             if (!file.TryGenerateCheckSum()) throw new ArgumentNullException(nameof(file.CheckSum));
 
-            string sql = @"INSERT OR REPLACE INTO objects (name, localpath, remotepath, parentdir, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Name, @LocalPath, @RemotePath, @ParentDirectory, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
-            return await _semaphore.ExecuteAsync(sql, new { file.Name, file.LocalPath, file.RemotePath, file.ParentDirectory, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
+            string sql = @"INSERT OR REPLACE INTO objects (name, localpath, parentdir, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Name, @LocalPath, @ParentDirectory, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
+            return await _semaphore.ExecuteAsync(sql, new { file.Name, file.LocalPath, file.ParentDirectory, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
         }
 
         /// <inheritdoc />

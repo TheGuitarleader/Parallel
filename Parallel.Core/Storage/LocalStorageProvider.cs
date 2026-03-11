@@ -54,11 +54,10 @@ namespace Parallel.Core.Storage
             return Task.CompletedTask;
         }
 
-        /// <inheritdoc />
-        public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
+        public async Task DownloadFileAsync(string source, string destination, CancellationToken ct = default)
         {
-            await using FileStream openStream = File.OpenRead(file.RemotePath);
-            await using FileStream createStream = File.Create(file.LocalPath);
+            await using FileStream openStream = File.OpenRead(source);
+            await using FileStream createStream = File.Create(destination);
             await using ZstdStream zstdStream = new ZstdStream(openStream, ZstdStreamMode.Decompress);
             await zstdStream.CopyToAsync(createStream, ct);
         }
@@ -84,7 +83,6 @@ namespace Parallel.Core.Storage
             SystemFile file = new SystemFile(path)
             {
                 Name = fi.Name,
-                RemotePath = fi.FullName,
                 RemoteSize = fi.Length
             };
 
@@ -99,21 +97,21 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task<long> UploadFileAsync(SystemFile file, bool overwrite = false, CancellationToken ct = default)
+        public async Task<long> UploadFileAsync(string source, string destination, bool overwrite = false, CancellationToken ct = default)
         {
-            if (await ExistsAsync(file.RemotePath))
+            if (await ExistsAsync(destination))
             {
-                if (!overwrite) return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
-                File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) & ~FileAttributes.ReadOnly);
+                if (!overwrite) return Convert.ToInt64((await GetFileAsync(destination))?.RemoteSize);
+                File.SetAttributes(destination, File.GetAttributes(destination) & ~FileAttributes.ReadOnly);
             }
 
-            await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
-            await using FileStream openStream = File.OpenRead(file.LocalPath);
-            await using FileStream createStream = File.Create(file.RemotePath);
+            await CreateDirectoryAsync(await GetDirectoryName(destination));
+            await using FileStream openStream = File.OpenRead(source);
+            await using FileStream createStream = File.Create(destination);
             await using ZstdStream zstdStream = new ZstdStream(createStream, ZstdStreamMode.Compress);
             await openStream.CopyToAsync(zstdStream, ct);
 
-            File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
+            File.SetAttributes(destination, File.GetAttributes(destination) | FileAttributes.ReadOnly);
             return createStream.Length;
         }
     }

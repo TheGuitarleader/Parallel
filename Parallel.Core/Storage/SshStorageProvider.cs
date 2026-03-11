@@ -78,11 +78,11 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
+        public async Task DownloadFileAsync(string source, string destination, CancellationToken ct = default)
         {
             InsureConnection();
-            await using SftpFileStream openStream = _client.OpenRead(file.RemotePath);
-            await using FileStream createStream = File.Create(file.LocalPath);
+            await using SftpFileStream openStream = _client.OpenRead(source);
+            await using FileStream createStream = File.Create(destination);
             await using ZstdStream zstdStream = new(openStream, ZstdStreamMode.Decompress);
             await zstdStream.CopyToAsync(createStream, ct);
         }
@@ -109,7 +109,7 @@ namespace Parallel.Core.Storage
             if (!await ExistsAsync(path)) return null;
 
             ISftpFile sf = _client.Get(path);
-            return new SystemFile(sf.Name, sf.FullName, sf.Length, sf.LastWriteTime);
+            return new SystemFile(sf.Name, sf.Length, sf.LastWriteTime);
         }
 
         /// <inheritdoc />
@@ -121,22 +121,22 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task<long> UploadFileAsync(SystemFile file, bool overwrite = false, CancellationToken ct = default)
+        public async Task<long> UploadFileAsync(string source, string destination, bool overwrite = false, CancellationToken ct = default)
         {
             InsureConnection();
-            if (await ExistsAsync(file.RemotePath))
+            if (await ExistsAsync(destination))
             {
-                if (!overwrite) return Convert.ToInt64((await GetFileAsync(file.RemotePath))?.RemoteSize);
-                _client.ChangePermissions(file.RemotePath, 644);
+                if (!overwrite) return Convert.ToInt64((await GetFileAsync(destination))?.RemoteSize);
+                _client.ChangePermissions(destination, 644);
             }
 
-            await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
-            await using SftpFileStream createStream = _client.Create(file.RemotePath);
-            await using FileStream openStream = File.OpenRead(file.LocalPath);
+            await CreateDirectoryAsync(await GetDirectoryName(destination));
+            await using SftpFileStream createStream = _client.Create(destination);
+            await using FileStream openStream = File.OpenRead(source);
             await using ZstdStream zstdStream = new(createStream, ZstdStreamMode.Compress);
             await openStream.CopyToAsync(zstdStream, ct);
 
-            _client.ChangePermissions(file.RemotePath, 444);
+            _client.ChangePermissions(destination, 444);
             return createStream.Length;
         }
     }

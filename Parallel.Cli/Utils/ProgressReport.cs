@@ -27,7 +27,7 @@ namespace Parallel.Cli.Utils
             Interlocked.Increment(ref _current);
 
             int percent = _current * 100 / _total;
-            CommandLine.WriteLine($"[{_localVault.Id}] ({percent}%) {operation}: {file.LocalPath}");
+            CommandLine.WriteLine($"[{_localVault.Id}] ({percent}%) {operation}: {file.LocalPath} {(string.IsNullOrEmpty(file.CheckSum) ? "" : $"({file.CheckSum[..8]}...)")}");
             //CommandLine.ProgressBar(_current++, _total, _sw.Elapsed);
         }
 

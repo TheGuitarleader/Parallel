@@ -25,11 +25,6 @@ namespace Parallel.Core.Models
         public string LocalPath { get; set; } = string.Empty;
 
         /// <summary>
-        /// The path of the file in the backup file system.
-        /// </summary>
-        public string RemotePath { get; set; } = string.Empty;
-
-        /// <summary>
         /// The path of the parent directory in the backup file system.
         /// </summary>
         public string? ParentDirectory { get; set; } = null;
@@ -99,27 +94,6 @@ namespace Parallel.Core.Models
             Deleted = !fileInfo.Exists;
         }
 
-        public SystemFile(string localPath, string remotePath)
-        {
-            LocalPath = localPath;
-            RemotePath = remotePath;
-        }
-
-        public SystemFile(string name, string localpath, string remotepath, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
-        {
-            Name = name;
-            LocalPath = localpath;
-            RemotePath = remotepath;
-            LastWrite = UnixTime.FromMilliseconds(lastwrite);
-            LastUpdate = UnixTime.FromMilliseconds(lastupdate);
-            LocalSize = localsize;
-            RemoteSize = remotesize;
-            Hidden = Converter.ToBool(hidden);
-            ReadOnly = Converter.ToBool(readOnly);
-            Deleted = Converter.ToBool(deleted);
-            CheckSum = checksum;
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemFile"/> class.
         /// </summary>
@@ -139,11 +113,10 @@ namespace Parallel.Core.Models
         /// <param name="salt"></param>
         /// <param name="iv"></param>
         /// <param name="checksum"></param>
-        public SystemFile(string name, string localpath, string remotepath, string parentdir, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
+        public SystemFile(string name, string localpath, string parentdir, long lastwrite, long lastupdate, long localsize, long remotesize, string type, long hidden, long readOnly, long deleted, string checksum)
         {
             Name = name;
             LocalPath = localpath;
-            RemotePath = remotepath;
             ParentDirectory = parentdir;
             LastWrite = UnixTime.FromMilliseconds(lastwrite);
             LastUpdate = UnixTime.FromMilliseconds(lastupdate);
@@ -155,10 +128,9 @@ namespace Parallel.Core.Models
             CheckSum = checksum;
         }
 
-        public SystemFile(string name, string remotePath, long length, DateTime lastWriteTime)
+        public SystemFile(string name, long length, DateTime lastWriteTime)
         {
             Name = name;
-            RemotePath = remotePath;
             RemoteSize = length;
             LastWrite = new UnixTime(lastWriteTime);
         }
@@ -176,7 +148,6 @@ namespace Parallel.Core.Models
             [
                 this?.Name != null && value?.Name != null ? this.Name.Equals(value.Name) : (bool?)null,
                 this?.LocalPath != null && value?.LocalPath != null ? this.LocalPath.Equals(value.LocalPath) : (bool?)null,
-                this?.RemotePath != null && value?.RemotePath != null ? this.RemotePath.Equals(value.RemotePath) : (bool?)null,
                 this?.ParentDirectory != null && value?.ParentDirectory != null ? this.ParentDirectory.Equals(value.ParentDirectory) : (bool?)null,
                 value?.LocalSize != null ? this.LocalSize.Equals(value.LocalSize) : (bool?)null,
                 value?.RemoteSize != null ? this.RemoteSize.Equals(value.RemoteSize) : (bool?)null,
