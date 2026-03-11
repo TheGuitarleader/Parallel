@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Entex Interactive, LLC
+﻿// Copyright 2026 Kyle Ebbinga
 
 using Parallel.Core.IO;
 using System;
@@ -137,6 +137,16 @@ namespace Parallel.Core.Database
         Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, int limit);
 
         Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType type, int limit);
+
+        #endregion
+        
+        #region Snapshots
+        
+        Task<bool> AddSnapshotAsync(string snapshot);
+        
+        Task<IReadOnlyList<string>> GetSnapshotsAsync();
+
+        Task RemoveSnapshotAsync(string snapshot);
 
         #endregion
     }

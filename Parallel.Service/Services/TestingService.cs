@@ -1,9 +1,10 @@
-﻿// Copyright 2026 Entex Interactive, LLC
+﻿// Copyright 2026 Kyle Ebbinga
 
 using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
 using Parallel.Core.Utils;
 using Parallel.Service.Tasks;
+using Parallel.Service.Utils;
 
 namespace Parallel.Service.Services
 {

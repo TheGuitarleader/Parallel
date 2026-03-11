@@ -1,9 +1,9 @@
-﻿// Copyright 2026 Entex Interactive, LLC
+﻿// Copyright 2026 Kyle Ebbinga
 
 using System.Diagnostics;
 using System.Timers;
 
-namespace Parallel.Core.Utils
+namespace Parallel.Service.Utils
 {
     /// <summary>
     /// Allows for easy use of monitoring system processes.

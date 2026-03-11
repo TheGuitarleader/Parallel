@@ -1,4 +1,4 @@
-﻿// Copyright 2026 Entex Interactive, LLC
+﻿// Copyright 2026 Kyle Ebbinga
 
 using System.Collections.Concurrent;
 using System.Data;
@@ -46,7 +46,7 @@ namespace Parallel.Core.IO.Scanning
             ConcurrentBag<SystemFile> changedFiles = new();
 
             HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
-            IEnumerable<SystemFile> remoteFiles = _db is null ? [] : await _db.GetLatestFilesAsync(path, DateTime.UtcNow, false);
+            IEnumerable<SystemFile> remoteFiles = _db is null ? [] : await _db.GetLatestFilesAsync(path, DateTime.UtcNow.AddHours(1), false);
             System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile) =>
             {
                 if (File.Exists(remoteFile.LocalPath))
@@ -210,7 +210,7 @@ namespace Parallel.Core.IO.Scanning
                 string current = pending.Pop();
                 if (IsIgnored(current, exempt))
                 {
-                    Log.Debug($"Ignored -> {current}");
+                    //Log.Debug($"Ignored -> {current}");
                     continue;
                 }
 

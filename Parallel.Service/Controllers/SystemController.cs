@@ -1,7 +1,8 @@
-﻿// Copyright 2026 Entex Interactive, LLC
+﻿// Copyright 2026 Kyle Ebbinga
 
 using Microsoft.AspNetCore.Mvc;
 using Parallel.Core.Utils;
+using Parallel.Service.Utils;
 
 namespace Parallel.Service.Controllers
 {
