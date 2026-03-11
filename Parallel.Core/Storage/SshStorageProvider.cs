@@ -8,6 +8,7 @@ using Parallel.Core.Security;
 using Parallel.Core.Settings;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
+using ZstdSharp;
 
 namespace Parallel.Core.Storage
 {
@@ -47,7 +48,6 @@ namespace Parallel.Core.Storage
         public async Task CreateDirectoryAsync(string path)
         {
             InsureConnection();
-
             string parentDir = string.Empty;
             foreach (string subPath in path.Split('/'))
             {
@@ -73,7 +73,6 @@ namespace Parallel.Core.Storage
         public async Task DeleteFileAsync(string path)
         {
             InsureConnection();
-
             if (!await ExistsAsync(path)) return;
             await _client.DeleteAsync(path);
         }
@@ -82,18 +81,16 @@ namespace Parallel.Core.Storage
         public async Task DownloadFileAsync(SystemFile file, CancellationToken ct = default)
         {
             InsureConnection();
-
             await using SftpFileStream openStream = _client.OpenRead(file.RemotePath);
             await using FileStream createStream = File.Create(file.LocalPath);
-            await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
-            await gzipStream.CopyToAsync(createStream, ct);
+            await using ZstdStream zstdStream = new(openStream, ZstdStreamMode.Decompress);
+            await zstdStream.CopyToAsync(createStream, ct);
         }
 
         /// <inheritdoc />
         public async Task<bool> ExistsAsync(string path)
         {
             InsureConnection();
-
             return await _client.ExistsAsync(path);
         }
 
@@ -136,8 +133,8 @@ namespace Parallel.Core.Storage
             await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
             await using SftpFileStream createStream = _client.Create(file.RemotePath);
             await using FileStream openStream = File.OpenRead(file.LocalPath);
-            await using GZipStream gzipStream = new(createStream, CompressionLevel.SmallestSize);
-            await openStream.CopyToAsync(gzipStream, ct);
+            await using ZstdStream zstdStream = new(createStream, ZstdStreamMode.Compress);
+            await openStream.CopyToAsync(zstdStream, ct);
 
             _client.ChangePermissions(file.RemotePath, 444);
             return createStream.Length;

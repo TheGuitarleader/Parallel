@@ -10,7 +10,6 @@ namespace Parallel.Cli.Commands
     public class UnzipCommand : Command
     {
         private readonly Argument<string> sourceArg = new("path", "The source path of files to unzip.");
-        private readonly Option<bool> keepOpt = new(["--keep", "-k"], "If the original files should be kept.");
 
         private Stopwatch? _sw;
         private readonly List<Task> _tasks = new List<Task>();
@@ -19,25 +18,33 @@ namespace Parallel.Cli.Commands
         public UnzipCommand() : base("unzip", "Unzips files in a directory.")
         {
             this.AddArgument(sourceArg);
-            this.AddOption(keepOpt);
-            this.SetHandler(async (path, keep) =>
+            this.SetHandler(HandleUnzipAsync, sourceArg);
+        }
+
+        private async Task HandleUnzipAsync(string path)
+        {
+            _sw = Stopwatch.StartNew();
+            CommandLine.WriteLine($"Scanning for files in {path}...", ConsoleColor.DarkGray);
+            string[] files = Directory.GetFiles(path, $"*.gz", SearchOption.AllDirectories);
+            if (files.Length == 0)
             {
-                _sw = Stopwatch.StartNew();
-                CommandLine.WriteLine($"Scanning for files in {path}...", ConsoleColor.DarkGray);
-                string[] files = Directory.GetFiles(path, $"*.gz", SearchOption.AllDirectories);
-                if (files.Length == 0)
+                CommandLine.WriteLine("No files found to unzip!", ConsoleColor.Yellow);
+                return;
+            }
+
+            CommandLine.WriteLine($"Unzipping {files.Length:N0} files...", ConsoleColor.DarkGray);
+            ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }; 
+            System.Threading.Tasks.Parallel.ForEach(files, options, (file, ct) =>
+            {
+                using (FileStream openFile = File.OpenRead(file))
+                using (FileStream createFile = new FileStream(file.Replace(".gz", string.Empty), FileMode.OpenOrCreate))
+                using (GZipStream gZip = new GZipStream(openFile, CompressionMode.Decompress))
                 {
-                    CommandLine.WriteLine("No files found to unzip!", ConsoleColor.Yellow);
-                    return;
+                    gZip.CopyTo(createFile);
                 }
+            });
 
-                CommandLine.WriteLine($"Unzipping {files.Length.ToString("N0")} files...", ConsoleColor.DarkGray);
-                _totalTasks = files.Length;
-                _tasks.AddRange(files.Select(file => Task.Run(() => DecompressFile(file, keep))));
-                await Task.WhenAll(_tasks);
-
-                CommandLine.WriteLine($"Successfully unzipped {files.Length.ToString("N0")} files in {_sw.Elapsed}.", ConsoleColor.Green);
-            }, sourceArg, keepOpt);
+            CommandLine.WriteLine($"Successfully unzipped {files.Length:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
         }
 
         private void DecompressFile(string path, bool keep)

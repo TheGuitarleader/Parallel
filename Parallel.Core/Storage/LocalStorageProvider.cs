@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
+using ZstdSharp;
 
 namespace Parallel.Core.Storage
 {
@@ -58,8 +59,8 @@ namespace Parallel.Core.Storage
         {
             await using FileStream openStream = File.OpenRead(file.RemotePath);
             await using FileStream createStream = File.Create(file.LocalPath);
-            await using GZipStream gzipStream = new GZipStream(openStream, CompressionMode.Decompress);
-            await gzipStream.CopyToAsync(createStream, ct);
+            await using ZstdStream zstdStream = new ZstdStream(openStream, ZstdStreamMode.Decompress);
+            await zstdStream.CopyToAsync(createStream, ct);
         }
 
         /// <inheritdoc />
@@ -109,8 +110,8 @@ namespace Parallel.Core.Storage
             await CreateDirectoryAsync(await GetDirectoryName(file.RemotePath));
             await using FileStream openStream = File.OpenRead(file.LocalPath);
             await using FileStream createStream = File.Create(file.RemotePath);
-            await using GZipStream gzipStream = new GZipStream(createStream, CompressionLevel.SmallestSize);
-            await openStream.CopyToAsync(gzipStream, ct);
+            await using ZstdStream zstdStream = new ZstdStream(createStream, ZstdStreamMode.Compress);
+            await openStream.CopyToAsync(zstdStream, ct);
 
             File.SetAttributes(file.RemotePath, File.GetAttributes(file.RemotePath) | FileAttributes.ReadOnly);
             return createStream.Length;
