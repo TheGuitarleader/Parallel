@@ -134,7 +134,7 @@ namespace Parallel.Cli.Commands
 
             CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for file changes in {path}...", ConsoleColor.DarkGray);
             FileScanner scanner = new FileScanner(syncManager);
-            SystemFile[] files = await scanner.GetFileChangesAsync(path, ignoredFolders, force);
+            LocalFile[] files = await scanner.GetFileChangesAsync(path, ignoredFolders, force);
             int successFiles = files.Length;
             if (successFiles == 0)
             {

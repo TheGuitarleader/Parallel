@@ -18,7 +18,7 @@ namespace Parallel.Core.Storage
     /// <summary>
     /// Represents the wrapper for S3 compatible object storage.
     /// </summary>
-    public class S3StorageProvider : IStorageProvider
+    public class S3StorageProvider// : IStorageProvider
     {
         private readonly AmazonS3Client _client;
         private readonly string _bucket;
@@ -94,13 +94,13 @@ namespace Parallel.Core.Storage
             return Task.FromResult(index >= 0 ? path[..index] : string.Empty);
         }
 
-        public async Task<SystemFile?> GetFileAsync(string path)
+        public async Task<LocalFile?> GetFileAsync(string path)
         {
             try
             {
                 if (!await ExistsAsync(path)) return null;
                 GetObjectMetadataResponse metadata = await _client.GetObjectMetadataAsync(_bucket, path);
-                return new SystemFile(path)
+                return new LocalFile(path)
                 {
                     RemoteSize = metadata.ContentLength
                 };

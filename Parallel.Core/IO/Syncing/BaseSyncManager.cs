@@ -48,12 +48,12 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public async Task<bool> ConnectAsync()
         {
-            Log.Debug($"[{LocalVault.Id}] Connecting...");
+            Log.Debug("[{LocalVaultId}] Connecting...", LocalVault.Id);
             string root = PathBuilder.GetRootDirectory(LocalVault);
             if (!await StorageProvider.ExistsAsync(root))
             {
                 await StorageProvider.CreateDirectoryAsync(root);
-                Log.Debug($"Created root directory: {root}");
+                Log.Debug("Created root directory: {Root}", root);
             }
 
             if (!await StorageProvider.ExistsAsync(PathBuilder.GetConfigurationFile(LocalVault)))
@@ -62,16 +62,16 @@ namespace Parallel.Core.IO.Syncing
                 RemoteVault.IgnoreDirectories.Add(PathBuilder.GetRootDirectory(LocalVault));
                 RemoteVault.Save(TempConfigFile);
 
-                Log.Debug($"Created config file: {TempConfigFile}");
+                Log.Debug("Created config file: {TempConfigFile}", TempConfigFile);
             }
             else
             {
-                await StorageProvider.DownloadFileAsync(PathBuilder.GetConfigurationFile(LocalVault), TempConfigFile);
+                await StorageProvider.DownloadFileAsync(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault));
                 RemoteVaultConfig? config = RemoteVaultConfig.Load(TempConfigFile);
                 if (config == null) return false;
                 RemoteVault = config;
                 LocalVault.Name = config.Name;
-                Log.Debug($"Downloaded file: {TempConfigFile}");
+                Log.Debug("Downloaded file: {TempConfigFile}", TempConfigFile);
             }
 
             if (!await StorageProvider.ExistsAsync(PathBuilder.GetDatabaseFile(LocalVault)))
@@ -80,42 +80,42 @@ namespace Parallel.Core.IO.Syncing
                 Database = new SqliteContext(TempDbFile);
                 await Database.InitializeAsync();
 
-                Log.Debug($"Create db file: {TempDbFile}");
+                Log.Debug("Create db file: {TempDbFile}", TempDbFile);
             }
             else
             {
                 string remoteDbFile = PathBuilder.GetDatabaseFile(LocalVault);
-                await StorageProvider.CloneFileAsync(remoteDbFile, remoteDbFile + ".old");
-                await StorageProvider.DownloadFileAsync(remoteDbFile, TempDbFile);
+                //await StorageProvider.CloneFileAsync(remoteDbFile, remoteDbFile + ".old");
+                await StorageProvider.DownloadFileAsync(TempDbFile, remoteDbFile);
                 Database = new SqliteContext(TempDbFile);
 
-                Log.Debug($"Downloaded file: {TempDbFile}");
+                Log.Debug("Downloaded file: {TempDbFile}", TempDbFile);
             }
 
-            Log.Information($"[{LocalVault.Id}] Connected");
+            Log.Information("[{LocalVaultId}] Connected", LocalVault.Id);
             return true;
         }
 
         /// <inheritdoc />
         public async Task DisconnectAsync()
         {
-            Log.Debug($"[{LocalVault.Id}] Disconnecting...");
+            Log.Debug("[{LocalVaultId}] Disconnecting...", LocalVault.Id);
             RemoteVault.Save(TempConfigFile);
 
             await StorageProvider.UploadFileAsync(TempConfigFile, PathBuilder.GetConfigurationFile(LocalVault), true);
             await StorageProvider.UploadFileAsync(TempDbFile, PathBuilder.GetDatabaseFile(LocalVault), true);
 
             StorageProvider?.Dispose();
-            Log.Information($"[{LocalVault.Id}] Disconnected");
+            Log.Information("[{LocalVaultId}] Disconnected", LocalVault.Id);
         }
 
         /// <inheritdoc />
-        public abstract Task<int> BackupFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress, bool overwrite);
+        public abstract Task<int> BackupFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress, bool overwrite);
 
         /// <inheritdoc />
-        public abstract Task<int> RestoreFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress);
+        public abstract Task<int> RestoreFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress);
 
         /// <inheritdoc />
-        public abstract Task<int> PruneFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress);
+        public abstract Task<int> PruneFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress);
     }
 }

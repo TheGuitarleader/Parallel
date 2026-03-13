@@ -1,15 +1,14 @@
 // Copyright 2026 Kyle Ebbinga
 
 using Microsoft.AspNetCore.SignalR;
-using Parallel.Service;
 
 namespace Parallel.Service.Services
 {
-    public class MessageHub : Hub
+    public class SignalRHub : Hub
     {
-        private readonly ILogger<MessageHub> _logger;
+        private readonly ILogger<SignalRHub> _logger;
 
-        public MessageHub(ILogger<MessageHub> logger)
+        public SignalRHub(ILogger<SignalRHub> logger)
         {
             _logger = logger;
         }

@@ -13,6 +13,7 @@ using Newtonsoft.Json.Serialization;
 using Parallel.Service.Extensions.Logging;
 using Parallel.Service.Utils;
 using Serilog;
+using Serilog.Events;
 
 namespace Parallel.Service
 {
@@ -26,10 +27,13 @@ namespace Parallel.Service
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
             // Add Logging services
-            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().WriteTo.File(LogFile).CreateLogger();
+            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().WriteTo.Async(a => a.File(
+                Path.Combine(PathBuilder.TempDirectory, "Logs", "server-.log"),
+                rollingInterval: RollingInterval.Day,
+                restrictedToMinimumLevel: LogEventLevel.Warning)).CreateLogger();
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog();
-            //builder.Logging.AddSignalR();
+            builder.Logging.AddSignalR();
 
             AssemblyName assembly = Assembly.GetExecutingAssembly().GetName();
             Log.Information($"{assembly.Name} v{assembly.Version}");
@@ -60,7 +64,7 @@ namespace Parallel.Service
                 });
             });
 
-            builder.Services.AddSignalR().AddHubOptions<MessageHub>(options =>
+            builder.Services.AddSignalR().AddHubOptions<SignalRHub>(options =>
             {
                 options.EnableDetailedErrors = true;
             });
@@ -77,7 +81,7 @@ namespace Parallel.Service
             app.UseRouting();
             app.UseCors();
             app.MapControllers();
-            app.MapHub<MessageHub>("/hub");
+            app.MapHub<SignalRHub>("/hub");
             await app.RunAsync();
         }
     }

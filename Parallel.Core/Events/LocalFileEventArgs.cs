@@ -9,11 +9,11 @@ namespace Parallel.Core.Events
 {
     public class LocalFileEventArgs : EventArgs
     {
-        public SystemFile SystemFile { get; }
+        public LocalFile LocalFile { get; }
 
         public LocalFileEventArgs(string file)
         {
-            SystemFile = new SystemFile(file);
+            LocalFile = new LocalFile(file);
         }
     }
 }

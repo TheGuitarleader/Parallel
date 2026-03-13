@@ -38,37 +38,37 @@ namespace Parallel.Core.IO.Scanning
         /// <param name="ignoreFolders"></param>
         /// <param name="force"></param>
         /// <returns>A list of files that have changed since the last backup.</returns>
-        public async Task<SystemFile[]> GetFileChangesAsync(string path, string[] ignoreFolders, bool force)
+        public async Task<LocalFile[]> GetFileChangesAsync(string path, string[] ignoreFolders, bool force)
         {
-            if (!Directory.Exists(path)) return Array.Empty<SystemFile>();
+            if (!Directory.Exists(path)) return Array.Empty<LocalFile>();
 
             ConcurrentBag<string> scannedFiles = new();
-            ConcurrentBag<SystemFile> changedFiles = new();
+            ConcurrentBag<LocalFile> changedFiles = new();
 
             HashSet<string> localFiles = FileScanner.GetFiles(path, ignoreFolders, ".").ToHashSet();
-            IEnumerable<SystemFile> remoteFiles = _db is null ? [] : await _db.GetLatestFilesAsync(path, DateTime.UtcNow.AddHours(1), false);
+            IEnumerable<LocalFile> remoteFiles = _db is null ? [] : await _db.GetLatestFilesAsync(path, DateTime.UtcNow.AddHours(1), false);
             System.Threading.Tasks.Parallel.ForEach(remoteFiles, ParallelConfig.Options, (remoteFile) =>
             {
-                if (File.Exists(remoteFile.LocalPath))
+                if (File.Exists(remoteFile.Fullname))
                 {
-                    SystemFile localFile = new SystemFile(remoteFile.LocalPath);
-                    if (IsIgnored(localFile.LocalPath, ignoreFolders))
+                    LocalFile localFile = new LocalFile(remoteFile.Fullname);
+                    if (IsIgnored(localFile.Fullname, ignoreFolders))
                     {
-                        Log.Debug($"Ignored -> {localFile.LocalPath}");
+                        Log.Debug($"Ignored -> {localFile.Fullname}");
                         localFile.Deleted = true;
                         changedFiles.Add(localFile);
                     }
                     else if (HasChanged(localFile, remoteFile) || force)
                     {
-                        Log.Debug($"Changed -> {localFile.LocalPath}");
+                        Log.Debug($"Changed -> {localFile.Fullname}");
                         changedFiles.Add(localFile);
                     }
 
-                    scannedFiles.Add(localFile.LocalPath);
+                    scannedFiles.Add(localFile.Fullname);
                 }
                 else
                 {
-                    Log.Debug($"Deleted -> {remoteFile.LocalPath}");
+                    Log.Debug($"Deleted -> {remoteFile.Fullname}");
                     remoteFile.Deleted = true;
                     changedFiles.Add(remoteFile);
                 }
@@ -80,7 +80,7 @@ namespace Parallel.Core.IO.Scanning
             {
                 if (IsIgnored(filePath, ignoreFolders)) return;
                 Log.Debug($"Created -> {filePath}");
-                changedFiles.Add(new SystemFile(filePath));
+                changedFiles.Add(new LocalFile(filePath));
             });
 
             Log.Information($"Found {changedFiles.Count:N0} changes in '{path}'");
@@ -93,11 +93,11 @@ namespace Parallel.Core.IO.Scanning
         /// <param name="source">The source file to compare.</param>
         /// <param name="target">The target file to compare to.</param>
         /// <returns>True is success, otherwise false.</returns>
-        public static bool HasChanged(SystemFile source, SystemFile? target)
+        public static bool HasChanged(LocalFile source, LocalFile? target)
         {
             if (target is null || source.LastWrite.TotalMilliseconds <= target.LastWrite.TotalMilliseconds) return false;
             if (!source.TryGenerateCheckSum()) return false;
-            return source.CheckSum != target.CheckSum;
+            return source.LocalCheckSum != target.LocalCheckSum;
         }
 
         /// <summary>
@@ -259,22 +259,21 @@ namespace Parallel.Core.IO.Scanning
         /// Scans a directory for duplicate files with the same name and size.
         /// </summary>
         /// <param name="path"></param>
-        /// <returns>A <see cref="KeyValuePair{TKey,TValue}"/> array of duplicate files, in order of most duplicate entries, where the key refers to the filename, and the values are an array of <see cref="SystemFile"/>s in order of oldest to newest.</returns>
-        public static Dictionary<string, SystemFile[]> GetDuplicateFiles(string path)
+        /// <returns>A <see cref="KeyValuePair{TKey,TValue}"/> array of duplicate files, in order of most duplicate entries, where the key refers to the filename, and the values are an array of <see cref="LocalFile"/>s in order of oldest to newest.</returns>
+        public static Dictionary<string, LocalFile[]> GetDuplicateFiles(string path)
         {
-            ConcurrentDictionary<string, List<SystemFile>> dict = new();
+            ConcurrentDictionary<string, List<LocalFile>> dict = new();
             IEnumerable<string> files = GetFiles(path, "*");
             System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, file =>
             {
-                SystemFile entry = new(file);
+                LocalFile entry = new(file);
                 dict.AddOrUpdate(entry.Name, _ => [entry], (k, v) =>
                 {
                     lock (v)
                     {
-                        SystemFile? key = v.FirstOrDefault();
+                        LocalFile? key = v.FirstOrDefault();
                         if (entry.LocalSize.Equals(key?.LocalSize))
                         {
-                            Log.Debug($"{entry.LocalPath} : {key?.LocalPath}");
                             v.Add(entry);
                         }
                     }
@@ -324,12 +323,9 @@ namespace Parallel.Core.IO.Scanning
                 if (entry.EndsWith('/'))
                 {
                     string[] folders = path.Split('\\');
-                    foreach (string dir in folders)
+                    if (folders.Any(dir => dir.Equals(entry.Remove(entry.Length - 1, 1), StringComparison.CurrentCultureIgnoreCase)))
                     {
-                        if (dir.ToLower() == entry.Remove(entry.Length - 1, 1).ToLower())
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
 

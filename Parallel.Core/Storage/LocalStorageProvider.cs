@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
+using Parallel.Core.Utils;
 using ZstdSharp;
 
 namespace Parallel.Core.Storage
@@ -12,7 +13,7 @@ namespace Parallel.Core.Storage
     /// <summary>
     /// Represents the wrapper for a default dotnet file system.
     /// </summary>
-    public class LocalStorageProvider : IStorageProvider
+    public class LocalStorageProvider// : IStorageProvider
     {
         private readonly LocalVaultConfig _vaultConfig;
 
@@ -75,18 +76,18 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc/>
-        public Task<SystemFile?> GetFileAsync(string path)
+        public Task<LocalFile?> GetFileAsync(string path)
         {
-            if (!File.Exists(path)) return Task.FromResult<SystemFile?>(null);
+            if (!File.Exists(path)) return Task.FromResult<LocalFile?>(null);
 
             FileInfo fi = new(path);
-            SystemFile file = new SystemFile(path)
+            LocalFile file = new LocalFile(path)
             {
                 Name = fi.Name,
                 RemoteSize = fi.Length
             };
 
-            return Task.FromResult<SystemFile?>(file);
+            return Task.FromResult<LocalFile?>(file);
         }
 
         /// <inheritdoc />
@@ -106,13 +107,18 @@ namespace Parallel.Core.Storage
             }
 
             await CreateDirectoryAsync(await GetDirectoryName(destination));
-            await using FileStream openStream = File.OpenRead(source);
+            
+            long totalBytes = 0;
             await using FileStream createStream = File.Create(destination);
-            await using ZstdStream zstdStream = new ZstdStream(createStream, ZstdStreamMode.Compress);
-            await openStream.CopyToAsync(zstdStream, ct);
+            await using StreamProgress countingStream = new StreamProgress(createStream, b => totalBytes = b);
+            await using FileStream openStream = File.OpenRead(source);
+            await using (ZstdStream zstdStream = new(countingStream, ZstdStreamMode.Compress))
+            {
+                await openStream.CopyToAsync(zstdStream, ct);
+            }
 
             File.SetAttributes(destination, File.GetAttributes(destination) | FileAttributes.ReadOnly);
-            return createStream.Length;
+            return totalBytes;
         }
     }
 }

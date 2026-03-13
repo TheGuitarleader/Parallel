@@ -36,18 +36,29 @@ namespace Parallel.Cli
             RootCommand rootCommand = new("Parallel file manager - Easily back up and synchronize massive amounts of files, save system states, and free up drive space.");
             IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(Command).IsAssignableFrom(t) && !t.IsAbstract);
             foreach (Type type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);
-            await rootCommand.InvokeAsync(args);
 
-            // Clean successful logs
-            await Log.CloseAndFlushAsync();
-            if (EventTracker.Errors.Count > 0)
+            try
             {
-                string logDir = Path.Combine(PathBuilder.TempDirectory, "Logs");
-                if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
-                await File.WriteAllTextAsync(Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.json"), JsonConvert.SerializeObject(EventTracker, Formatting.Indented));
+                await rootCommand.InvokeAsync(args);
             }
-
-            Settings.Save();
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                throw;
+            }
+            finally
+            {
+                // Clean successful logs
+                await Log.CloseAndFlushAsync();
+                if (!EventTracker.Errors.IsEmpty)
+                {
+                    string logDir = Path.Combine(PathBuilder.TempDirectory, "Logs");
+                    if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
+                    await File.WriteAllTextAsync(Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.json"), JsonConvert.SerializeObject(EventTracker, Formatting.Indented));
+                }
+                
+                Settings.Save();
+            }
         }
     }
 }

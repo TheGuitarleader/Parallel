@@ -41,7 +41,7 @@ namespace Parallel.Core.Security
         /// </summary>
         /// <param name="input"></param>
         /// <param name="output"></param>
-        /// <param name="systemFile"></param>
+        /// <param name="LocalFile"></param>
         /// <param name="masterKey"></param>
         /// <returns></returns>
         public static void EncryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, string salt, string iv)
@@ -65,7 +65,7 @@ namespace Parallel.Core.Security
         /// </summary>
         /// <param name="input"></param>
         /// <param name="output"></param>
-        /// <param name="systemFile"></param>
+        /// <param name="LocalFile"></param>
         /// <param name="masterKey"></param>
         public static void DecryptStream(Stream input, Stream output, string masterKey, UnixTime timestamp, string salt, string iv)
         {

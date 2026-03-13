@@ -65,9 +65,9 @@ namespace Parallel.Core.Database
         /// </summary>
         /// <param name="file"></param>
         /// <returns>True if successful, false otherwise</returns>
-        Task<bool> AddFileAsync(SystemFile file);
+        Task<bool> AddFileAsync(LocalFile file);
 
-        Task RemoveFileAsync(SystemFile file);
+        Task RemoveFileAsync(LocalFile file);
 
         /// <summary>
         /// Gets a list of files by newest revision.
@@ -75,7 +75,7 @@ namespace Parallel.Core.Database
         /// <param name="path"></param>
         /// <param name="timestamp"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp);
+        Task<IReadOnlyList<LocalFile>> GetLatestFilesAsync(string path, DateTime timestamp);
 
         /// <summary>
         /// Gets a list of files by newest revision.
@@ -84,7 +84,7 @@ namespace Parallel.Core.Database
         /// <param name="timestamp"></param>
         /// <param name="deleted"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted);
+        Task<IReadOnlyList<LocalFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted);
 
         /// <summary>
         /// Gets a list of files.
@@ -93,14 +93,14 @@ namespace Parallel.Core.Database
         /// <param name="timestamp"></param>
         /// <param name="deleted"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<SystemFile>> GetFilesAsync(string path, DateTime timestamp, bool deleted);
+        Task<IReadOnlyList<LocalFile>> GetFilesAsync(string path, DateTime timestamp, bool deleted);
 
         /// <summary>
         /// Gets a specific file.
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        Task<SystemFile?> GetFileAsync(string path);
+        Task<LocalFile?> GetFileAsync(string path);
 
         Task<long> GetLocalSizeAsync();
         Task<long> GetRemoteSizeAsync();
@@ -118,7 +118,7 @@ namespace Parallel.Core.Database
         /// Gets a list of files in a directory in ascending order. If multiple files exist, those will be in order of most recent.
         /// </summary>
         /// <param name="path"></param>
-        Task<IReadOnlyList<SystemFile>> ListFilesAsync(string path);
+        Task<IReadOnlyList<LocalFile>> ListFilesAsync(string path);
 
         #endregion
 
@@ -132,7 +132,7 @@ namespace Parallel.Core.Database
         /// <param name="type"></param>
         /// <param name="file"></param>
         /// <returns>True if successful, false otherwise</returns>
-        Task<bool> AddHistoryAsync(HistoryType type, SystemFile file);
+        Task<bool> AddHistoryAsync(HistoryType type, LocalFile file);
 
         Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, int limit);
 

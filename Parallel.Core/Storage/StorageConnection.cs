@@ -39,9 +39,9 @@ namespace Parallel.Core.Storage
         {
             return vaultConfig.Credentials.Service switch
             {
-                FileService.Local => new LocalStorageProvider(vaultConfig),
+                //FileService.Local => new LocalStorageProvider(vaultConfig),
                 FileService.Remote => new SshStorageProvider(vaultConfig),
-                FileService.Cloud => new S3StorageProvider(vaultConfig),
+                //FileService.Cloud => new S3StorageProvider(vaultConfig),
                 _ => throw new ArgumentOutOfRangeException()
             };
         }

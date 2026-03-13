@@ -7,7 +7,7 @@ namespace Parallel.Service.Utils
 {
     public class ClientProgressReporter : IProgressReporter
     {
-        public void Report(ProgressOperation operation, SystemFile file)
+        public void Report(ProgressOperation operation, LocalFile file)
         {
             throw new NotImplementedException();
         }
@@ -17,7 +17,7 @@ namespace Parallel.Service.Utils
             throw new NotImplementedException();
         }
 
-        public void Failed(SystemFile file, string reason)
+        public void Failed(LocalFile file, string reason)
         {
             throw new NotImplementedException();
         }

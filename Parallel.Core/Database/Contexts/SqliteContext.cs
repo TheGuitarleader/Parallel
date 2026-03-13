@@ -26,36 +26,36 @@ namespace Parallel.Core.Database.Contexts
         public async Task InitializeAsync()
         {
             Log.Information("Creating index database...");
-            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`name` TEXT NOT NULL, `localpath` TEXT NOT NULL, `parentdir` TEXT NOT NULL, `lastwrite` LONG INTEGER NOT NULL, `lastupdate` LONG INTEGER NOT NULL, `localsize` LONG INTEGER NOT NULL, `remotesize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readonly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `checksum` TEXT, UNIQUE (localpath, checksum));");
-            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `path` TEXT NOT NULL, `type` INTEGER NOT NULL, PRIMARY KEY(`timestamp`));");
+            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `objects` (`name` TEXT NOT NULL, `fullname` TEXT NOT NULL, `parentDir` TEXT NOT NULL, `lastWrite` LONG INTEGER NOT NULL, `lastUpdate` LONG INTEGER NOT NULL, `localSize` LONG INTEGER NOT NULL, `remoteSize` LONG INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT Other CHECK(`type` IN ('Document', 'Photo', 'Music', 'Video', 'Other')), `hidden` INTEGER NOT NULL DEFAULT 0, `readOnly` INTEGER NOT NULL DEFAULT 0, `deleted` INTEGER NOT NULL DEFAULT 0, `localCheckSum` TEXT, `remoteCheckSum` TEXT, UNIQUE (fullname, localCheckSum));");
+            await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `history` (`timestamp` LONG INTEGER NOT NULL, `fullname` TEXT NOT NULL, `type` INTEGER NOT NULL, PRIMARY KEY(`timestamp`));");
             await _semaphore.ExecuteAsync("CREATE TABLE IF NOT EXISTS `snapshots` (`timestamp` LONG INTEGER NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`timestamp`));");
-            await _semaphore.ExecuteAsync("CREATE INDEX idx_objects_path_update ON objects(localpath, lastupdate DESC, deleted);");
+            await _semaphore.ExecuteAsync("CREATE INDEX idx_objects_path_update ON objects(fullname, lastupdate DESC, deleted);");
         }
 
         #region Objects
 
         /// <exception cref="ArgumentNullException"></exception>
         /// <inheritdoc />
-        public async Task<bool> AddFileAsync(SystemFile file)
+        public async Task<bool> AddFileAsync(LocalFile file)
         {
-            if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
-            if (!file.TryGenerateCheckSum()) throw new ArgumentNullException(nameof(file.CheckSum));
+            if (string.IsNullOrEmpty(file.Fullname)) throw new ArgumentNullException(nameof(file.Fullname));
+            if (!file.TryGenerateCheckSum()) throw new ArgumentNullException(nameof(file.LocalCheckSum));
 
-            string sql = @"INSERT OR REPLACE INTO objects (name, localpath, parentdir, lastwrite, lastupdate, LocalSize, RemoteSize, type, hidden, readonly, deleted, checksum) VALUES (@Name, @LocalPath, @ParentDirectory, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @CheckSum);";
-            return await _semaphore.ExecuteAsync(sql, new { file.Name, file.LocalPath, file.ParentDirectory, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.CheckSum }) > 0;
+            string sql = "INSERT OR REPLACE INTO objects (name, fullname, parentDir, lastWrite, lastUpdate, localSize, remoteSize, type, hidden, readOnly, deleted, localCheckSum, remoteCheckSum) VALUES (@Name, @Fullname, @ParentDirectory, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @LocalCheckSum, @RemoteCheckSum);";
+            return await _semaphore.ExecuteAsync(sql, new { file.Name, file.Fullname, file.ParentDirectory, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.LocalCheckSum, file.RemoteCheckSum }) > 0;
         }
 
         /// <inheritdoc />
-        public async Task RemoveFileAsync(SystemFile file)
+        public async Task RemoveFileAsync(LocalFile file)
         {
-            string sql = $"DELETE FROM objects WHERE localpath = @LocalPath AND checksum = @CheckSum;";
-            await _semaphore.ExecuteAsync(sql, new { file.LocalPath, file.CheckSum });
+            string sql = $"DELETE FROM objects WHERE fullname = @Fullname AND checksum = @LocalCheckSum;";
+            await _semaphore.ExecuteAsync(sql, new { file.Fullname, file.LocalCheckSum });
         }
 
         /// <inheritdoc />
         public async Task<long> GetLocalSizeAsync()
         {
-            string sql = "SELECT COALESCE(SUM(f.localsize), 0) FROM objects f JOIN (SELECT localpath, MAX(lastupdate) AS max_lastupdate FROM objects WHERE deleted = 0 GROUP BY localpath) latest ON f.localpath = latest.localpath AND f.lastupdate = latest.max_lastupdate;";
+            string sql = "SELECT COALESCE(SUM(f.localsize), 0) FROM objects f JOIN (SELECT fullname, MAX(lastupdate) AS max_lastupdate FROM objects WHERE deleted = 0 GROUP BY fullname) latest ON f.fullname = latest.fullname AND f.lastupdate = latest.max_lastupdate;";
             return await _semaphore.QuerySingleAsync<long>(sql);
         }
 
@@ -83,37 +83,37 @@ namespace Parallel.Core.Database.Contexts
         /// <inheritdoc />
         public async Task<long> GetTotalFilesAsync(bool deleted)
         {
-            string sql = $"SELECT COUNT(DISTINCT localpath) FROM objects WHERE deleted = @deleted;";
+            string sql = $"SELECT COUNT(DISTINCT fullname) FROM objects WHERE deleted = @deleted;";
             return await _semaphore.QuerySingleAsync<long>(sql, new { deleted });
         }
 
         /// <inheritdoc />
-        public async Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp)
+        public async Task<IReadOnlyList<LocalFile>> GetLatestFilesAsync(string path, DateTime timestamp)
         {
-            string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time ORDER BY lastwrite DESC) GROUP BY localpath;";
-            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds });
+            string sql = "SELECT * FROM (SELECT * FROM objects WHERE fullname LIKE @Path AND lastupdate <= @Time ORDER BY lastwrite DESC) GROUP BY fullname;";
+            return await _semaphore.QueryAsync<LocalFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds });
         }
 
         /// <inheritdoc />
-        public async Task<IReadOnlyList<SystemFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted)
+        public async Task<IReadOnlyList<LocalFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted)
         {
-            Log.Debug($"SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE '{path}%' AND lastupdate <= {new UnixTime(timestamp).TotalMilliseconds} AND deleted = {deleted} ORDER BY lastwrite DESC) GROUP BY localpath;");
-            string sql = "SELECT * FROM (SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastwrite DESC) GROUP BY localpath;";
-            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
+            Log.Debug($"SELECT * FROM (SELECT * FROM objects WHERE fullname LIKE '{path}%' AND lastupdate <= {new UnixTime(timestamp).TotalMilliseconds} AND deleted = {deleted} ORDER BY lastwrite DESC) GROUP BY fullname;");
+            string sql = "SELECT * FROM (SELECT * FROM objects WHERE fullname LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastwrite DESC) GROUP BY fullname;";
+            return await _semaphore.QueryAsync<LocalFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
         }
 
         /// <inheritdoc />
-        public async Task<IReadOnlyList<SystemFile>> GetFilesAsync(string path, DateTime timestamp, bool deleted)
+        public async Task<IReadOnlyList<LocalFile>> GetFilesAsync(string path, DateTime timestamp, bool deleted)
         {
-            string sql = "SELECT * FROM objects WHERE localpath LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastupdate ASC";
-            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
+            string sql = "SELECT * FROM objects WHERE fullname LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastupdate ASC";
+            return await _semaphore.QueryAsync<LocalFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
         }
 
         /// <inheritdoc />
-        public async Task<SystemFile?> GetFileAsync(string path)
+        public async Task<LocalFile?> GetFileAsync(string path)
         {
-            string sql = $"SELECT (name, localpath, remotepath, lastwrite, lastupdate, localsize, remotesize, type, hidden, readonly, deleted, checksum) FROM objects WHERE localpath LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
-            return await _semaphore.QuerySingleAsync<SystemFile>(sql, new { path });
+            string sql = $"SELECT (name, fullname, remotepath, lastwrite, lastupdate, localsize, remotesize, type, hidden, readonly, deleted, checksum) FROM objects WHERE fullname LIKE \"%@path%\" OR remotepath LIKE \"%@path%\" ORDER BY lastupdate DESC";
+            return await _semaphore.QuerySingleAsync<LocalFile>(sql, new { path });
         }
 
         /// <inheritdoc />
@@ -124,10 +124,10 @@ namespace Parallel.Core.Database.Contexts
         }
 
         /// <inheritdoc />
-        public async Task<IReadOnlyList<SystemFile>> ListFilesAsync(string path)
+        public async Task<IReadOnlyList<LocalFile>> ListFilesAsync(string path)
         {
-            string sql = "SELECT * FROM objects WHERE parentdir = @Path ORDER BY localpath ASC, lastupdate DESC";
-            return await _semaphore.QueryAsync<SystemFile>(sql, new { Path = path });
+            string sql = "SELECT * FROM objects WHERE parentdir = @Path ORDER BY fullname ASC, lastupdate DESC";
+            return await _semaphore.QueryAsync<LocalFile>(sql, new { Path = path });
         }
 
         #endregion
@@ -135,26 +135,26 @@ namespace Parallel.Core.Database.Contexts
         #region History
 
         /// <inheritdoc />
-        public async Task<bool> AddHistoryAsync(HistoryType type, SystemFile file)
+        public async Task<bool> AddHistoryAsync(HistoryType type, LocalFile file)
         {
-            if (string.IsNullOrEmpty(file.LocalPath)) throw new ArgumentNullException(nameof(file.LocalPath));
+            if (string.IsNullOrEmpty(file.Fullname)) throw new ArgumentNullException(nameof(file.Fullname));
 
-            string sql = @"INSERT OR REPLACE INTO history (timestamp, path, type) VALUES(@Timestamp, @Path, @Type);";
-            return await _semaphore.ExecuteAsync(sql, new { Timestamp = file.LastUpdate.TotalMilliseconds, Path = file.LocalPath, Type = type }) > 0;
+            string sql = @"INSERT OR REPLACE INTO history (timestamp, fullname, type) VALUES(@Timestamp, @Fullname, @Type);";
+            return await _semaphore.ExecuteAsync(sql, new { Timestamp = file.LastUpdate.TotalMilliseconds, file.Fullname, Type = type }) > 0;
         }
 
         /// <inheritdoc />
         public async Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, int limit)
         {
-            string sql = "SELECT * FROM history WHERE path LIKE @Path ORDER BY timestamp DESC LIMIT @limit;";
-            return await _semaphore.QueryAsync<HistoryEvent>(sql, new { Path = $"%{path}%", limit });
+            string sql = "SELECT * FROM history WHERE path LIKE @Fullname ORDER BY timestamp DESC LIMIT @limit;";
+            return await _semaphore.QueryAsync<HistoryEvent>(sql, new { Fullname = $"%{path}%", limit });
         }
 
         /// <inheritdoc />
         public async Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType type, int limit)
         {
-            string sql = "SELECT * FROM history WHERE path LIKE @Path AND type = @type ORDER BY timestamp DESC LIMIT @limit;";
-            return await _semaphore.QueryAsync<HistoryEvent>(sql, new { Path = $"%{path}%", type, limit });
+            string sql = "SELECT * FROM history WHERE path LIKE @Fullname AND type = @type ORDER BY timestamp DESC LIMIT @limit;";
+            return await _semaphore.QueryAsync<HistoryEvent>(sql, new { Fullname = $"%{path}%", type, limit });
         }
 
         #endregion

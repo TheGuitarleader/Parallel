@@ -22,12 +22,12 @@ namespace Parallel.Cli.Utils
             _total = totalFiles;
         }
 
-        public void Report(ProgressOperation operation, SystemFile file)
+        public void Report(ProgressOperation operation, LocalFile file)
         {
             Interlocked.Increment(ref _current);
 
             int percent = _current * 100 / _total;
-            CommandLine.WriteLine($"[{_localVault.Id}] ({percent}%) {operation}: {file.LocalPath} {(string.IsNullOrEmpty(file.CheckSum) ? "" : $"({file.CheckSum[..8]}...)")}");
+            CommandLine.WriteLine($"[{_localVault.Id}] ({percent}%) {operation}: {file.Fullname} {(string.IsNullOrEmpty(file.LocalCheckSum) ? "" : $"({file.LocalCheckSum[..8]}...)")}");
             //CommandLine.ProgressBar(_current++, _total, _sw.Elapsed);
         }
 
@@ -38,9 +38,9 @@ namespace Parallel.Cli.Utils
         }
 
         /// <inheritdoc />
-        public void Failed(SystemFile file, string message)
+        public void Failed(LocalFile file, string message)
         {
-            CommandLine.WriteLine(_localVault, $"Operation failed: '{file.LocalPath}' (Reason: {message})", ConsoleColor.Red);
+            CommandLine.WriteLine(_localVault, $"Operation failed: '{file.Fullname}' (Reason: {message})", ConsoleColor.Red);
         }
     }
 }
