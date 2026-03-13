@@ -100,7 +100,7 @@ namespace Parallel.Core.IO.Syncing
                     if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
 
                     Log.Debug($"Restoring file: {file.Fullname} ({file.RemoteCheckSum})");
-                    await StorageProvider.DownloadFileAsync(file.Fullname, PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!), ct);
+                    await StorageProvider.DownloadFileAsync(file, PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!), ct);
                     if (!File.Exists(file.Fullname))
                     {
                         progress.Failed(file, "File not found!");

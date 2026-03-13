@@ -121,7 +121,7 @@ namespace Parallel.Cli.Commands
             string remoteSnapshotFile = PathBuilder.Combine(PathBuilder.GetSnapshotsDirectory(syncManager.LocalVault), snapshotFilename);
             
             await File.WriteAllTextAsync(localSnapshotFile, JsonConvert.SerializeObject(snapshots));
-            await syncManager.StorageProvider.UploadFileAsync(localSnapshotFile, remoteSnapshotFile, false);
+            await syncManager.StorageProvider.UploadFileAsync(new LocalFile(localSnapshotFile), remoteSnapshotFile);
             if (!await (syncManager.Database?.AddSnapshotAsync(snapshotFilename) ?? Task.FromResult(false))) Log.Error($"Failed to add snapshot: {snapshotFilename}");
             CommandLine.WriteLine(syncManager.LocalVault, $"Successfully created snapshot: {snapshotFilename}", ConsoleColor.Green);
             await syncManager.DisconnectAsync();

@@ -82,11 +82,11 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc />
-        public async Task DownloadFileAsync(string sourcePath, string remotePath, CancellationToken ct = default)
+        public async Task DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default)
         {
             InsureConnection();
             await using SftpFileStream openStream = _client.OpenRead(remotePath);
-            await using FileStream createStream = File.Create(sourcePath);
+            await using FileStream createStream = File.Create(file.Fullname);
             await using ZstdStream zstdStream = new(openStream, ZstdStreamMode.Decompress);
             await zstdStream.CopyToAsync(createStream, ct);
         }
@@ -124,40 +124,14 @@ namespace Parallel.Core.Storage
             _client.RenameFile(source, target);
         }
 
-        /// <inheritdoc />
-        public async Task<long> UploadFileAsync(string sourcePath, string remotePath, bool overwrite = false, CancellationToken ct = default)
-        {
-            InsureConnection();
-            if (await ExistsAsync(remotePath))
-            {
-                if (!overwrite) return Convert.ToInt64((await GetFileAsync(remotePath))?.RemoteSize);
-                _client.ChangePermissions(remotePath, 644);
-            }
-
-            await CreateDirectoryAsync(await GetDirectoryName(remotePath));
-            
-            long totalBytes = 0;
-            await using SftpFileStream createStream = _client.Create(remotePath);
-            await using HashStream hashStream = new(createStream, b => totalBytes = b);
-            await using FileStream openStream = File.OpenRead(sourcePath);
-            await using (ZstdStream zstdStream = new(hashStream, ZstdStreamMode.Compress))
-            {
-                await openStream.CopyToAsync(zstdStream, ct);
-            }
-
-            _client.ChangePermissions(remotePath, 444);
-            string remoteChecksum = Convert.ToHexStringLower(hashStream.GetHash());
-            Log.Information("Uploaded file: {SourcePath} ({RemoteChecksum})", sourcePath, remoteChecksum);
-            return totalBytes;
-        }
-
         public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)
         {
             InsureConnection();
             if (await ExistsAsync(remotePath))
             {
+                Log.Debug("Skipping file: {RemotePath}", remotePath);
                 if (!overwrite) return await GetFileAsync(remotePath);
-                _client.ChangePermissions(remotePath, 644);
+                //_client.ChangePermissions(remotePath, 644);
             }
 
             string tempPath = remotePath + ".tmp";
@@ -172,6 +146,7 @@ namespace Parallel.Core.Storage
                 await openStream.CopyToAsync(zstdStream, ct);
             }
 
+            if (overwrite && await ExistsAsync(remotePath)) await _client.DeleteFileAsync(remotePath, ct);
             await _client.RenameFileAsync(tempPath, remotePath, ct);
             _client.ChangePermissions(remotePath, 444);
             

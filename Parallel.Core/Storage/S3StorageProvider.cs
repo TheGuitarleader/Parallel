@@ -18,7 +18,7 @@ namespace Parallel.Core.Storage
     /// <summary>
     /// Represents the wrapper for S3 compatible object storage.
     /// </summary>
-    public class S3StorageProvider// : IStorageProvider
+    public class S3StorageProvider : IStorageProvider
     {
         private readonly AmazonS3Client _client;
         private readonly string _bucket;
@@ -67,10 +67,10 @@ namespace Parallel.Core.Storage
             await _client.DeleteObjectAsync(_bucket, path);
         }
 
-        public async Task DownloadFileAsync(string source, string destination, CancellationToken ct = default)
+        public async Task DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default)
         {
-            using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, source, ct);
-            await using FileStream createStream = File.Create(destination);
+            using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, remotePath, ct);
+            await using FileStream createStream = File.Create(file.Fullname);
             await using ZstdStream zstdStream = new ZstdStream(response.ResponseStream, ZstdStreamMode.Decompress);
             await zstdStream.CopyToAsync(createStream, ct);
         }
@@ -94,16 +94,13 @@ namespace Parallel.Core.Storage
             return Task.FromResult(index >= 0 ? path[..index] : string.Empty);
         }
 
-        public async Task<LocalFile?> GetFileAsync(string path)
+        public async Task<RemoteFile?> GetFileAsync(string path)
         {
             try
             {
                 if (!await ExistsAsync(path)) return null;
                 GetObjectMetadataResponse metadata = await _client.GetObjectMetadataAsync(_bucket, path);
-                return new LocalFile(path)
-                {
-                    RemoteSize = metadata.ContentLength
-                };
+                return new RemoteFile(Path.GetFileName(path), path, metadata.LastModified.GetValueOrDefault(), metadata.ContentLength, metadata.ChecksumSHA256);
             }
             catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -147,6 +144,41 @@ namespace Parallel.Core.Storage
             await pipe.Writer.CompleteAsync();
             await uploadTask.ConfigureAwait(false);
             return totalBytes;
+        }
+        
+        public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)
+        {
+            if (!overwrite && await ExistsAsync(remotePath))
+            {
+                Log.Debug("Skipping file: {RemotePath}", remotePath);
+                return await GetFileAsync(remotePath);
+            }
+
+            Pipe pipe = new Pipe();
+            TransferUtility utility = new TransferUtility(_client);
+            Task uploadTask = utility.UploadAsync(new TransferUtilityUploadRequest
+            {
+                BucketName = _bucket,
+                Key = remotePath,
+                InputStream = pipe.Reader.AsStream(),
+                ContentType = "application/octet-stream"
+            }, ct);
+
+            long totalBytes = 0;
+            await using HashStream hashStream = new HashStream(pipe.Writer.AsStream(), b => totalBytes = b);
+            await using FileStream openStream = File.OpenRead(file.Fullname);
+            await using (ZstdStream zstdStream = new(hashStream, ZstdStreamMode.Compress))
+            {
+                await openStream.CopyToAsync(zstdStream, ct);
+                await zstdStream.FlushAsync(ct);
+            }
+
+            await pipe.Writer.CompleteAsync();
+            await uploadTask.ConfigureAwait(false);
+
+            string remoteChecksum = Convert.ToHexStringLower(hashStream.GetHash());
+            Log.Information("Uploaded file: {SourcePath} ({RemoteChecksum})", file.Fullname, remoteChecksum);
+            return new RemoteFile(file.Name, remotePath, file.LastWrite, file.LastUpdate, totalBytes, remoteChecksum);
         }
     }
 }
