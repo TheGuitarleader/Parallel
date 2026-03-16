@@ -71,7 +71,7 @@ namespace Parallel.Core.Storage
         {
             using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, remotePath, ct);
             await using FileStream createStream = File.Create(file.Fullname);
-            await using ZstdStream zstdStream = new ZstdStream(response.ResponseStream, ZstdStreamMode.Decompress);
+            await using ZstdStream zstdStream = new(response.ResponseStream, ZstdStreamMode.Decompress);
             await zstdStream.CopyToAsync(createStream, ct);
         }
 
@@ -111,39 +111,6 @@ namespace Parallel.Core.Storage
         public Task CloneFileAsync(string source, string target)
         {
             throw new NotImplementedException();
-        }
-
-        public async Task<long> UploadFileAsync(string source, string destination, bool overwrite, CancellationToken ct = default)
-        {
-            if (!overwrite && await ExistsAsync(destination))
-            {
-                Log.Debug($"Skipping file: {destination}");
-                return Convert.ToInt64((await GetFileAsync(destination))?.RemoteSize);
-            }
-
-            await CreateDirectoryAsync(await GetDirectoryName(destination));
-            Pipe pipe = new Pipe();
-            TransferUtility utility = new TransferUtility(_client);
-            Task uploadTask = utility.UploadAsync(new TransferUtilityUploadRequest
-            {
-                BucketName = _bucket,
-                Key = destination,
-                InputStream = pipe.Reader.AsStream(),
-                ContentType = "application/octet-stream"
-            }, ct);
-
-            long totalBytes = 0;
-            await using StreamProgress countingStream = new StreamProgress(pipe.Writer.AsStream(), b => totalBytes = b);
-            await using FileStream openStream = File.OpenRead(source);
-            await using (ZstdStream zstdStream = new(countingStream, ZstdStreamMode.Compress))
-            {
-                await openStream.CopyToAsync(zstdStream, ct);
-                await zstdStream.FlushAsync(ct);
-            }
-
-            await pipe.Writer.CompleteAsync();
-            await uploadTask.ConfigureAwait(false);
-            return totalBytes;
         }
         
         public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)

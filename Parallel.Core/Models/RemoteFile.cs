@@ -36,14 +36,14 @@ namespace Parallel.Core.Models
         /// </summary>
         public string? RemoteCheckSum { get; set; }
 
-        public RemoteFile(string name, string fullname, DateTime lastWriteTime, long remoteSize, string remoteChecksum)
+        public RemoteFile(string name, string fullname, DateTime lastWriteTime, long remoteSize, string? remoteChecksum)
         {
             Name = name;
             Fullname = fullname;
             LastWrite = new UnixTime(lastWriteTime);
             LastUpdate = UnixTime.Now;
             RemoteSize = remoteSize;
-            RemoteCheckSum = remoteChecksum.Contains("tmp") ? null : remoteChecksum;
+            RemoteCheckSum = remoteChecksum?.Contains("tmp") == true ? null : remoteChecksum;
         }
 
         public RemoteFile(string name, string fullname, UnixTime lastWrite, UnixTime lastUpdate, long remoteSize, string remoteChecksum)

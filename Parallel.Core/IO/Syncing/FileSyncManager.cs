@@ -57,6 +57,7 @@ namespace Parallel.Core.IO.Syncing
                     else
                     {
                         Log.Warning("File failed during upload: {Fullname}", file.Fullname);
+                        cleanupFiles.Add(file);
                     }
                 }
                 catch (Exception ex)
