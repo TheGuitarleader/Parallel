@@ -22,10 +22,10 @@ namespace Parallel.Core.Utils
             _reportBytes = reportBytes;
         }
         
-        public byte[] GetHash()
+        public string GetHashHexString()
         {
             _sha.TransformFinalBlock([], 0, 0);
-            return _sha.Hash!;
+            return Convert.ToHexStringLower(_sha.Hash!);
         }
 
         public override void Write(byte[] buffer, int offset, int count)

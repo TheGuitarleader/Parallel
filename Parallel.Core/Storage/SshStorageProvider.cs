@@ -116,21 +116,13 @@ namespace Parallel.Core.Storage
             return new RemoteFile(sf.Name, sf.FullName, sf.LastWriteTimeUtc, sf.Length, sf.Name);
         }
 
-        /// <inheritdoc />
-        public async Task CloneFileAsync(string source, string target)
-        {
-            InsureConnection();
-            if (await ExistsAsync(source)) _client.ChangePermissions(source, 644);
-            _client.RenameFile(source, target);
-        }
-
         public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)
         {
             InsureConnection();
-            if (await ExistsAsync(remotePath))
+            if (!overwrite && await ExistsAsync(remotePath))
             {
                 Log.Debug("Skipping file: {RemotePath}", remotePath);
-                if (!overwrite) return await GetFileAsync(remotePath);
+                return await GetFileAsync(remotePath);
                 //_client.ChangePermissions(remotePath, 644);
             }
 
@@ -140,17 +132,18 @@ namespace Parallel.Core.Storage
             long totalBytes = 0;
             await using SftpFileStream createStream = _client.Create(tempPath);
             await using HashStream hashStream = new(createStream, b => totalBytes = b);
-            await using FileStream openStream = File.OpenRead(file.Fullname);
+            await using FileStream openStream = new(file.Fullname, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
             await using (ZstdStream zstdStream = new(hashStream, ZstdStreamMode.Compress))
             {
-                await openStream.CopyToAsync(zstdStream, ct);
+                await openStream.CopyToAsync(zstdStream, 81920, ct);
+                await zstdStream.FlushAsync(ct);
             }
 
             if (overwrite && await ExistsAsync(remotePath)) await _client.DeleteFileAsync(remotePath, ct);
             await _client.RenameFileAsync(tempPath, remotePath, ct);
             _client.ChangePermissions(remotePath, 444);
             
-            string remoteChecksum = Convert.ToHexStringLower(hashStream.GetHash());
+            string remoteChecksum = hashStream.GetHashHexString();
             Log.Information("Uploaded file: {SourcePath} ({RemoteChecksum})", file.Fullname, remoteChecksum);
             return new RemoteFile(file.Name, file.Fullname, file.LastWrite, file.LastUpdate, totalBytes, remoteChecksum);
         }

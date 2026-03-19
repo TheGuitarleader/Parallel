@@ -96,7 +96,7 @@ namespace Parallel.Core.IO.Scanning
         public static bool HasChanged(LocalFile source, LocalFile? target)
         {
             if (target is null || source.LastWrite.TotalMilliseconds <= target.LastWrite.TotalMilliseconds) return false;
-            if (!source.TryGenerateCheckSum()) return false;
+            if (!source.TryGenerateCheckSums()) return false;
             return source.LocalCheckSum != target.LocalCheckSum;
         }
 

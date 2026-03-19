@@ -39,7 +39,7 @@ namespace Parallel.Core.Database.Contexts
         public async Task<bool> AddFileAsync(LocalFile file)
         {
             if (string.IsNullOrEmpty(file.Fullname)) throw new ArgumentNullException(nameof(file.Fullname));
-            if (!file.TryGenerateCheckSum()) throw new ArgumentNullException(nameof(file.LocalCheckSum));
+            if (!file.TryGenerateCheckSums()) throw new ArgumentNullException(nameof(file.LocalCheckSum));
 
             string sql = "INSERT OR REPLACE INTO objects (name, fullname, parentDir, lastWrite, lastUpdate, localSize, remoteSize, type, hidden, readOnly, deleted, localCheckSum, remoteCheckSum) VALUES (@Name, @Fullname, @ParentDirectory, @LastWrite, @LastUpdate, @LocalSize, @RemoteSize, @Type, @Hidden, @ReadOnly, @Deleted, @LocalCheckSum, @RemoteCheckSum);";
             return await _semaphore.ExecuteAsync(sql, new { file.Name, file.Fullname, file.ParentDirectory, LastWrite = file.LastWrite.TotalMilliseconds, LastUpdate = UnixTime.Now.TotalMilliseconds, file.LocalSize, file.RemoteSize, Type = file.Type.ToString(), file.Hidden, file.ReadOnly, file.Deleted, file.LocalCheckSum, file.RemoteCheckSum }) > 0;
@@ -62,7 +62,7 @@ namespace Parallel.Core.Database.Contexts
         /// <inheritdoc />
         public async Task<long> GetRemoteSizeAsync()
         {
-            string sql = "SELECT COALESCE(SUM(f.remotesize), 0) FROM objects f JOIN (SELECT checksum, MAX(lastupdate) AS max_lastupdate FROM objects GROUP BY checksum) latest ON f.checksum = latest.checksum AND f.lastupdate = latest.max_lastupdate;";
+            string sql = "SELECT COALESCE(SUM(f.remotesize), 0) FROM objects f JOIN (SELECT checksum, MAX(lastupdate) AS max_lastupdate FROM objects GROUP BY localchecksum) latest ON f.localchecksum = latest.localchecksum AND f.lastupdate = latest.max_lastupdate;";
             return await _semaphore.QuerySingleAsync<long>(sql);
         }
 

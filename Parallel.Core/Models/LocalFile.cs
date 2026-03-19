@@ -168,7 +168,7 @@ namespace Parallel.Core.Models
             return results.All(b => b != null && (bool)b);
         }
 
-        public bool TryGenerateCheckSum()
+        public bool TryGenerateCheckSums()
         {
             if (!string.IsNullOrEmpty(LocalCheckSum)) return true;
             if (!string.IsNullOrEmpty(RemoteCheckSum)) return true;
@@ -185,13 +185,13 @@ namespace Parallel.Core.Models
                     fs.CopyTo(zstd);
                 }
 
-                RemoteCheckSum = Convert.ToHexStringLower(hs.GetHash());
+                RemoteCheckSum = hs.GetHashHexString();
 
                 fs.Position = 0;
                 LocalCheckSum = Convert.ToHexStringLower(sha256.ComputeHash(fs));
-
-                Log.Debug("LocalChecksum: {LocalChecksum}", LocalCheckSum);
-                Log.Debug("RemoteCheckSum: {RemoteCheckSum}", RemoteCheckSum);
+                
+                //Log.Debug("LocalCheckSum:  {LocalCheckSum}", LocalCheckSum);
+                //Log.Debug("RemoteCheckSum: {RemoteCheckSum}", RemoteCheckSum);
 
                 return !string.IsNullOrEmpty(LocalCheckSum) && !string.IsNullOrEmpty(RemoteCheckSum);
             }

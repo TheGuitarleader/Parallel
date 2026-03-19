@@ -99,8 +99,9 @@ namespace Parallel.Core.Storage
             try
             {
                 if (!await ExistsAsync(path)) return null;
+                string checksum256 = Path.GetFileName(path);
                 GetObjectMetadataResponse metadata = await _client.GetObjectMetadataAsync(_bucket, path);
-                return new RemoteFile(Path.GetFileName(path), path, metadata.LastModified.GetValueOrDefault(), metadata.ContentLength, metadata.ChecksumSHA256);
+                return new RemoteFile(checksum256, path, metadata.LastModified.GetValueOrDefault(), metadata.ContentLength, checksum256);
             }
             catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -108,11 +109,6 @@ namespace Parallel.Core.Storage
             }
         }
 
-        public Task CloneFileAsync(string source, string target)
-        {
-            throw new NotImplementedException();
-        }
-        
         public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)
         {
             if (!overwrite && await ExistsAsync(remotePath))
@@ -132,7 +128,7 @@ namespace Parallel.Core.Storage
             }, ct);
 
             long totalBytes = 0;
-            await using HashStream hashStream = new HashStream(pipe.Writer.AsStream(), b => totalBytes = b);
+            await using HashStream hashStream = new(pipe.Writer.AsStream(), b => totalBytes = b);
             await using FileStream openStream = File.OpenRead(file.Fullname);
             await using (ZstdStream zstdStream = new(hashStream, ZstdStreamMode.Compress))
             {
@@ -143,7 +139,7 @@ namespace Parallel.Core.Storage
             await pipe.Writer.CompleteAsync();
             await uploadTask.ConfigureAwait(false);
 
-            string remoteChecksum = Convert.ToHexStringLower(hashStream.GetHash());
+            string remoteChecksum = hashStream.GetHashHexString();
             Log.Information("Uploaded file: {SourcePath} ({RemoteChecksum})", file.Fullname, remoteChecksum);
             return new RemoteFile(file.Name, remotePath, file.LastWrite, file.LastUpdate, totalBytes, remoteChecksum);
         }
