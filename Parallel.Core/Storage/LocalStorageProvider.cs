@@ -55,12 +55,15 @@ namespace Parallel.Core.Storage
             return Task.CompletedTask;
         }
 
-        public async Task DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default)
+        public async Task<RemoteFile?> DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default)
         {
+            if(!File.Exists(remotePath)) return null;
+            
             await using FileStream openStream = File.OpenRead(remotePath);
             await using FileStream createStream = File.Create(file.Fullname);
             await using ZstdStream zstdStream = new ZstdStream(openStream, ZstdStreamMode.Decompress);
             await zstdStream.CopyToAsync(createStream, ct);
+            return await GetFileAsync(remotePath);
         }
 
         /// <inheritdoc />

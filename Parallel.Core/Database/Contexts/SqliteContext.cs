@@ -62,7 +62,7 @@ namespace Parallel.Core.Database.Contexts
         /// <inheritdoc />
         public async Task<long> GetRemoteSizeAsync()
         {
-            string sql = "SELECT COALESCE(SUM(f.remotesize), 0) FROM objects f JOIN (SELECT checksum, MAX(lastupdate) AS max_lastupdate FROM objects GROUP BY localchecksum) latest ON f.localchecksum = latest.localchecksum AND f.lastupdate = latest.max_lastupdate;";
+            string sql = "SELECT COALESCE(SUM(f.remotesize), 0) FROM objects f JOIN (SELECT localchecksum, MAX(lastupdate) AS max_lastupdate FROM objects GROUP BY localchecksum) latest ON f.localchecksum = latest.localchecksum AND f.lastupdate = latest.max_lastupdate;";
             return await _semaphore.QuerySingleAsync<long>(sql);
         }
 
@@ -138,7 +138,6 @@ namespace Parallel.Core.Database.Contexts
         public async Task<bool> AddHistoryAsync(HistoryType type, LocalFile file)
         {
             if (string.IsNullOrEmpty(file.Fullname)) throw new ArgumentNullException(nameof(file.Fullname));
-
             string sql = @"INSERT OR REPLACE INTO history (timestamp, fullname, type) VALUES(@Timestamp, @Fullname, @Type);";
             return await _semaphore.ExecuteAsync(sql, new { Timestamp = file.LastUpdate.TotalMilliseconds, file.Fullname, Type = type }) > 0;
         }

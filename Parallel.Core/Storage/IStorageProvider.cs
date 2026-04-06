@@ -37,7 +37,7 @@ namespace Parallel.Core.Storage
         /// <param name="file">The source path in the <see cref="IStorageProvider"/>.</param>
         /// <param name="remotePath">The destination path where to download the file to.</param>
         /// <param name="ct"></param>
-        Task DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default);
+        Task<RemoteFile?> DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default);
 
         /// <summary>
         /// Checks if a path exists on the associated storage provider.

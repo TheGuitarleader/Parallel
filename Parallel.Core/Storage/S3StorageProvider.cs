@@ -67,12 +67,15 @@ namespace Parallel.Core.Storage
             await _client.DeleteObjectAsync(_bucket, path);
         }
 
-        public async Task DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default)
+        public async Task<RemoteFile?> DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default)
         {
+            if(!await ExistsAsync(remotePath)) return null;
+            
             using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, remotePath, ct);
             await using FileStream createStream = File.Create(file.Fullname);
             await using ZstdStream zstdStream = new(response.ResponseStream, ZstdStreamMode.Decompress);
             await zstdStream.CopyToAsync(createStream, ct);
+            return await GetFileAsync(remotePath);
         }
 
         public async Task<bool> ExistsAsync(string path)

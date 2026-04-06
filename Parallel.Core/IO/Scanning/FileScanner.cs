@@ -210,7 +210,7 @@ namespace Parallel.Core.IO.Scanning
                 string current = pending.Pop();
                 if (IsIgnored(current, exempt))
                 {
-                    //Log.Debug($"Ignored -> {current}");
+                    Log.Debug($"Ignored -> {current}");
                     continue;
                 }
 
@@ -313,28 +313,29 @@ namespace Parallel.Core.IO.Scanning
         /// <returns>True if ignored, otherwise false.</returns>
         public static bool IsIgnored(string path, string[] exempt)
         {
+            string[] dirs = path.Split(Path.DirectorySeparatorChar);
+            string fileName = Path.GetFileName(path);
+            string extension = Path.GetExtension(path);
+            
             foreach (string entry in exempt)
             {
-                if (path.StartsWith(entry))
+                if (path.StartsWith(entry, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
 
                 if (entry.EndsWith('/'))
                 {
-                    string[] folders = path.Split('\\');
-                    if (folders.Any(dir => dir.Equals(entry.Remove(entry.Length - 1, 1), StringComparison.CurrentCultureIgnoreCase)))
-                    {
-                        return true;
-                    }
+                    string dirName = entry.TrimEnd('/');
+                    if (dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase))) return true;
                 }
-
-                if (entry.StartsWith('*'))
+                else if (entry.StartsWith("*"))
                 {
-                    if (path.EndsWith(entry.Replace("*", string.Empty)))
-                    {
-                        return true;
-                    }
+                    if (extension.Equals(entry.Substring(1), StringComparison.OrdinalIgnoreCase)) return true;
+                }
+                else
+                {
+                    if (fileName.Equals(entry, StringComparison.OrdinalIgnoreCase)) return true;
                 }
             }
 
