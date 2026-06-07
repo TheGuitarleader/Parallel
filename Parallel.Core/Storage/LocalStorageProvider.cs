@@ -59,11 +59,22 @@ namespace Parallel.Core.Storage
         {
             if(!File.Exists(remotePath)) return null;
             
+            long totalBytes = 0;
+            string remoteChecksum;
+            
             await using FileStream openStream = File.OpenRead(remotePath);
             await using FileStream createStream = File.Create(file.Fullname);
-            await using ZstdStream zstdStream = new ZstdStream(openStream, ZstdStreamMode.Decompress);
-            await zstdStream.CopyToAsync(createStream, ct);
-            return await GetFileAsync(remotePath);
+            await using (ZstdStream zstdStream = new(openStream, ZstdStreamMode.Decompress))
+            await using (HashStream hashStream = new(zstdStream, b => totalBytes = b))
+            {
+                await hashStream.CopyToAsync(createStream, ct);
+                await hashStream.FlushAsync(ct);
+                
+                remoteChecksum = hashStream.GetHashHexString();
+            }
+            
+            Log.Information("Downloaded file: {SourcePath} ({RemoteChecksum})", file.Fullname, remoteChecksum);
+            return new RemoteFile(file.Name, file.Fullname, file.LastWrite, file.LastUpdate, totalBytes, remoteChecksum);
         }
 
         /// <inheritdoc />

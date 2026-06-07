@@ -22,7 +22,7 @@ namespace Parallel.Service.Services
                 await Task.Delay(GetTimeUntilNextDay(), stoppingToken);
                 await Log.CloseAndFlushAsync();
 
-                if (_logEventTracker.Warnings.IsEmpty && _logEventTracker.Errors.IsEmpty) continue;
+                if (_logEventTracker.ErrorCount <= 0) continue;
 
                 string logDir = Path.Combine(PathBuilder.ProgramData, "Logs");
                 if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);

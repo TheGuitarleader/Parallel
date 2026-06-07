@@ -38,7 +38,7 @@ namespace Parallel.Cli.Commands
             this.AddOption(_limitOpt);
             this.SetHandler(async (path, config, limit) =>
             {
-                await DisplayHistoryAsync(path, config, limit);
+                await DisplayHistoryAsync(null, path, config, limit);
             }, _sourceOpt, _configOpt, _limitOpt);
 
             _archiveCmd.AddOption(_sourceOpt);
@@ -90,7 +90,7 @@ namespace Parallel.Cli.Commands
             }, _sourceOpt, _configOpt, _limitOpt);
         }
 
-        private async Task DisplayHistoryAsync(string path, string config, int limit)
+        private async Task DisplayHistoryAsync(HistoryType? type, string path, string config, int limit)
         {
             if (limit == 0) limit = _limit;
             LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault(v => v.Enabled);
@@ -108,37 +108,21 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            IReadOnlyList<HistoryEvent> historyList = await (syncManager.Database?.GetHistoryAsync(path, limit) ?? Task.FromResult<IReadOnlyList<HistoryEvent>>([]));
+            Task<IReadOnlyList<HistoryEvent>>? historyTask = type == null ? syncManager.Database?.GetHistoryAsync(path) : syncManager.Database?.GetHistoryAsync(path, type);
+            IReadOnlyList<HistoryEvent> historyList = await (historyTask ?? Task.FromResult<IReadOnlyList<HistoryEvent>>([]));
             if (!historyList.Any()) CommandLine.WriteLine("No history was found!", ConsoleColor.Yellow);
-            foreach (HistoryEvent historyEvent in historyList)
-            {
-                CommandLine.WriteLine($"[{Formatter.FromDateTime(historyEvent.CreatedAt.ToLocalTime())}] {historyEvent.Type + ":",-9} {historyEvent.Fullname}", ConsoleColor.White);
-            }
-        }
 
-        private async Task DisplayHistoryAsync(HistoryType type, string path, string config, int limit)
-        {
-            if (limit == 0) limit = _limit;
-            LocalVaultConfig? vault = ParallelConfig.Load().Vaults.FirstOrDefault(v => v.Enabled);
-            if (!string.IsNullOrEmpty(config)) vault = ParallelConfig.GetVault(config);
-            if (vault == null)
+            int display = Math.Min(limit, historyList.Count);
+            for (int i = 0; i < display; i++)
             {
-                CommandLine.WriteLine($"No vault was found!", ConsoleColor.Yellow);
-                return;
-            }
-
-            ISyncManager? syncManager = SyncManager.CreateNew(vault);
-            if (syncManager == null || !await syncManager.ConnectAsync())
-            {
-                CommandLine.WriteLine(vault, $"Failed to connect to vault!", ConsoleColor.Red);
-                return;
-            }
-
-            IReadOnlyList<HistoryEvent> historyList = await (syncManager.Database?.GetHistoryAsync(path, type, limit) ?? Task.FromResult<IReadOnlyList<HistoryEvent>>([]));
-            if (!historyList.Any()) CommandLine.WriteLine("No history was found!", ConsoleColor.Yellow);
-            foreach (HistoryEvent historyEvent in historyList)
-            {
+                HistoryEvent historyEvent = historyList[i];
                 CommandLine.WriteLine($"[{Formatter.FromDateTime(historyEvent.CreatedAt.ToLocalTime())}] {historyEvent.Type}: {historyEvent.Fullname}");
+            }
+
+            int remaining = historyList.Count - display;
+            if (remaining > 0)
+            {
+                CommandLine.WriteLine($"{remaining:N0} entr{(remaining == 1 ? "y" : "ies")} remaining...", ConsoleColor.DarkGray);
             }
         }
     }

@@ -86,18 +86,21 @@ namespace Parallel.Core.Models
         /// </summary>
         public LocalFile(string path)
         {
+            Name = Path.GetFileName(path);
+            Fullname = Path.GetFullPath(path);
+            LastUpdate = UnixTime.Now;
+            ParentDirectory = Path.GetDirectoryName(path);
+            Type = FileTypes.GetFileCategory(Path.GetExtension(path));
+            Deleted = !File.Exists(path);
+
+            if (!File.Exists(path)) return;
+            
             FileInfo fileInfo = new FileInfo(path);
-            Name = fileInfo.Name;
-            Fullname = fileInfo.FullName;
             LocalSize = fileInfo.Length;
             RemoteSize = fileInfo.Length;
             LastWrite = new UnixTime(fileInfo.LastWriteTimeUtc);
-            LastUpdate = UnixTime.Now;
-            ParentDirectory = Path.GetDirectoryName(path);
-            Type = FileTypes.GetFileCategory(Path.GetExtension(fileInfo.Name));
             Hidden = fileInfo.Attributes.HasFlag(FileAttributes.Hidden);
             ReadOnly = fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly);
-            Deleted = !fileInfo.Exists;
         }
 
         /// <summary>

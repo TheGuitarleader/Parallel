@@ -12,26 +12,26 @@ namespace Parallel.Core.Utils
     public class LogEventTracker : ILogEventSink
     {
         /// <summary>
-        /// Gets an array of warning log messages.
+        /// Gets an array of log messages.
         /// </summary>
-        public readonly ConcurrentBag<string> Warnings = new ConcurrentBag<string>();
-
+        public readonly ConcurrentBag<string> Logs = new ConcurrentBag<string>();
+        
         /// <summary>
-        /// Gets an array of error log messages.
+        /// Gets the number of errors in this log.
         /// </summary>
-        public readonly ConcurrentBag<string> Errors = new ConcurrentBag<string>();
+        public int ErrorCount = 0;
 
         /// <inheritdoc />
         public void Emit(LogEvent logEvent)
         {
-            if (logEvent.Level == LogEventLevel.Warning)
-            {
-                Warnings.Add($"[{logEvent.Timestamp.LocalDateTime:HH:mm:ss.fff}]: {logEvent.RenderMessage()}");
-            }
-
             if (logEvent.Level >= LogEventLevel.Error)
             {
-                Errors.Add(logEvent.Exception != null ? $"[{logEvent.Timestamp.LocalDateTime:HH:mm:ss.fff}]: {logEvent.Exception}" : $"[{logEvent.Timestamp.LocalDateTime:HH:mm:ss.fff}]: {logEvent.RenderMessage()}");
+                Logs.Add($"[{logEvent.Timestamp.LocalDateTime:HH:mm:ss.fff} {logEvent.Level.ToString()[..4].ToUpperInvariant()}]: {logEvent.Exception}");
+                Interlocked.Increment(ref ErrorCount);
+            }
+            else
+            {
+                Logs.Add($"[{logEvent.Timestamp.LocalDateTime:HH:mm:ss.fff} {logEvent.Level.ToString()[..4].ToUpperInvariant()}]: {logEvent.RenderMessage()}");
             }
         }
     }

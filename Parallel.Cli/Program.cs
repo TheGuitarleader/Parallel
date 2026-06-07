@@ -50,11 +50,11 @@ namespace Parallel.Cli
             {
                 // Clean successful logs
                 await Log.CloseAndFlushAsync();
-                if (!EventTracker.Errors.IsEmpty)
+                if (EventTracker.ErrorCount > 0)
                 {
                     string logDir = Path.Combine(PathBuilder.TempDirectory, "Logs");
                     if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
-                    await File.WriteAllTextAsync(Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.json"), JsonConvert.SerializeObject(EventTracker, Formatting.Indented));
+                    await File.WriteAllLinesAsync(Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log"), EventTracker.Logs.Reverse());
                 }
                 
                 Settings.Save();

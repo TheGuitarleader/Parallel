@@ -134,9 +134,13 @@ namespace Parallel.Core.Database
         /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddHistoryAsync(HistoryType type, LocalFile file);
 
+        Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path);
+        
         Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, int limit);
 
-        Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType type, int limit);
+        Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType? type);
+        
+        Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType? type, int limit);
 
         #endregion
         

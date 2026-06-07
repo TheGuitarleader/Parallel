@@ -143,16 +143,30 @@ namespace Parallel.Core.Database.Contexts
         }
 
         /// <inheritdoc />
+        public async Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path)
+        {
+            string sql = "SELECT * FROM history WHERE fullname LIKE @Fullname ORDER BY timestamp DESC;";
+            return await _semaphore.QueryAsync<HistoryEvent>(sql, new { Fullname = $"%{path}%" });
+        }
+        
+        /// <inheritdoc />
         public async Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, int limit)
         {
-            string sql = "SELECT * FROM history WHERE path LIKE @Fullname ORDER BY timestamp DESC LIMIT @limit;";
+            string sql = "SELECT * FROM history WHERE fullname LIKE @Fullname ORDER BY timestamp DESC LIMIT @limit;";
             return await _semaphore.QueryAsync<HistoryEvent>(sql, new { Fullname = $"%{path}%", limit });
         }
 
         /// <inheritdoc />
-        public async Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType type, int limit)
+        public async Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType? type)
         {
-            string sql = "SELECT * FROM history WHERE path LIKE @Fullname AND type = @type ORDER BY timestamp DESC LIMIT @limit;";
+            string sql = "SELECT * FROM history WHERE fullname LIKE @Fullname AND type = @type ORDER BY timestamp DESC;";
+            return await _semaphore.QueryAsync<HistoryEvent>(sql, new { Fullname = $"%{path}%", type });
+        }
+        
+        /// <inheritdoc />
+        public async Task<IReadOnlyList<HistoryEvent>> GetHistoryAsync(string path, HistoryType? type, int limit)
+        {
+            string sql = "SELECT * FROM history WHERE fullname LIKE @Fullname AND type = @type ORDER BY timestamp DESC LIMIT @limit;";
             return await _semaphore.QueryAsync<HistoryEvent>(sql, new { Fullname = $"%{path}%", type, limit });
         }
 

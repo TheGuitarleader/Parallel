@@ -57,7 +57,7 @@ namespace Parallel.Core.IO.Syncing
                     else
                     {
                         Log.Warning("File failed during upload: {Fullname}", file.Fullname);
-                        cleanupFiles.Add(remotePath);
+                        cleanupFiles.Add(remotePath + ".tmp");
                     }
                 }
                 catch (Exception ex)
@@ -105,7 +105,10 @@ namespace Parallel.Core.IO.Syncing
 
                     Log.Debug($"Restoring file: {file.Fullname} ({file.RemoteCheckSum})");
                     RemoteFile? remoteFile = await StorageProvider.DownloadFileAsync(file, PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!), ct);
-                    if (remoteFile == null || file.RemoteCheckSum != remoteFile.RemoteCheckSum)
+                    
+                    Console.WriteLine($"{file.LocalCheckSum} | {file.RemoteCheckSum} | {remoteFile?.RemoteCheckSum}");
+                    
+                    if (remoteFile == null || file.LocalCheckSum != remoteFile.RemoteCheckSum)
                     {
                         progress.Failed(file, "File not found!");
                         cleanupFiles.Add(file.Fullname);

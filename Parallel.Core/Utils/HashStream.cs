@@ -10,6 +10,7 @@ namespace Parallel.Core.Utils
         private readonly Stream _inner;
         private readonly Action<long>? _reportBytes;
         private long _totalWrite = 0;
+        private long _totalRead = 0;
         
         public HashStream(Stream inner)
         {
@@ -26,6 +27,28 @@ namespace Parallel.Core.Utils
         {
             _sha.TransformFinalBlock([], 0, 0);
             return Convert.ToHexStringLower(_sha.Hash!);
+        }
+        
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            int bytesRead = _inner.Read(buffer, offset, count);
+            if (bytesRead <= 0) return bytesRead;
+            
+            _sha.TransformBlock(buffer, offset, bytesRead, null, 0);
+            _totalRead += bytesRead;
+            _reportBytes?.Invoke(_totalRead);
+            return bytesRead;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            int bytesRead = await _inner.ReadAsync(buffer, cancellationToken);
+            if (bytesRead <= 0) return bytesRead;
+            
+            _sha.TransformBlock(buffer.Span.Slice(0, bytesRead).ToArray(), 0, bytesRead, null, 0);
+            _totalRead += bytesRead;
+            _reportBytes?.Invoke(_totalRead);
+            return bytesRead;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -62,11 +85,6 @@ namespace Parallel.Core.Utils
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             return _inner.FlushAsync(cancellationToken);
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            return _inner.Read(buffer, offset, count);
         }
 
         public override long Seek(long offset, SeekOrigin origin)

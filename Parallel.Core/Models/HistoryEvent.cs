@@ -11,10 +11,10 @@ namespace Parallel.Core.Models
         public UnixTime CreatedAt { get; set; }
         public string Fullname { get; set; }
 
-        public HistoryEvent(long timestamp, string path, long type)
+        public HistoryEvent(long timestamp, string fullname, long type)
         {
             CreatedAt = UnixTime.FromMilliseconds(timestamp);
-            Fullname = path;
+            Fullname = fullname;
             Type = (HistoryType)type;
         }
     }
