@@ -2,7 +2,7 @@
 
 Parallel is built on respect—for users, contributors, and the systems we design. We expect all participants to uphold a collaborative, inclusive, and transparent environment.
 
-## 🌱 Our Pledge
+## Our Pledge
 
 In the interest of fostering an open and welcoming community, we pledge to:
 
@@ -11,7 +11,7 @@ In the interest of fostering an open and welcoming community, we pledge to:
 - Avoid personal attacks, trolling, or disruptive behavior.
 - Honor the modular, expressive spirit of the project.
 
-## 🚫 Unacceptable Behavior
+## Unacceptable Behavior
 
 Examples include:
 
@@ -20,10 +20,10 @@ Examples include:
 - Sharing private information without consent.
 - Sabotaging or intentionally breaking the project.
 
-## 🧭 Enforcement
+## Enforcement
 
 Violations may result in warnings, temporary bans, or permanent removal from the project. Enforcement decisions are made by project maintainers.
 
-## 🙌 Scope
+## Scope
 
 This Code of Conduct applies to all project spaces—GitHub issues, pull requests, discussions, and any other community interactions.
