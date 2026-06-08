@@ -27,7 +27,7 @@ namespace Parallel.Core.IO
             }
         }
 
-        public static string TempFile => Path.Combine(TempDirectory, DateTime.Now.ToString("MM-dd-yyyy hh-mm-ss") + ".tmp");
+        public static string TempFile => Path.Combine(TempDirectory, UnixTime.Now.TotalMilliseconds + ".tmp");
 
         /// <summary>
         /// Gets the corresponding directory for program data based on the <see cref="OSPlatform"/>.

@@ -67,7 +67,7 @@ namespace Parallel.Core.Database
         /// <returns>True if successful, false otherwise</returns>
         Task<bool> AddFileAsync(LocalFile file);
 
-        Task RemoveFileAsync(LocalFile file);
+        Task<bool> RemoveFileAsync(LocalFile file);
 
         /// <summary>
         /// Gets a list of files by newest revision.

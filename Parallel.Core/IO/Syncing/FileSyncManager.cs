@@ -149,9 +149,9 @@ namespace Parallel.Core.IO.Syncing
             {
                 try
                 {
-                    await (Database != null ? Database.RemoveFileAsync(file) : Task.CompletedTask);
+                    if (!await (Database?.RemoveFileAsync(file) ?? Task.FromResult(false))) return;
                     if (!await (Database?.AddHistoryAsync(HistoryType.Pruned, file) ?? Task.FromResult(false))) Log.Error("Failed to add history: {Fullname}", file.Fullname);
-                    await StorageProvider.DeleteFileAsync(PathBuilder.GetObjectPath(RemoteVault, file.LocalCheckSum!));
+                    await StorageProvider.DeleteFileAsync(PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!));
                     progress.Report(ProgressOperation.Pruned, file);
                 }
                 catch (Exception ex)

@@ -70,10 +70,12 @@ namespace Parallel.Service.Tasks
             while (true)
             {
                 if (!_queue.TryDequeue(out QueuedTask? candidate)) continue;
+                if (_tasks.IsEmpty) continue;
+                
                 QueuedTask next = _tasks.Values.OrderByDescending(t => t.Priority + (DateTime.UtcNow - t.EnqueuedAt).TotalSeconds * 0.1).First();
                 if (ReferenceEquals(candidate, next))
                 {
-                    _logger.LogDebug($"Starting task with key: '{candidate.Key}', remaining: {_queue.Count - 1}");
+                    _logger.LogDebug($"Starting task with key: '{candidate.Key}', remaining: {_queue.Count}");
                     _tasks.TryRemove(candidate.Key, out _);
                     return candidate.TaskFunc;
                 }

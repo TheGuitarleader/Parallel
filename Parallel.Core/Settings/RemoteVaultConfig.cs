@@ -42,7 +42,7 @@ namespace Parallel.Core.Settings
         public HashSet<string> IgnoreDirectories { get; } = CreateIgnoreDirectories();
 
         /// <summary>
-        /// A collection of deleted directories allowed to be pruned.
+        /// A collection of directories allowed to be pruned.
         /// <para>Recommended when using a cloud-based <see cref="FileService"/> to save on storage costs.</para>
         /// <para>Default: Empty</para>
         /// </summary>
@@ -82,6 +82,7 @@ namespace Parallel.Core.Settings
             {
                 list.Add("$RECYCLE.BIN/"); // For NTFS file systems
                 list.Add("*.lnk"); // Shortcuts to other paths
+                list.Add("desktop.ini");
             }
 
             // Ignore folders on Linux machines
