@@ -36,7 +36,7 @@ namespace Parallel.Cli
             RootCommand rootCommand = new("Parallel file manager - Easily back up and synchronize massive amounts of files, save system states, and free up drive space.");
             IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(Command).IsAssignableFrom(t) && !t.IsAbstract);
             foreach (Type type in types) rootCommand.AddCommand((Command)Activator.CreateInstance(type)!);
-            await File.WriteAllTextAsync(Path.Combine(PathBuilder.TempDirectory, "Command.md"), MarkdownGenerator.Generate(rootCommand));
+            //await File.WriteAllTextAsync(Path.Combine(PathBuilder.TempDirectory, "Command.md"), MarkdownGenerator.Generate(rootCommand));
 
             try
             {

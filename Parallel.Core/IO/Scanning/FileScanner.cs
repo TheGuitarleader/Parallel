@@ -96,8 +96,15 @@ namespace Parallel.Core.IO.Scanning
         public static bool HasChanged(LocalFile source, LocalFile? target)
         {
             if (target is null || source.LastWrite.TotalMilliseconds <= target.LastWrite.TotalMilliseconds) return false;
-            if (!source.TryGenerateCheckSums()) return false;
+            if (!source.TryGenerateCheckSums() || !target.TryGenerateCheckSums()) return false;
             return source.LocalCheckSum != target.LocalCheckSum;
+        }
+        
+        public static bool IsSameFile(LocalFile source, LocalFile? target)
+        {
+            if (target is null) return false;
+            if (!source.TryGenerateCheckSums() || !target.TryGenerateCheckSums()) return false;
+            return source.LocalCheckSum == target.LocalCheckSum;
         }
 
         /// <summary>
@@ -272,10 +279,7 @@ namespace Parallel.Core.IO.Scanning
                     lock (v)
                     {
                         LocalFile? key = v.FirstOrDefault();
-                        if (entry.LocalSize.Equals(key?.LocalSize))
-                        {
-                            v.Add(entry);
-                        }
+                        if (IsSameFile(entry, key)) v.Add(entry);
                     }
 
                     return v;
