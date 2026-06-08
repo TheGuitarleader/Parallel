@@ -29,4 +29,4 @@ ln -sf "$INSTALL_ROOT/$BIN_NAME" "$BIN_LINK"
 echo Cleaning up...
 rm -rf "$TMP_DIR"
 
-echo "Installation complete. You can now run Parallel from the command line."
+echo "Installation complete."
