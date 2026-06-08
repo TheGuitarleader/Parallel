@@ -22,9 +22,9 @@ namespace Parallel.Cli.Commands
         private readonly Option<string> _sourceOpt = new(["--path", "-p"], "The source path to restore.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
         private readonly Option<DateTime> _beforeOpt = new(["--before"], "Restores files before a certain timestamp.");
-        private readonly Option<string> _remapOpt = new(["--remap"], "The output directory remapping.");
-        private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces overwriting any files.");
-        private readonly Option<bool> _dryRunOpt = new(["--dry-run"], "Previews a command without executing it.");
+        private readonly Option<string> _remapOpt = new(["--remap"], "The new directory to map restored files to.");
+        private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces restoring, bypassing safe guards.");
+        private readonly Option<bool> _dryRunOpt = new(["--dry-run"], "Previews the command without executing it.");
 
         public RestoreCommand() : base("restore", "Restores files from the backup.")
         {

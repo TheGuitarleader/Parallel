@@ -46,10 +46,10 @@ namespace Parallel.Core.Database.Contexts
         }
 
         /// <inheritdoc />
-        public async Task RemoveFileAsync(LocalFile file)
+        public async Task<bool> RemoveFileAsync(LocalFile file)
         {
-            string sql = $"DELETE FROM objects WHERE fullname = @Fullname AND checksum = @LocalCheckSum;";
-            await _semaphore.ExecuteAsync(sql, new { file.Fullname, file.LocalCheckSum });
+            string sql = $"DELETE FROM objects WHERE fullname = @Fullname AND localCheckSum = @LocalCheckSum;";
+            return await _semaphore.ExecuteAsync(sql, new { file.Fullname, file.LocalCheckSum }) > 0;
         }
 
         /// <inheritdoc />

@@ -11,7 +11,7 @@ using Parallel.Core.Settings;
 
 namespace Parallel.Cli.Commands
 {
-    public class CheckCommand : Command
+    public class ValidateCommand : Command
     {
         private Stopwatch _sw = new Stopwatch();
 
@@ -19,7 +19,7 @@ namespace Parallel.Cli.Commands
         private readonly Option<string> _sourceOpt = new(["--path", "-p"], "The source path to back up.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
 
-        public CheckCommand() : base("check", "Syncs the system with the vaults.")
+        public ValidateCommand() : base("check", "Syncs the system with the vaults.")
         {
             this.AddOption(_sourceOpt);
             this.AddOption(_configOpt);
