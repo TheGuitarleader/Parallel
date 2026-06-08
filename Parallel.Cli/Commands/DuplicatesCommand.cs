@@ -37,8 +37,8 @@ namespace Parallel.Cli.Commands
                 lines.AddRange(paths.Select(value => $" - {value}"));
             }
 
-            CommandLine.WriteLine($"Opening editor...", ConsoleColor.DarkGray);
-            string fileName = Path.Combine(PathBuilder.TempDirectory, DateTime.Now.ToString("MM-dd-yyyy hh-mm-ss") + ".txt");
+            CommandLine.WriteLine($"Opening file...", ConsoleColor.DarkGray);
+            string fileName = PathBuilder.TempFile;
             await File.WriteAllLinesAsync(fileName, lines);
             CommandLine.OpenFile(fileName, false);
 

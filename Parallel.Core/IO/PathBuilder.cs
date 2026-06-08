@@ -27,6 +27,8 @@ namespace Parallel.Core.IO
             }
         }
 
+        public static string TempFile => Path.Combine(TempDirectory, DateTime.Now.ToString("MM-dd-yyyy hh-mm-ss") + ".tmp");
+
         /// <summary>
         /// Gets the corresponding directory for program data based on the <see cref="OSPlatform"/>.
         /// </summary>
@@ -182,18 +184,24 @@ namespace Parallel.Core.IO
             return Combine(GetObjectsDirectory(vaultConfig), hash.Substring(0, 2), hash.Substring(2, 2), hash);
         }
 
-        public static string ReplacePath(string fullPath, string sourceRoot, string outputRoot)
+        public static string ReplacePath(string fullPath, string sourceRoot, string? outputRoot)
         {
-            // Normalize to forward slashes
-            fullPath = fullPath.Replace('\\', '/');
-            sourceRoot = sourceRoot.Replace('\\', '/');
+            ArgumentNullException.ThrowIfNull(fullPath);
+            ArgumentNullException.ThrowIfNull(sourceRoot);
+            
+            if(string.IsNullOrEmpty(outputRoot)) return fullPath;
+            string Normalize(string p) => p.Replace('\\', '/').TrimEnd('/');
+            fullPath = Normalize(fullPath);
+            sourceRoot = Normalize(sourceRoot);
 
             if (!fullPath.StartsWith(sourceRoot, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("Path is outside source root");
+                throw new InvalidOperationException($"Path '{fullPath}' is outside source root '{sourceRoot}'");
             }
 
-            return outputRoot + fullPath.Substring(sourceRoot.Length);
+            string relative = fullPath.Substring(sourceRoot.Length);
+            if (relative.StartsWith("/")) relative = relative.Substring(1);
+            return Path.Combine(outputRoot, relative.Replace('/', Path.DirectorySeparatorChar));
         }
     }
 }

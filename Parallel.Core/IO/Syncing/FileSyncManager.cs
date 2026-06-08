@@ -105,9 +105,6 @@ namespace Parallel.Core.IO.Syncing
 
                     Log.Debug($"Restoring file: {file.Fullname} ({file.RemoteCheckSum})");
                     RemoteFile? remoteFile = await StorageProvider.DownloadFileAsync(file, PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!), ct);
-                    
-                    Console.WriteLine($"{file.LocalCheckSum} | {file.RemoteCheckSum} | {remoteFile?.RemoteCheckSum}");
-                    
                     if (remoteFile == null || file.LocalCheckSum != remoteFile.RemoteCheckSum)
                     {
                         progress.Failed(file, "File not found!");
