@@ -9,7 +9,7 @@
         <Nullable>enable</Nullable>
         <AssemblyName>Parallel.Core</AssemblyName>
         <AssemblyVersion>0.0.0.0</AssemblyVersion>
-        <Company>Kyle Ebbinga</Company>
+        <Company>Entex Interactive, LLC</Company>
         <Copyright>Copyright $(Company). All Rights Reserved.</Copyright>
         <FileVersion>$(AssemblyVersion)</FileVersion>
         <Version>$(VersionPrefix)$(AssemblyVersion)</Version>
