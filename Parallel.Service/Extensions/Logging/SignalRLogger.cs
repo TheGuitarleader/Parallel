@@ -13,9 +13,9 @@ namespace Parallel.Service.Extensions.Logging
         private readonly string _categoryName;
         private readonly IExternalScopeProvider _scopeProvider;
         private readonly IServiceProvider _services;
-        private IHubContext<MessageHub>? _hub;
+        private IHubContext<SignalRHub>? _hub;
 
-        private IHubContext<MessageHub>? Hub => _hub ??= _services.GetService<IHubContext<MessageHub>>();
+        private IHubContext<SignalRHub>? Hub => _hub ??= _services.GetService<IHubContext<SignalRHub>>();
 
         public SignalRLogger(string categoryName, IExternalScopeProvider scopeProvider, IServiceProvider services)
         {

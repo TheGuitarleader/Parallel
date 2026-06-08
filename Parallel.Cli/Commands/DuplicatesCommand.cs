@@ -25,8 +25,8 @@ namespace Parallel.Cli.Commands
         private async Task ScanForDuplicateFiles(string path)
         {
             CommandLine.WriteLine($"Scanning for duplicate files in {path}...", ConsoleColor.DarkGray);
-            Dictionary<string, SystemFile[]> duplicates = FileScanner.GetDuplicateFiles(path);
-            Dictionary<string, string[]> result = duplicates.ToDictionary(k => k.Key, v => v.Value.Select(l => l.LocalPath).ToArray());
+            Dictionary<string, LocalFile[]> duplicates = FileScanner.GetDuplicateFiles(path);
+            Dictionary<string, string[]> result = duplicates.ToDictionary(k => k.Key, v => v.Value.Select(l => l.Fullname).ToArray());
             long length = duplicates.Sum(kv => kv.Value.Sum(l => l.LocalSize));
 
             List<string> lines = new List<string>();

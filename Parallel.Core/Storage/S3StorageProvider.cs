@@ -67,12 +67,15 @@ namespace Parallel.Core.Storage
             await _client.DeleteObjectAsync(_bucket, path);
         }
 
-        public async Task DownloadFileAsync(string source, string destination, CancellationToken ct = default)
+        public async Task<RemoteFile?> DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default)
         {
-            using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, source, ct);
-            await using FileStream createStream = File.Create(destination);
-            await using ZstdStream zstdStream = new ZstdStream(response.ResponseStream, ZstdStreamMode.Decompress);
+            if(!await ExistsAsync(remotePath)) return null;
+            
+            using GetObjectResponse? response = await _client.GetObjectAsync(_bucket, remotePath, ct);
+            await using FileStream createStream = File.Create(file.Fullname);
+            await using ZstdStream zstdStream = new(response.ResponseStream, ZstdStreamMode.Decompress);
             await zstdStream.CopyToAsync(createStream, ct);
+            return await GetFileAsync(remotePath);
         }
 
         public async Task<bool> ExistsAsync(string path)
@@ -94,16 +97,14 @@ namespace Parallel.Core.Storage
             return Task.FromResult(index >= 0 ? path[..index] : string.Empty);
         }
 
-        public async Task<SystemFile?> GetFileAsync(string path)
+        public async Task<RemoteFile?> GetFileAsync(string path)
         {
             try
             {
                 if (!await ExistsAsync(path)) return null;
+                string checksum256 = Path.GetFileName(path);
                 GetObjectMetadataResponse metadata = await _client.GetObjectMetadataAsync(_bucket, path);
-                return new SystemFile(path)
-                {
-                    RemoteSize = metadata.ContentLength
-                };
+                return new RemoteFile(checksum256, path, metadata.LastModified.GetValueOrDefault(), metadata.ContentLength, checksum256);
             }
             catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -111,34 +112,28 @@ namespace Parallel.Core.Storage
             }
         }
 
-        public Task CloneFileAsync(string source, string target)
+        public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
-        }
-
-        public async Task<long> UploadFileAsync(string source, string destination, bool overwrite, CancellationToken ct = default)
-        {
-            if (!overwrite && await ExistsAsync(destination))
+            if (!overwrite && await ExistsAsync(remotePath))
             {
-                Log.Debug($"Skipping file: {destination}");
-                return Convert.ToInt64((await GetFileAsync(destination))?.RemoteSize);
+                Log.Debug("Skipping file: {RemotePath}", remotePath);
+                return await GetFileAsync(remotePath);
             }
 
-            await CreateDirectoryAsync(await GetDirectoryName(destination));
             Pipe pipe = new Pipe();
             TransferUtility utility = new TransferUtility(_client);
             Task uploadTask = utility.UploadAsync(new TransferUtilityUploadRequest
             {
                 BucketName = _bucket,
-                Key = destination,
+                Key = remotePath,
                 InputStream = pipe.Reader.AsStream(),
                 ContentType = "application/octet-stream"
             }, ct);
 
             long totalBytes = 0;
-            await using StreamProgress countingStream = new StreamProgress(pipe.Writer.AsStream(), b => totalBytes = b);
-            await using FileStream openStream = File.OpenRead(source);
-            await using (ZstdStream zstdStream = new(countingStream, ZstdStreamMode.Compress))
+            await using HashStream hashStream = new(pipe.Writer.AsStream(), b => totalBytes = b);
+            await using FileStream openStream = File.OpenRead(file.Fullname);
+            await using (ZstdStream zstdStream = new(hashStream, ZstdStreamMode.Compress))
             {
                 await openStream.CopyToAsync(zstdStream, ct);
                 await zstdStream.FlushAsync(ct);
@@ -146,7 +141,10 @@ namespace Parallel.Core.Storage
 
             await pipe.Writer.CompleteAsync();
             await uploadTask.ConfigureAwait(false);
-            return totalBytes;
+
+            string remoteChecksum = hashStream.GetHashHexString();
+            Log.Information("Uploaded file: {SourcePath} ({RemoteChecksum})", file.Fullname, remoteChecksum);
+            return new RemoteFile(file.Name, remotePath, file.LastWrite, file.LastUpdate, totalBytes, remoteChecksum);
         }
     }
 }

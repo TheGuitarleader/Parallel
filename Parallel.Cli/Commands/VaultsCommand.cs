@@ -28,10 +28,9 @@ namespace Parallel.Cli.Commands
             this.SetHandler(() =>
             {
                 CommandLine.WriteLine("Active vaults:");
-                for (int i = 0; i < Program.Settings.Vaults.Count; i++)
+                foreach (LocalVaultConfig vault in Program.Settings.Vaults.OrderBy(v => v.Name))
                 {
-                    LocalVaultConfig vault = Program.Settings.Vaults.ElementAt(i);
-                    CommandLine.WriteLine($"{i + 1}: {vault.Name} ({vault.Id})");
+                    CommandLine.WriteLine($"[{vault.Id}]: {vault.Name} {(vault.Enabled ? "(Syncing)" : string.Empty)}");
                 }
             });
 

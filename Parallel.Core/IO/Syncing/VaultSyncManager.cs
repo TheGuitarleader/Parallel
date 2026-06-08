@@ -10,17 +10,17 @@ namespace Parallel.Core.IO.Syncing
     {
         public VaultSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
-        public override Task<int> BackupFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress, bool overwrite)
+        public override Task<int> BackupFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress, bool overwrite)
         {
             throw new NotImplementedException();
         }
 
-        public override Task<int> RestoreFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress)
+        public override Task<int> RestoreFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }
 
-        public override Task<int> PruneFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress)
+        public override Task<int> PruneFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress)
         {
             throw new NotImplementedException();
         }

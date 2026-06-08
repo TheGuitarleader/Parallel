@@ -11,7 +11,7 @@ namespace Parallel.Core.Events
         /// <summary>
         /// The recently transferred file.
         /// </summary>
-        public SystemFile File { get; }
+        public LocalFile File { get; }
 
         /// <summary>
         /// The amount of files already transferred.
@@ -23,7 +23,7 @@ namespace Parallel.Core.Events
         /// </summary>
         public int Total { get; }
 
-        public TransferUpdateEventArgs(SystemFile file, int finished, int total)
+        public TransferUpdateEventArgs(LocalFile file, int finished, int total)
         {
             File = file;
             Finished = finished;

@@ -109,19 +109,19 @@ namespace Parallel.Cli.Commands
         private async Task RestoreInternalAsync(ISyncManager syncManager, string path, DateTime timestamp, string? output, bool archive, bool force)
         {
             CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
-            IReadOnlyList<SystemFile> files = await (syncManager.Database?.GetLatestFilesAsync(path, timestamp, archive) ?? Task.FromResult<IReadOnlyList<SystemFile>>([]));
+            IReadOnlyList<LocalFile> files = await (syncManager.Database?.GetLatestFilesAsync(path, timestamp, archive) ?? Task.FromResult<IReadOnlyList<LocalFile>>([]));
 
-            List<SystemFile> restoreFiles = new List<SystemFile>();
+            List<LocalFile> restoreFiles = new List<LocalFile>();
             System.Threading.Tasks.Parallel.ForEach(files, ParallelConfig.Options, (file) =>
             {
-                string outputPath = file.LocalPath;
+                string outputPath = file.Fullname;
                 if (!string.IsNullOrEmpty(output))
                 {
-                    file.LocalPath = PathBuilder.ReplacePath(file.LocalPath, path, output);
+                    file.Fullname = PathBuilder.ReplacePath(file.Fullname, path, output);
                 }
 
-                if (File.Exists(outputPath) && !FileScanner.HasChanged(file, new SystemFile(outputPath)) && !force) return;
-                Log.Debug($"Restoring: {outputPath} ({Formatter.FromCheckSum(file.CheckSum)})");
+                if (File.Exists(outputPath) && !FileScanner.HasChanged(file, new LocalFile(outputPath)) && !force) return;
+                Log.Debug($"Restoring: {outputPath} ({Formatter.FromCheckSum(file.LocalCheckSum)})");
                 restoreFiles.Add(file);
             });
 

@@ -12,17 +12,22 @@ namespace Parallel.Core.Models
         /// <summary>
         /// The path of the file on the local machine.
         /// </summary>
-        public string LocalPath { get; set; } = string.Empty;
+        public string Fullname { get; set; }
         
         /// <summary>
         /// The time the current file was last written to.
         /// </summary>
-        public DateTime LastWrite { get; set; } = DateTime.Now;
+        public DateTime LastWrite { get; set; }
         
         /// <summary>
         /// The checksum used to check if the file has changed.
         /// </summary>
-        public string? CheckSum { get; set; } = string.Empty;
+        public string? LocalCheckSum { get; set; }
+        
+        /// <summary>
+        /// The checksum used to check if the file was fully uploaded.
+        /// </summary>
+        public string? RemoteCheckSum { get; set; }
         
         /// <summary>
         /// If the file is currently hidden.
@@ -34,11 +39,12 @@ namespace Parallel.Core.Models
         /// </summary>
         public bool ReadOnly { get; } = false;
 
-        public Snapshot(SystemFile file)
+        public Snapshot(LocalFile file)
         {
-            LocalPath = file.LocalPath;
+            Fullname = file.Fullname;
             LastWrite = file.LastWrite.ToLocalTime();
-            CheckSum = file.CheckSum;
+            LocalCheckSum = file.LocalCheckSum;
+            RemoteCheckSum = file.RemoteCheckSum;
             Hidden = file.Hidden;
             ReadOnly = file.ReadOnly;
         }

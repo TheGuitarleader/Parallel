@@ -113,18 +113,18 @@ namespace Parallel.Service.Services
 
                     try
                     {
-                        List<SystemFile> systemFiles = new();
+                        List<LocalFile> LocalFiles = new();
                         FileScanner scanner = new FileScanner(syncManager);
                         string[] ignoredFolders = syncManager.RemoteVault.IgnoreDirectories.ToArray();
                         foreach (string path in syncManager.RemoteVault.BackupDirectories)
                         {
-                            SystemFile[] pathFiles = await scanner.GetFileChangesAsync(path, ignoredFolders, false);
+                            LocalFile[] pathFiles = await scanner.GetFileChangesAsync(path, ignoredFolders, false);
                             if (pathFiles.Length == 0) continue;
-                            systemFiles.AddRange(pathFiles);
+                            LocalFiles.AddRange(pathFiles);
                         }
 
-                        _logger.LogInformation($"Syncing {systemFiles.Count:N0} files with vault: {syncManager.LocalVault.Id}");
-                        await syncManager.BackupFilesAsync(systemFiles, new ConsoleProgressReport(), false);
+                        _logger.LogInformation($"Syncing {LocalFiles.Count:N0} files with vault: {syncManager.LocalVault.Id}");
+                        await syncManager.BackupFilesAsync(LocalFiles, new ConsoleProgressReport(), false);
 
                         // Prunes old files from the vault.
                         foreach (string path in syncManager.RemoteVault.PruneDirectories)

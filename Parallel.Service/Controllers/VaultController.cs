@@ -69,7 +69,7 @@ namespace Parallel.Service.Controllers
             if (!System.IO.File.Exists(tempDbFile)) return BadRequest();
 
             SqliteContext db = new SqliteContext(tempDbFile);
-            IReadOnlyList<SystemFile> files = await db.ListFilesAsync(path);
+            IReadOnlyList<LocalFile> files = await db.ListFilesAsync(path);
             return Json(files);
         }
     }

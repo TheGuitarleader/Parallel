@@ -11,11 +11,11 @@ namespace Parallel.Core.IO
 {
     public struct ScanFileSystemResult
     {
-        public SystemFile[] BackupFiles { get; }
-        public SystemFile[] DeletedFiles { get; }
-        public SystemFile[] IgnoredFiles { get; }
+        public LocalFile[] BackupFiles { get; }
+        public LocalFile[] DeletedFiles { get; }
+        public LocalFile[] IgnoredFiles { get; }
 
-        public ScanFileSystemResult(IEnumerable<SystemFile> localFiles, IEnumerable<SystemFile> deletedFiles, IEnumerable<SystemFile> ignoredFiles)
+        public ScanFileSystemResult(IEnumerable<LocalFile> localFiles, IEnumerable<LocalFile> deletedFiles, IEnumerable<LocalFile> ignoredFiles)
         {
             BackupFiles = localFiles.ToArray();
             DeletedFiles = deletedFiles.ToArray();

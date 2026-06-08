@@ -81,7 +81,7 @@ namespace Parallel.Cli.Utils
         public static void Write(object value, ConsoleColor color = ConsoleColor.Gray)
         {
             Console.ForegroundColor = color;
-            Console.Write("\r" + value?.ToString()?.PadRight(Console.WindowWidth));
+            Console.Write($"\r> {value?.ToString()?.PadRight(Console.WindowWidth - 2)}");
             Console.ResetColor();
         }
 
@@ -140,7 +140,7 @@ namespace Parallel.Cli.Utils
         public static void ProgressBar(double part, double total, TimeSpan elapsed)
         {
             double percent = part / total;
-            string percentStr = $"> Progress: {Convert.ToInt32(percent * 100).ToString("D2")}%";
+            string percentStr = $"> Progress: {Convert.ToInt32(percent * 100):D2}%";
 
             TimeSpan remaining;
             double remainingMs = elapsed.TotalMilliseconds * (total - part) / part;

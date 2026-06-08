@@ -10,13 +10,13 @@ namespace Parallel.Core.Diagnostics
     public class NullProgressReporter : IProgressReporter
     {
         /// <inheritdoc />
-        public void Report(ProgressOperation operation, SystemFile file) { }
+        public void Report(ProgressOperation operation, LocalFile file) { }
 
         /// <inheritdoc />
         public void Reset() { }
 
         /// <inheritdoc />
-        public void Failed(SystemFile file, string message)
+        public void Failed(LocalFile file, string message)
         {
             Log.Error(message);
         }

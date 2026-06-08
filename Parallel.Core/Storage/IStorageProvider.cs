@@ -34,10 +34,10 @@ namespace Parallel.Core.Storage
         /// <summary>
         /// Downloads a file from the associated storage provider.
         /// </summary>
-        /// <param name="source">The source path in the <see cref="IStorageProvider"/>.</param>
-        /// <param name="destination">The destination path where to download the file to.</param>
+        /// <param name="file">The source path in the <see cref="IStorageProvider"/>.</param>
+        /// <param name="remotePath">The destination path where to download the file to.</param>
         /// <param name="ct"></param>
-        Task DownloadFileAsync(string source, string destination, CancellationToken ct = default);
+        Task<RemoteFile?> DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default);
 
         /// <summary>
         /// Checks if a path exists on the associated storage provider.
@@ -61,24 +61,16 @@ namespace Parallel.Core.Storage
         /// <param name="path"></param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        Task<SystemFile?> GetFileAsync(string path);
-
-        /// <summary>
-        /// Renames a file in the associated storage provider.
-        /// </summary>
-        /// <param name="source"></param>
-        /// <param name="target"></param>
-        /// <returns></returns>
-        Task CloneFileAsync(string source, string target);
+        Task<RemoteFile?> GetFileAsync(string path);
 
         /// <summary>
         /// Uploads a file to the associated storage provider.
         /// </summary>
-        /// <param name="source">The source path on the machine to upload.</param>
-        /// <param name="destination">The destination path in the <see cref="IStorageProvider"/>.</param>
+        /// <param name="file">The file to upload.</param>
+        /// <param name="remotePath">The remote path in the <see cref="IStorageProvider"/>.</param>
         /// <param name="overwrite"></param>
         /// <param name="ct"></param>
         /// <returns>The size, in bytes, of the amount of data transferred. Otherwise, 0.</returns>
-        Task<long> UploadFileAsync(string source, string destination, bool overwrite, CancellationToken ct = default);
+        Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default);
     }
 }

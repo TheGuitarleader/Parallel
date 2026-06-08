@@ -24,149 +24,137 @@ namespace Parallel.Core.IO.Syncing
         public FileSyncManager(LocalVaultConfig localVault) : base(localVault) { }
 
         /// <inheritdoc/>
-        public override async Task<int> BackupFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress, bool overwrite)
+        public override async Task<int> BackupFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress, bool overwrite)
         {
             if (!files.Any()) return 0;
-            int queued = 0, completed = 0, total = 0;
+            int completed = 0;
 
+            ConcurrentBag<string> cleanupFiles = [];
             ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
-            SystemFile[] uploadFiles = files.Where(f => !f.Deleted).ToArray();
-            SystemFile[] deleteFiles = files.Except(uploadFiles).ToArray();
-            total = uploadFiles.Length;
+            LocalFile[] uploadFiles = files.Where(f => !f.Deleted).ToArray();
+            LocalFile[] deletedFiles = files.Except(uploadFiles).ToArray();
 
-            Log.Information($"Uploading {uploadFiles.Length:N0} files...");
-            Task worker = System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
+            Log.Information("Uploading {UploadFilesLength:N0} files...", uploadFiles.Length);
+            await System.Threading.Tasks.Parallel.ForEachAsync(uploadFiles, ParallelConfig.Options, async (file, ct) =>
             {
-                Interlocked.Increment(ref queued);
-                if (!file.TryGenerateCheckSum()) return;
+                if (!file.TryGenerateCheckSums()) return;
 
-                SemaphoreSlim threadLock = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
-                string remotePath = PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!);
+                SemaphoreSlim threadLock = threadPool.GetOrAdd(file.RemoteCheckSum!, _ => new SemaphoreSlim(1, 1));
+                string remotePath = PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!);
                 await threadLock.WaitAsync(ct);
 
                 try
                 {
-                    Log.Debug($"Pushing -> {file.LocalPath}");
-                    file.RemoteSize = await StorageProvider.UploadFileAsync(file.LocalPath, remotePath, overwrite, ct);
-                    if (!await (Database?.AddHistoryAsync(HistoryType.Synced, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
-                    if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error($"Failed to add file: {file.LocalPath}");
-                    progress.Report(ProgressOperation.Synced, file);
+                    RemoteFile? remoteFile = await StorageProvider.UploadFileAsync(file, remotePath, overwrite, ct);
+                    if (remoteFile != null && file.RemoteCheckSum == remoteFile.RemoteCheckSum)
+                    {
+                        LocalFile localFile = file.AppendFile(remoteFile);
+                        if (!await (Database?.AddHistoryAsync(HistoryType.Synced, localFile) ?? Task.FromResult(false))) Log.Error("Failed to add history: {Fullname}", localFile.Fullname);
+                        if (!await (Database?.AddFileAsync(localFile) ?? Task.FromResult(false))) Log.Error("Failed to add file: {Fullname}", localFile.Fullname);
+                        progress.Report(ProgressOperation.Synced, localFile);
+                        Interlocked.Increment(ref completed);
+                    }
+                    else
+                    {
+                        Log.Warning("File failed during upload: {Fullname}", file.Fullname);
+                        cleanupFiles.Add(remotePath + ".tmp");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    await StorageProvider.DeleteFileAsync(remotePath);
                     progress.Failed(file, ex.GetBaseException().ToString());
+                    cleanupFiles.Add(remotePath);
                 }
                 finally
                 {
                     threadLock.Release();
-                    Interlocked.Increment(ref completed);
-                    Interlocked.Decrement(ref queued);
                 }
             });
 
-            Log.Information($"Archiving {deleteFiles.Length:N0} files...");
-            await System.Threading.Tasks.Parallel.ForEachAsync(deleteFiles, ParallelConfig.Options, async (file, ct) =>
+            Log.Information("Archiving {DeletedFilesLength:N0} files...", deletedFiles.Length);
+            await System.Threading.Tasks.Parallel.ForEachAsync(deletedFiles, ParallelConfig.Options, async (file, ct) =>
             {
-                if (!await (Database?.AddHistoryAsync(HistoryType.Archived, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
-                if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error($"Failed to add file: {file.LocalPath}");
+                if (!await (Database?.AddHistoryAsync(HistoryType.Archived, file) ?? Task.FromResult(false))) Log.Error("Failed to add history: {Fullname}", file.Fullname);
+                if (!await (Database?.AddFileAsync(file) ?? Task.FromResult(false))) Log.Error("Failed to add file: {Fullname}", file.Fullname);
                 progress.Report(ProgressOperation.Archived, file);
                 Interlocked.Increment(ref completed);
             });
 
-            Task monitor = Task.Run(async () =>
-            {
-                Stopwatch sw = Stopwatch.StartNew();
-                while (!worker.IsCompleted)
-                {
-                    Log.Debug($"WORKER STATS @ ETA {Converter.ToRemainingTimeSpan(sw.Elapsed, completed, total)}: queued={queued}, completed={completed}, total={total}");
-                    await Task.Delay(10000);
-                }
-            });
-
-            await Task.WhenAll(worker, monitor).ConfigureAwait(false);
+            Log.Information("Cleaning up {CleanFilesLength:N0} files...", cleanupFiles.Count);
+            foreach (string path in cleanupFiles) await StorageProvider.DeleteFileAsync(path);
             return completed;
         }
 
         /// <inheritdoc/>
-        public override async Task<int> RestoreFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress)
+        public override async Task<int> RestoreFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress)
         {
             if (!files.Any()) return 0;
-            int queued = 0, completed = 0, total = files.Count;
+            int completed = 0;
 
+            ConcurrentBag<string> cleanupFiles = [];
             ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
-            Task worker = System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
-                Interlocked.Increment(ref queued);
-                SemaphoreSlim threadLock = threadPool.GetOrAdd(file.CheckSum!, _ => new SemaphoreSlim(1, 1));
+                SemaphoreSlim threadLock = threadPool.GetOrAdd(file.LocalCheckSum!, _ => new SemaphoreSlim(1, 1));
                 await threadLock.WaitAsync(ct);
 
                 try
                 {
-                    string? parentDir = Path.GetDirectoryName(file.LocalPath);
+                    string? parentDir = Path.GetDirectoryName(file.Fullname);
                     if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
 
-                    Log.Debug($"Restoring file: {file.LocalPath} ({file.CheckSum})");
-                    await StorageProvider.DownloadFileAsync(PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!), file.LocalPath, ct);
-                    if (!File.Exists(file.LocalPath))
+                    Log.Debug($"Restoring file: {file.Fullname} ({file.RemoteCheckSum})");
+                    RemoteFile? remoteFile = await StorageProvider.DownloadFileAsync(file, PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!), ct);
+                    
+                    Console.WriteLine($"{file.LocalCheckSum} | {file.RemoteCheckSum} | {remoteFile?.RemoteCheckSum}");
+                    
+                    if (remoteFile == null || file.LocalCheckSum != remoteFile.RemoteCheckSum)
                     {
                         progress.Failed(file, "File not found!");
+                        cleanupFiles.Add(file.Fullname);
                         return;
                     }
 
-                    FileInfo fileInfo = new(file.LocalPath);
+                    FileInfo fileInfo = new(file.Fullname);
                     FileAttributes attributes = fileInfo.Attributes;
                     if (file.ReadOnly) attributes |= FileAttributes.ReadOnly;
                     if (file.Hidden) attributes |= FileAttributes.Hidden;
                     fileInfo.LastWriteTime = file.LastWrite.ToLocalTime();
                     fileInfo.Attributes = attributes;
 
-                    if (!await (Database?.AddHistoryAsync(HistoryType.Restored, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
+                    if (!await (Database?.AddHistoryAsync(HistoryType.Restored, file) ?? Task.FromResult(false))) Log.Error("Failed to add history: {Fullname}", file.Fullname);
                     progress.Report(ProgressOperation.Restored, file);
+                    Interlocked.Increment(ref completed);
                 }
                 catch (Exception ex)
                 {
                     progress.Failed(file, ex.GetBaseException().ToString());
-                    if (File.Exists(file.LocalPath)) File.Delete(file.LocalPath);
+                    cleanupFiles.Add(file.Fullname);
                 }
                 finally
                 {
                     threadLock.Release();
-                    threadPool.TryRemove(file.CheckSum!, out _);
-                    Interlocked.Increment(ref completed);
-                    Interlocked.Decrement(ref queued);
                 }
             });
-
-            Task monitor = Task.Run(async () =>
-            {
-                Stopwatch sw = Stopwatch.StartNew();
-                while (!worker.IsCompleted)
-                {
-                    Log.Debug($"WORKER STATS @ ETA {Converter.ToRemainingTimeSpan(sw.Elapsed, completed, total)}: queued={queued}, completed={completed}, total={total}");
-                    await Task.Delay(10000);
-                }
-            });
-
-            await Task.WhenAll(worker, monitor).ConfigureAwait(false);
+            
+            Log.Information("Cleaning up {CleanFilesLength:N0} files...", cleanupFiles.Count);
+            foreach (string path in cleanupFiles) if(File.Exists(path)) File.Delete(path);
             return completed;
         }
 
         /// <inheritdoc/>
-        public override async Task<int> PruneFilesAsync(IReadOnlyList<SystemFile> files, IProgressReporter progress)
+        public override async Task<int> PruneFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress)
         {
             if (!files.Any()) return 0;
-            int queued = 0, completed = 0, total = files.Count;
+            int completed = 0;
 
-            Task worker = System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
             {
-                Interlocked.Increment(ref queued);
-
                 try
                 {
                     await (Database != null ? Database.RemoveFileAsync(file) : Task.CompletedTask);
-                    if (!await (Database?.AddHistoryAsync(HistoryType.Pruned, file) ?? Task.FromResult(false))) Log.Error($"Failed to add history: {file.LocalPath}");
-                    await StorageProvider.DeleteFileAsync(PathBuilder.GetObjectPath(RemoteVault, file.CheckSum!));
+                    if (!await (Database?.AddHistoryAsync(HistoryType.Pruned, file) ?? Task.FromResult(false))) Log.Error("Failed to add history: {Fullname}", file.Fullname);
+                    await StorageProvider.DeleteFileAsync(PathBuilder.GetObjectPath(RemoteVault, file.LocalCheckSum!));
                     progress.Report(ProgressOperation.Pruned, file);
                 }
                 catch (Exception ex)
@@ -176,21 +164,9 @@ namespace Parallel.Core.IO.Syncing
                 finally
                 {
                     Interlocked.Increment(ref completed);
-                    Interlocked.Decrement(ref queued);
                 }
             });
-
-            Task monitor = Task.Run(async () =>
-            {
-                Stopwatch sw = Stopwatch.StartNew();
-                while (!worker.IsCompleted)
-                {
-                    Log.Debug($"WORKER STATS @ ETA {Converter.ToRemainingTimeSpan(sw.Elapsed, completed, total)}: queued={queued}, completed={completed}, total={total}");
-                    await Task.Delay(10000);
-                }
-            });
-
-            await Task.WhenAll(worker, monitor).ConfigureAwait(false);
+            
             return completed;
         }
     }

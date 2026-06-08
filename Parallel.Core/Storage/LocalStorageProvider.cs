@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
 using Parallel.Core.Settings;
+using Parallel.Core.Utils;
 using ZstdSharp;
 
 namespace Parallel.Core.Storage
@@ -54,12 +55,26 @@ namespace Parallel.Core.Storage
             return Task.CompletedTask;
         }
 
-        public async Task DownloadFileAsync(string source, string destination, CancellationToken ct = default)
+        public async Task<RemoteFile?> DownloadFileAsync(LocalFile file, string remotePath, CancellationToken ct = default)
         {
-            await using FileStream openStream = File.OpenRead(source);
-            await using FileStream createStream = File.Create(destination);
-            await using ZstdStream zstdStream = new ZstdStream(openStream, ZstdStreamMode.Decompress);
-            await zstdStream.CopyToAsync(createStream, ct);
+            if(!File.Exists(remotePath)) return null;
+            
+            long totalBytes = 0;
+            string remoteChecksum;
+            
+            await using FileStream openStream = File.OpenRead(remotePath);
+            await using FileStream createStream = File.Create(file.Fullname);
+            await using (ZstdStream zstdStream = new(openStream, ZstdStreamMode.Decompress))
+            await using (HashStream hashStream = new(zstdStream, b => totalBytes = b))
+            {
+                await hashStream.CopyToAsync(createStream, ct);
+                await hashStream.FlushAsync(ct);
+                
+                remoteChecksum = hashStream.GetHashHexString();
+            }
+            
+            Log.Information("Downloaded file: {SourcePath} ({RemoteChecksum})", file.Fullname, remoteChecksum);
+            return new RemoteFile(file.Name, file.Fullname, file.LastWrite, file.LastUpdate, totalBytes, remoteChecksum);
         }
 
         /// <inheritdoc />
@@ -75,44 +90,72 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc/>
-        public Task<SystemFile?> GetFileAsync(string path)
+        public Task<RemoteFile?> GetFileAsync(string path)
         {
-            if (!File.Exists(path)) return Task.FromResult<SystemFile?>(null);
+            if (!File.Exists(path)) return Task.FromResult<RemoteFile?>(null);
 
             FileInfo fi = new(path);
-            SystemFile file = new SystemFile(path)
+            RemoteFile file = new(fi.Name, path, fi.LastWriteTimeUtc, fi.Length, fi.Name);
+            return Task.FromResult<RemoteFile?>(file);
+        }
+        
+        private void InternalRenameFile(string sourcePath, string destPath)
+        {
+            if(!File.Exists(sourcePath)) return;
+            
+            FileAttributes sourceAttrs = File.GetAttributes(sourcePath);
+            bool isReadOnly = (sourceAttrs & FileAttributes.ReadOnly) != 0;
+            
+            if (File.Exists(destPath))
             {
-                Name = fi.Name,
-                RemoteSize = fi.Length
-            };
-
-            return Task.FromResult<SystemFile?>(file);
+                FileAttributes destAttrs = File.GetAttributes(destPath);
+                if ((destAttrs & FileAttributes.ReadOnly) != 0)
+                {
+                    File.SetAttributes(destPath, destAttrs & ~FileAttributes.ReadOnly);
+                }
+            }
+            
+            File.Move(sourcePath, destPath, true);
+            
+            if (isReadOnly)
+            {
+                FileAttributes destAttrs = File.GetAttributes(destPath);
+                File.SetAttributes(destPath, destAttrs | FileAttributes.ReadOnly);
+            }
         }
 
         /// <inheritdoc />
-        public async Task CloneFileAsync(string source, string target)
+        public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)
         {
-            if (await ExistsAsync(source)) File.SetAttributes(source, ~FileAttributes.ReadOnly & File.GetAttributes(source));
-            File.Copy(source, target, true);
-        }
-
-        /// <inheritdoc />
-        public async Task<long> UploadFileAsync(string source, string destination, bool overwrite = false, CancellationToken ct = default)
-        {
-            if (await ExistsAsync(destination))
+            if (!overwrite && await ExistsAsync(remotePath))
             {
-                if (!overwrite) return Convert.ToInt64((await GetFileAsync(destination))?.RemoteSize);
-                File.SetAttributes(destination, File.GetAttributes(destination) & ~FileAttributes.ReadOnly);
+                Log.Debug("Skipping file: {RemotePath}", remotePath);
+                return await GetFileAsync(remotePath);
             }
 
-            await CreateDirectoryAsync(await GetDirectoryName(destination));
-            await using FileStream openStream = File.OpenRead(source);
-            await using FileStream createStream = File.Create(destination);
-            await using ZstdStream zstdStream = new ZstdStream(createStream, ZstdStreamMode.Compress);
-            await openStream.CopyToAsync(zstdStream, ct);
+            string tempPath = remotePath + ".tmp";
+            await CreateDirectoryAsync(await GetDirectoryName(remotePath));
+            
+            long totalBytes = 0;
+            string remoteChecksum;
 
-            File.SetAttributes(destination, File.GetAttributes(destination) | FileAttributes.ReadOnly);
-            return createStream.Length;
+            await using (FileStream createStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous))
+            await using (FileStream openStream = new(file.Fullname, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            await using (HashStream hashStream = new(createStream, b => totalBytes = b))
+            {
+                await using (ZstdStream zstdStream = new(hashStream, ZstdStreamMode.Compress))
+                {
+                    await openStream.CopyToAsync(zstdStream, ct);
+                    await zstdStream.FlushAsync(ct);
+                }
+
+                remoteChecksum = hashStream.GetHashHexString();
+            }
+            
+            InternalRenameFile(tempPath, remotePath);
+            
+            Log.Information("Uploaded file: {SourcePath} ({RemoteChecksum})", file.Fullname, remoteChecksum);
+            return new RemoteFile(file.Name, file.Fullname, file.LastWrite, file.LastUpdate, totalBytes, remoteChecksum);
         }
     }
 }

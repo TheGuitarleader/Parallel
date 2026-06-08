@@ -114,7 +114,7 @@ namespace Parallel.Cli.Commands
         private async Task PruneInternalAsync(ISyncManager syncManager, string path, DateTime timestamp, bool force)
         {
             CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
-            IReadOnlyList<SystemFile> files = await (syncManager.Database?.GetFilesAsync(path, timestamp, true) ?? Task.FromResult<IReadOnlyList<SystemFile>>([]));
+            IReadOnlyList<LocalFile> files = await (syncManager.Database?.GetFilesAsync(path, timestamp, true) ?? Task.FromResult<IReadOnlyList<LocalFile>>([]));
 
             if (files.Count == 0)
             {

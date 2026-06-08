@@ -8,10 +8,10 @@ namespace Parallel.Core.Events
 {
     public class TransferFailedEventArgs : EventArgs
     {
-        public SystemFile File { get; }
+        public LocalFile File { get; }
         public Exception Exception { get; }
 
-        public TransferFailedEventArgs(SystemFile file, Exception exception)
+        public TransferFailedEventArgs(LocalFile file, Exception exception)
         {
             File = file;
             Exception = exception;

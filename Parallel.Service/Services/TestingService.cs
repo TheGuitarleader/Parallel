@@ -11,12 +11,12 @@ namespace Parallel.Service.Services
     public class TestingService : BackgroundService
     {
         private readonly ILogger<TestingService> _logger;
-        private readonly IHubContext<MessageHub> _hub;
+        private readonly IHubContext<SignalRHub> _hub;
         private readonly ProcessMonitor _monitor;
         private readonly TaskQueuer _queuer;
         private readonly Stopwatch _sw;
 
-        public TestingService(ILogger<TestingService> logger, IHubContext<MessageHub> hub, ProcessMonitor monitor, TaskQueuer queuer)
+        public TestingService(ILogger<TestingService> logger, IHubContext<SignalRHub> hub, ProcessMonitor monitor, TaskQueuer queuer)
         {
             _logger = logger;
             _hub = hub;
