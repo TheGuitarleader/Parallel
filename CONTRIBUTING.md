@@ -5,7 +5,7 @@ Thanks for your interest in contributing to Parallel! This project is built on t
 ## 🧱 Getting Started
 
 1. **Clone the repo**: 
-    `git clone https://github.com/TheGuitarleader/Parallel.git`
+    `git clone https://github.com/EntexInteractive/Parallel.git`
 2. Create a new branch:  
     `git checkout -b feature/your-feature-name`
     `git checkout -b patch/your-patch-name`
@@ -35,4 +35,4 @@ All changes go through PR review. CI/CD pipelines validate builds across platfor
 
 ## 💬 Communication
 
-Use [GitHub Issues](https://github.com/TheGuitarleader/Parallel/issues) for bugs, ideas, and discussion. We welcome thoughtful dialogue and collaborative troubleshooting.
+Use [GitHub Issues](https://github.com/EntexInteractive/Parallel/issues) for bugs, ideas, and discussion. We welcome thoughtful dialogue and collaborative troubleshooting.
