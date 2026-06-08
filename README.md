@@ -6,9 +6,9 @@ Your files under your control.
 
 ## What is Parallel?
 
-Parallel is a modular, cross-platform file backup and synchronization tool built for people who want full control of their files. It ditches the cloud-first assumptions and gives you full transparency, and control over the how, when, and where your files move. No contracts, no vendor lock-ins, no silent overwrites. Just clean, dependable syncing on your terms.
+Parallel is a modular, cross-platform file backup and synchronization tool built for people who want full control of their files. It ditches the cloud-first assumptions and gives you full transparency and control over how, when, and where your files move. No contracts, no vendor lock-ins, no silent overwrites. Just clean, dependable syncing on your terms.
 
-Parallel was originally built to handle **terabytes of data** because Dropbox simply couldn’t. When commercial cloud services hit their limits, Parallel stepped in to offer **unbounded scale**, **local-first logic**, and **configurable workflows** that respect your storage, your bandwidth, and your rules.
+Parallel was originally built to handle **terabytes of data** because Dropbox simply couldn’t. When commercial cloud services reach their limits, Parallel stepped in to offer **unbounded scale**, **local-first logic**, and **configurable workflows** that respect your storage, bandwidth, and rules.
 
 ## Why Parallel?
 
@@ -22,14 +22,12 @@ Your computer already gives you enough to fight with, your files don't have to b
 | **Local-first**               | ✅ Always    | ❌ Cloud-first | ❌ Cloud-first | ⚠️ Hybrid (Apple ecosystem) | ✅ Yes
 | **Modular storage options**   | ✅ Any (NAS, SSH, S3) | ❌ Vendor-locked | ❌ Vendor-locked | ❌ Vendor-locked | ❌ Local only
 | **Compression**               | ✅ Always    | ❌ No        | ❌ No         | ❌ No       | ❌ No
-| **Encryption**                | ✅ Optional  | ❌ Vendor-controlled | ❌ Vendor-controlled | ❌ Vendor-controlled | ⚠️ Depends on drive encryption
 | **Cross-platform**            | ✅ Yes       | ✅ Yes       | ✅ Yes        | ⚠️ Apple-centric | ❌ Windows only
 | **Version History**           | ✅ Yes       | ✅ Yes       | ✅ Yes        | ✅ Yes | ⚠️ Limited
 | **System Snapshots**          | ✅ Yes       | ❌ No       | ❌ No        | ❌ No | ⚠️ Limited
 | **Offline access**            | ✅ Full      | ⚠️ Partial   | ⚠️ Partial    | ⚠️ Partial | ✅ Full
 | **Free to use**               | ✅ Always    | ⚠️ 2GB free | ⚠️ 5GB free   | ⚠️ 5GB free | ✅ Yes
 | **Max storage**               | ✅ Unlimited (your hardware)  | ⚠️ 2GB (free), 3TB (personal), 15TB (enterprise) | ⚠️ 5TB (personal), 25TB (enterprise) | ⚠️ 5GB–12TB (paid tiers) | ⚠️ Limited by drive size
-
 
 
 ## 📦 Quick Start Guide
@@ -40,18 +38,24 @@ git clone https://github.com/TheGuitarleader/Parallel
 cd Parallel
 dotnet build
 ```
+
+On Linux systems, you can install via:
+```
+curl -sSL https://raw.githubusercontent.com/TheGuitarleader/Parallel/main/install.sh | sudo bash
+```
+
 #### 2. Set up your vaults
-Vaults are storage targets where Parallel sends and recieves files. This can be an external drive, NAS share, SSH server, or S3-compatible cloud.
+Vaults are storage targets where Parallel sends and receives files. This can be an external drive, NAS share, SSH server, or S3-compatible cloud.
 ```
 parallel vaults add
 ```
 All vaults are saved as JSON in `%AppData%\Parallel\Configuration.json` for easier importing and exporting. Learn more [here](https://github.com/TheGuitarleader/Parallel/wiki/Configuration#configuration-file).
 #### 3. Back up files to vaults
-Parallel can backup all changed files on the system with:
+Parallel can back up all changed files on the system with:
 ```
 parallel sync
 ```
-You can also specify a path which can be a file or folder or a specific vault configuration.
+You can also specify a path, which can be a file, folder, or a specific vault configuration.
 ```
 parallel sync --path "C:\Windows\System32"
 parallel sync -p "C:\Windows\System32\cmd.exe"
@@ -63,7 +67,7 @@ Parallel can restore files from a vault with:
 parallel restore --path "C:\Windows\System32"
 parallel restore -p "C:\Windows\System32\cmd.exe"
 ```
-Parallel keeps revisions of files. To restore files to a previous version and not the latest you can use the `--before` option and provide a valid timestamp string. See more about DateTime [parsing](https://learn.microsoft.com/en-us/dotnet/api/system.datetime.parse?view=net-10.0#StringToParse).
+Parallel keeps revisions of files. To restore files to a previous version and not the latest, you can use the `--before` option and provide a valid timestamp string. See more about DateTime [parsing](https://learn.microsoft.com/en-us/dotnet/api/system.datetime.parse?view=net-10.0#StringToParse).
 ```
 parallel restore --path "C:\Windows\System32" --before "2025-12-16 5:11 PM"
 parallel restore -p "C:\Windows\System32\cmd.exe" --before "12/16/25"
