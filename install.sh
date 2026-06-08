@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO="TheGuitarleader/Parallel"
+REPO="EntexInteractive/Parallel"
 ASSET_PATTERN="Parallel-.*-cmd-linux-x64.zip"
 INSTALL_ROOT="/usr/local/lib/parallel"
 BIN_LINK="/usr/local/bin/parallel"

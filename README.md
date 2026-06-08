@@ -1,6 +1,6 @@
-# [<img src="https://raw.githubusercontent.com/TheGuitarleader/Parallel/master/Parallel.Cli/parallel-red.ico" alt="Parallel Icon" width="38" height="38">](https://github.com/TheGuitarleader/Parallel) Parallel
+# [<img src="https://raw.githubusercontent.com/EntexInteractive/Parallel/master/Parallel.Cli/parallel-red.ico" alt="Parallel Icon" width="38" height="38">](https://github.com/EntexInteractive/Parallel) Parallel
 
-[![.NET](https://img.shields.io/github/actions/workflow/status/TheGuitarleader/Parallel/dotnet-build.yml?label=Main%20build&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/actions/workflows/dotnet-build.yml) [![latest version](https://img.shields.io/github/v/release/TheGuitarleader/Parallel?label=Latest%20release&style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest) [![GitHub Downloads](https://img.shields.io/github/downloads/TheGuitarleader/Parallel/total?style=for-the-badge)](https://github.com/TheGuitarleader/Parallel/releases/latest)
+[![.NET](https://img.shields.io/github/actions/workflow/status/EntexInteractive/Parallel/dotnet-build.yml?label=Main%20build&style=for-the-badge)](https://github.com/EntexInteractive/Parallel/actions/workflows/dotnet-build.yml) [![latest version](https://img.shields.io/github/v/release/EntexInteractive/Parallel?label=Latest%20release&style=for-the-badge)](https://github.com/EntexInteractive/Parallel/releases/latest) [![GitHub Downloads](https://img.shields.io/github/downloads/EntexInteractive/Parallel/total?style=for-the-badge)](https://github.com/EntexInteractive/Parallel/releases/latest)
 
 Your files under your control.
 
@@ -32,16 +32,16 @@ Your computer already gives you enough to fight with, your files don't have to b
 
 ## 📦 Quick Start Guide
 #### 1. Install Parallel
-Download the latest [release](https://github.com/TheGuitarleader/Parallel/releases/latest) or build from source:
+Download the latest [release](https://github.com/EntexInteractive/Parallel/releases/latest) or build from source:
 ```
-git clone https://github.com/TheGuitarleader/Parallel
+git clone https://github.com/EntexInteractive/Parallel
 cd Parallel
 dotnet build
 ```
 
 On Linux systems, you can install via:
 ```
-curl -sSL https://raw.githubusercontent.com/TheGuitarleader/Parallel/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/EntexInteractive/Parallel/main/install.sh | sudo bash
 ```
 
 #### 2. Set up your vaults
@@ -49,7 +49,7 @@ Vaults are storage targets where Parallel sends and receives files. This can be 
 ```
 parallel vaults add
 ```
-All vaults are saved as JSON in `%AppData%\Parallel\Configuration.json` for easier importing and exporting. Learn more [here](https://github.com/TheGuitarleader/Parallel/wiki/Configuration#configuration-file).
+All vaults are saved as JSON in `%AppData%\Parallel\Configuration.json` for easier importing and exporting. Learn more [here](https://github.com/EntexInteractive/Parallel/wiki/Configuration#configuration-file).
 #### 3. Back up files to vaults
 Parallel can back up all changed files on the system with:
 ```
@@ -79,4 +79,4 @@ Parallel is currently in early development. Expect rapid iteration, breaking cha
 
 ## 💬 Contact
 
-For questions and ideas, reach out via our [GitHub Issues](https://github.com/TheGuitarleader/Parallel/issues).
+For questions and ideas, reach out via our [GitHub Issues](https://github.com/EntexInteractive/Parallel/issues).
