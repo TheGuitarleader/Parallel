@@ -56,4 +56,4 @@ if errorlevel 1 (
 echo Cleaning up...
 rmdir /s /q "%TMP_DIR%"
 
-echo Installation complete. You can now run Parallel from the command line.
+echo Installation complete.
