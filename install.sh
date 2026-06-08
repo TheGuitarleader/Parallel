@@ -15,3 +15,16 @@ DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | gr
 }
 
 echo "Downloading $DOWNLOAD_URL"
+curl -L "$DOWNLOAD_URL" -o "$ZIP_FILE"
+
+echo "Installing to $INSTALL_ROOT"
+rm -rf "$INSTALL_ROOT"
+mkdir -p "$INSTALL_ROOT"
+
+unzip -q "$ZIP_FILE" -d "$INSTALL_ROOT"
+chmod 755 "$INSTALL_ROOT/Parallel"
+ln -sf "$INSTALL_ROOT/Parallel" "$BIN_LINK"
+rm -rf "$TMP_DIR"
+
+echo "Complete!"
+parallel --version || true
