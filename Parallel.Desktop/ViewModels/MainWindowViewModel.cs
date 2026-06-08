@@ -1,4 +1,4 @@
-﻿namespace Parallel.App.ViewModels;
+﻿namespace Parallel.Desktop.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {

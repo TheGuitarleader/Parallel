@@ -4,10 +4,10 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
-using Parallel.App.ViewModels;
-using Parallel.App.Views;
+using Parallel.Desktop.ViewModels;
+using Parallel.Desktop.Views;
 
-namespace Parallel.App;
+namespace Parallel.Desktop;
 
 public partial class App : Application
 {

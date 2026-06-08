@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace Parallel.App.Views;
+namespace Parallel.Desktop.Views;
 
 public partial class MainWindow : Window
 {

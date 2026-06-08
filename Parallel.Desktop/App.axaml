@@ -1,7 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Parallel.App.App"
-             xmlns:local="using:Parallel.App"
+             x:Class="Parallel.Desktop.App"
+             xmlns:local="using:Parallel.Desktop"
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 

@@ -2,9 +2,9 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using Parallel.App.ViewModels;
+using Parallel.Desktop.ViewModels;
 
-namespace Parallel.App;
+namespace Parallel.Desktop;
 
 /// <summary>
 /// Given a view model, returns the corresponding view if possible.

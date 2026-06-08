@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using System;
 
-namespace Parallel.App;
+namespace Parallel.Desktop;
 
 sealed class Program
 {
