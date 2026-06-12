@@ -41,7 +41,7 @@ namespace Parallel.Core.IO.Syncing
         /// <summary>
         /// Establishes a connection to the associated <see cref="IStorageProvider"/> and downloads the needed files.
         /// </summary>
-        Task<bool> ConnectAsync();
+        Task<bool> ConnectAsync(bool force = false);
 
         /// <summary>
         /// Closes the current connection and releases its resources.

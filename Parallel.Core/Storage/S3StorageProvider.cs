@@ -2,6 +2,7 @@
 
 using System.IO.Compression;
 using System.IO.Pipelines;
+using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -32,7 +33,10 @@ namespace Parallel.Core.Storage
             AmazonS3Config config = new AmazonS3Config()
             {
                 ServiceURL = localVault.Credentials.Address,
-                ForcePathStyle = localVault.Credentials.ForceStyle
+                ForcePathStyle = localVault.Credentials.ForceStyle,
+                AuthenticationRegion = localVault.Credentials.Region,
+                DisableS3ExpressSessionAuth = true,
+                UseHttp = localVault.Credentials.Address?.StartsWith("http", StringComparison.OrdinalIgnoreCase) ?? false
             };
 
             _client = new AmazonS3Client(localVault.Credentials.Username, Encryption.Decode(localVault.Credentials.Password), config);
@@ -80,15 +84,14 @@ namespace Parallel.Core.Storage
 
         public async Task<bool> ExistsAsync(string path)
         {
-            try
+            ListObjectsV2Response? response = await _client.ListObjectsV2Async(new ListObjectsV2Request
             {
-                await _client.GetObjectMetadataAsync(_bucket, path);
-                return true;
-            }
-            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                return false;
-            }
+                BucketName = _bucket,
+                Prefix = path,
+                MaxKeys = 1
+            });
+
+            return response.KeyCount > 0;
         }
 
         public Task<string> GetDirectoryName(string path)

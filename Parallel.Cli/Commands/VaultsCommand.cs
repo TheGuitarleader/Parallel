@@ -53,6 +53,10 @@ namespace Parallel.Cli.Commands
                     string? bucketInput = CommandLine.ReadString("Bucket Name (Leave empty for default)");
                     string bucketName = string.IsNullOrEmpty(bucketInput) ? "parallel" : bucketInput;
                     spc.RootDirectory = bucketName;
+                    
+                    string? regionInput = CommandLine.ReadString("Region Name (Leave empty for default)");
+                    string regionName = string.IsNullOrEmpty(regionInput) ? "us-east-1" : regionInput;
+                    spc.Region = regionName;
 
                     spc.Address = CommandLine.ReadString("Endpoint");
                     spc.Username = CommandLine.ReadString("Access Key");
@@ -72,9 +76,6 @@ namespace Parallel.Cli.Commands
 
                 string? inputName = CommandLine.ReadString("Name (Leave empty for machine name)");
                 string profileName = string.IsNullOrEmpty(inputName) ? Environment.MachineName : inputName;
-
-                spc.Encrypt = CommandLine.ReadBool("Encrypt files? (y/n)", false);
-                spc.EncryptionKey = spc.Encrypt ? HashGenerator.GenerateHash(32, true) : null;
 
                 LocalVaultConfig localVault = new(profileId, profileName, spc);
                 localVault.Enabled = CommandLine.ReadBool("Enabled? (y/n)", true);
