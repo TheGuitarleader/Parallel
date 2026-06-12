@@ -101,6 +101,13 @@ namespace Parallel.Core.Database.Contexts
             string sql = "SELECT * FROM (SELECT * FROM objects WHERE fullname LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastwrite DESC) GROUP BY fullname;";
             return await _semaphore.QueryAsync<LocalFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
         }
+        
+        /// <inheritdoc />
+        public async Task<IReadOnlyList<LocalFile>> GetFilesAsync(string path, DateTime timestamp)
+        {
+            string sql = "SELECT * FROM objects WHERE fullname LIKE @Path AND lastupdate <= @Time ORDER BY lastupdate ASC";
+            return await _semaphore.QueryAsync<LocalFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds });
+        }
 
         /// <inheritdoc />
         public async Task<IReadOnlyList<LocalFile>> GetFilesAsync(string path, DateTime timestamp, bool deleted)
@@ -192,7 +199,13 @@ namespace Parallel.Core.Database.Contexts
             string sql = "SELECT DISTINCT name FROM snapshots ORDER BY timestamp DESC;";
             return await _semaphore.QueryAsync<string>(sql);
         }
-        
+
+        public async Task<string?> GetSnapshotAsync(string? name)
+        {
+            string sql = "SELECT DISTINCT name FROM snapshots WHERE name LIKE @Name ORDER BY timestamp DESC LIMIT 1;";
+            return await _semaphore.QuerySingleAsync<string>(sql, new { Name = $"%{name}%" });
+        }
+
         /// <inheritdoc />
         public async Task RemoveSnapshotAsync(string snapshot)
         {

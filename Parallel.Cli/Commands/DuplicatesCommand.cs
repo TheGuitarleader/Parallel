@@ -36,13 +36,12 @@ namespace Parallel.Cli.Commands
                 lines.Add($"{key} ({paths.Length:N0} items):");
                 lines.AddRange(paths.Select(value => $" - {value}"));
             }
-
-            CommandLine.WriteLine($"Opening file...", ConsoleColor.DarkGray);
+            
             string fileName = PathBuilder.TempFile;
             await File.WriteAllLinesAsync(fileName, lines);
-            CommandLine.OpenFile(fileName, false);
-
-            CommandLine.WriteLine($"Scan found {duplicates.Count(kv => kv.Value.Length > 1):N0} duplicate files. ({Formatter.FromBytes(length)})");
+            
+            CommandLine.WriteLine($"Scan found {duplicates.Count(kv => kv.Value.Length > 1):N0} duplicate files. ({Formatter.FromBytes(length)})", ConsoleColor.Green);
+            CommandLine.WriteLine($"A detailed list can be found here: {fileName}", ConsoleColor.DarkGray);
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Parallel.Cli
 
         public static async Task Main(string[] args)
         {
-            if (!ParallelConfig.CanStartCliInstance())
+            if (!ParallelConfig.CanStartNewInstance())
             {
                 CommandLine.WriteLine("An instance of Parallel is already running!", ConsoleColor.Yellow);
                 return;

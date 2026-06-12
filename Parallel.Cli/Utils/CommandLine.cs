@@ -17,6 +17,7 @@ namespace Parallel.Cli.Utils
 
         public static void OpenFile(string path, bool waitForExit = false)
         {
+            WriteLine($"Opening file...", ConsoleColor.DarkGray);
             Process? process = Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
             if (process != null && waitForExit) process.WaitForExit();
         }

@@ -62,6 +62,8 @@ namespace Parallel.Core.Storage
         /// <param name="ct"></param>
         /// <returns></returns>
         Task<RemoteFile?> GetFileAsync(string path);
+        
+        Task<string?> HashFileAsync(string remotePath, int bufferSize, CancellationToken ct);
 
         /// <summary>
         /// Uploads a file to the associated storage provider.

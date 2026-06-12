@@ -1,6 +1,7 @@
 ﻿// Copyright 2026 Kyle Ebbinga
 
 using System.IO.Compression;
+using System.Security.Cryptography;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
@@ -97,6 +98,28 @@ namespace Parallel.Core.Storage
             FileInfo fi = new(path);
             RemoteFile file = new(fi.Name, path, fi.LastWriteTimeUtc, fi.Length, fi.Name);
             return Task.FromResult<RemoteFile?>(file);
+        }
+        
+        /// <inheritdoc/>
+        public async Task<string?> HashFileAsync(string remotePath, int bufferSize = 81920, CancellationToken ct = default)
+        {
+            if (!await ExistsAsync(remotePath))
+            {
+                Log.Debug("Skipping file: {RemotePath}", remotePath);
+                return null;
+            }
+            
+            await using FileStream stream = File.OpenRead(remotePath);
+            using IncrementalHash sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            
+            int bytesRead;
+            byte[] buffer = new byte[bufferSize];
+            while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), ct)) > 0)
+            {
+                sha.AppendData(buffer.AsSpan(0, bytesRead));
+            }
+            
+            return Convert.ToHexStringLower(sha.GetHashAndReset());
         }
         
         private void InternalRenameFile(string sourcePath, string destPath)
