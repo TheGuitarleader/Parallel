@@ -179,9 +179,14 @@ namespace Parallel.Core.IO
         /// <param name="vaultConfig"></param>
         /// <param name="hash"></param>
         /// <returns></returns>
-        public static string GetObjectPath(LocalVaultConfig vaultConfig, string hash)
+        public static string GetObjectFile(LocalVaultConfig vaultConfig, string hash)
         {
             return Combine(GetObjectsDirectory(vaultConfig), hash.Substring(0, 2), hash.Substring(2, 2), hash);
+        }
+
+        public static string GetSnapshotFile(LocalVaultConfig localVaultConfig, string name)
+        {
+            return Combine(GetSnapshotsDirectory(localVaultConfig), name);
         }
 
         public static string ReplacePath(string fullPath, string sourceRoot, string? outputRoot)

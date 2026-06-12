@@ -70,5 +70,7 @@ namespace Parallel.Core.IO.Syncing
         /// <param name="progress"></param>
         /// <returns></returns>
         Task<int> PruneFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress);
+
+        Task<int> ScrubFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress);
     }
 }

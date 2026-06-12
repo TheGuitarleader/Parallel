@@ -3,6 +3,7 @@
 using System.CommandLine;
 using System.Diagnostics;
 using Parallel.Cli.Utils;
+using Parallel.Core.Diagnostics;
 using Parallel.Core.IO;
 using Parallel.Core.IO.Scanning;
 using Parallel.Core.IO.Syncing;
@@ -19,6 +20,8 @@ namespace Parallel.Cli.Commands
         private readonly Option<string> _sourceOpt = new(["--path", "-p"], "The source path to back up.");
         private readonly Option<string> _configOpt = new(["--config", "-c"], "The vault configuration to use.");
         private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces overwriting any files.");
+        private readonly Option<bool> _dryRunOpt = new(["--dry-run"], "Previews the command without executing it.");
+        private readonly Option<bool> _verboseOpt = new(["--verbose", "-v"], "Shows verbose output.");
 
         private readonly Command addCmd = new("add", "Adds a new directory to the backup list.");
         private readonly Command listCmd = new("list", "Shows all directories in the backup list.");
@@ -29,7 +32,8 @@ namespace Parallel.Cli.Commands
             this.AddOption(_sourceOpt);
             this.AddOption(_configOpt);
             this.AddOption(_forceOpt);
-            this.SetHandler(HandleBackupAsync, _sourceOpt, _configOpt, _forceOpt);
+            this.AddOption(_verboseOpt);
+            this.SetHandler(HandleSyncAsync, _sourceOpt, _configOpt, _forceOpt, _verboseOpt);
 
             this.AddCommand(addCmd);
             addCmd.AddArgument(_sourceArg);
@@ -42,9 +46,9 @@ namespace Parallel.Cli.Commands
             removeCmd.SetHandler(HandleRemoveAsync, _sourceArg, _configOpt);
         }
 
-        #region Backup
+        #region Sync
 
-        private async Task HandleBackupAsync(string? path, string? config, bool force)
+        private async Task HandleSyncAsync(string? path, string? config, bool force, bool verbose)
         {
             _sw = Stopwatch.StartNew();
             LocalVaultConfig? localVault = ParallelConfig.GetVault(config);
@@ -52,27 +56,27 @@ namespace Parallel.Cli.Commands
             {
                 if (!string.IsNullOrEmpty(path))
                 {
-                    await BackupPathAsync(localVault, path, force);
+                    await SyncPathAsync(localVault, path, force, verbose);
                 }
                 else
                 {
-                    await BackupSystemAsync(localVault, force);
+                    await SyncSystemAsync(localVault, force, verbose);
                 }
             }
             else
             {
                 if (!string.IsNullOrEmpty(path))
                 {
-                    await Program.Settings.ForEachVaultAsync(vault => BackupPathAsync(vault, path, force));
+                    await Program.Settings.ForEachVaultAsync(vault => SyncPathAsync(vault, path, force, verbose));
                 }
                 else
                 {
-                    await Program.Settings.ForEachVaultAsync(vault => BackupSystemAsync(vault, force));
+                    await Program.Settings.ForEachVaultAsync(vault => SyncSystemAsync(vault, force, verbose));
                 }
             }
         }
 
-        private async Task BackupSystemAsync(LocalVaultConfig vault, bool force)
+        private async Task SyncSystemAsync(LocalVaultConfig vault, bool force, bool verbose)
         {
             ISyncManager? syncManager = SyncManager.CreateNew(vault);
             if (syncManager == null || !await syncManager.ConnectAsync())
@@ -85,7 +89,7 @@ namespace Parallel.Cli.Commands
             {
                 foreach (string path in syncManager.RemoteVault.BackupDirectories)
                 {
-                    await BackupInternalAsync(syncManager, path, force);
+                    await SyncInternalAsync(syncManager, path, force, verbose);
                 }
             }
             finally
@@ -94,7 +98,7 @@ namespace Parallel.Cli.Commands
             }
         }
 
-        private async Task BackupPathAsync(LocalVaultConfig vault, string path, bool force)
+        private async Task SyncPathAsync(LocalVaultConfig vault, string path, bool force, bool verbose)
         {
             ISyncManager? syncManager = SyncManager.CreateNew(vault);
             if (syncManager == null || !await syncManager.ConnectAsync())
@@ -105,7 +109,7 @@ namespace Parallel.Cli.Commands
 
             try
             {
-                await BackupInternalAsync(syncManager, path, force);
+                await SyncInternalAsync(syncManager, path, force, verbose);
             }
             finally
             {
@@ -113,7 +117,7 @@ namespace Parallel.Cli.Commands
             }
         }
 
-        private async Task BackupInternalAsync(ISyncManager syncManager, string path, bool force)
+        private async Task SyncInternalAsync(ISyncManager syncManager, string path, bool force, bool verbose)
         {
             // Normalize paths for safe comparison
             string[] backupFolders = syncManager.RemoteVault.BackupDirectories.ToArray();
@@ -142,8 +146,10 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            CommandLine.WriteLine(syncManager.RemoteVault, $"Syncing up {files.Length:N0} files...", ConsoleColor.DarkGray);
-            int backedUpFiles = await syncManager.BackupFilesAsync(files, new ProgressReport(syncManager.RemoteVault, successFiles), force);
+            CommandLine.WriteLine(syncManager.RemoteVault, $"Syncing {files.Length:N0} files...", ConsoleColor.DarkGray);
+            IProgressReporter progressReporter = verbose ? new ProgressReport(syncManager.RemoteVault, successFiles) : new NullProgressReporter();
+            int backedUpFiles = await syncManager.BackupFilesAsync(files, progressReporter, force);
+            
             CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully synced {backedUpFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
         }
 

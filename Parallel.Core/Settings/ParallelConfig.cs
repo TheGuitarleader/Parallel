@@ -138,9 +138,11 @@ namespace Parallel.Core.Settings
             return Load().Vaults.FirstOrDefault(v => v.Id.Equals(vault, StringComparison.OrdinalIgnoreCase) || v.Name.Equals(vault, StringComparison.OrdinalIgnoreCase));
         }
 
-        public static bool CanStartCliInstance()
+        public static bool CanStartNewInstance()
         {
-            return Process.GetProcessesByName("Parallel").Length <= 1;
+            int cli = Process.GetProcessesByName("Parallel").Length;
+            int app = Process.GetProcessesByName("Parallel Desktop").Length;
+            return (app + cli) <= 1;
         }
 
         public static LocalVaultConfig[] GetEnabledVaults()

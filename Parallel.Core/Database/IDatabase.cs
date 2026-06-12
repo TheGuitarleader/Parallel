@@ -93,6 +93,15 @@ namespace Parallel.Core.Database
         /// <param name="timestamp"></param>
         /// <param name="deleted"></param>
         /// <returns></returns>
+        Task<IReadOnlyList<LocalFile>> GetFilesAsync(string path, DateTime timestamp);
+        
+        /// <summary>
+        /// Gets a list of files.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="timestamp"></param>
+        /// <param name="deleted"></param>
+        /// <returns></returns>
         Task<IReadOnlyList<LocalFile>> GetFilesAsync(string path, DateTime timestamp, bool deleted);
 
         /// <summary>
@@ -149,6 +158,8 @@ namespace Parallel.Core.Database
         Task<bool> AddSnapshotAsync(string snapshot);
         
         Task<IReadOnlyList<string>> GetSnapshotsAsync();
+        
+        Task<string?> GetSnapshotAsync(string? name);
 
         Task RemoveSnapshotAsync(string snapshot);
 

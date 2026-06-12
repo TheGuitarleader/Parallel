@@ -55,6 +55,8 @@ namespace Parallel.Core.IO.Syncing
                 await StorageProvider.CreateDirectoryAsync(root);
                 Log.Debug("Created root directory: {Root}", root);
             }
+            
+            
 
             if (!await StorageProvider.ExistsAsync(PathBuilder.GetConfigurationFile(LocalVault)))
             {
@@ -117,5 +119,7 @@ namespace Parallel.Core.IO.Syncing
 
         /// <inheritdoc />
         public abstract Task<int> PruneFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress);
+
+        public abstract Task<int> ScrubFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress);
     }
 }

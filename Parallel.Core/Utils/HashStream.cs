@@ -6,8 +6,8 @@ namespace Parallel.Core.Utils
 {
     public class HashStream : Stream
     {
-        private readonly SHA256 _sha = SHA256.Create();
         private readonly Stream _inner;
+        private readonly IncrementalHash _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         private readonly Action<long>? _reportBytes;
         private long _totalWrite = 0;
         private long _totalRead = 0;
@@ -23,37 +23,41 @@ namespace Parallel.Core.Utils
             _reportBytes = reportBytes;
         }
         
-        public string GetHashHexString()
+        protected override void Dispose(bool disposing)
         {
-            _sha.TransformFinalBlock([], 0, 0);
-            return Convert.ToHexStringLower(_sha.Hash!);
+            base.Dispose(disposing);
+            _inner.Dispose();
         }
+        
+        public string GetHashHexString() => Convert.ToHexStringLower(_hash.GetHashAndReset());
         
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int bytesRead = _inner.Read(buffer, offset, count);
-            if (bytesRead <= 0) return bytesRead;
-            
-            _sha.TransformBlock(buffer, offset, bytesRead, null, 0);
-            _totalRead += bytesRead;
+            int read = _inner.Read(buffer, offset, count);
+            if (read <= 0) return read;
+
+            _hash.AppendData(buffer.AsSpan(offset, read));
+            _totalRead += read;
             _reportBytes?.Invoke(_totalRead);
-            return bytesRead;
+
+            return read;
         }
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
         {
-            int bytesRead = await _inner.ReadAsync(buffer, cancellationToken);
-            if (bytesRead <= 0) return bytesRead;
-            
-            _sha.TransformBlock(buffer.Span.Slice(0, bytesRead).ToArray(), 0, bytesRead, null, 0);
-            _totalRead += bytesRead;
+            int read = await _inner.ReadAsync(buffer, ct);
+            if (read <= 0) return read;
+
+            _hash.AppendData(buffer.Span[..read]);
+            _totalRead += read;
             _reportBytes?.Invoke(_totalRead);
-            return bytesRead;
+
+            return read;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            _sha.TransformBlock(buffer, offset, count, null, 0);
+            _hash.AppendData(buffer.AsSpan(offset, count));
             _inner.Write(buffer, offset, count);
             _totalWrite += count;
             
@@ -62,7 +66,7 @@ namespace Parallel.Core.Utils
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            _sha.TransformBlock(buffer.ToArray(), 0, buffer.Length, null, 0);
+            _hash.AppendData(buffer.Span);
             await _inner.WriteAsync(buffer, cancellationToken);
             _totalWrite += buffer.Length;
             

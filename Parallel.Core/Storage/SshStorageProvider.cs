@@ -119,6 +119,11 @@ namespace Parallel.Core.Storage
             return new RemoteFile(sf.Name, sf.FullName, sf.LastWriteTimeUtc, sf.Length, sf.Name);
         }
 
+        public Task<string?> HashFileAsync(string remotePath, int bufferSize, CancellationToken ct)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)
         {
             InsureConnection();

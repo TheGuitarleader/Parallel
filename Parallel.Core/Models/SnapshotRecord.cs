@@ -7,7 +7,7 @@ namespace Parallel.Core.Models
     /// <summary>
     /// Represents a read-only record of a file at a specific moment in time.
     /// </summary>
-    public class Snapshot
+    public class SnapshotRecord
     {
         /// <summary>
         /// The path of the file on the local machine.
@@ -39,7 +39,7 @@ namespace Parallel.Core.Models
         /// </summary>
         public bool ReadOnly { get; } = false;
 
-        public Snapshot(LocalFile file)
+        public SnapshotRecord(LocalFile file)
         {
             Fullname = file.Fullname;
             LastWrite = file.LastWrite.ToLocalTime();

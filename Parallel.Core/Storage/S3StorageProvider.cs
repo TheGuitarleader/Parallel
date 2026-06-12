@@ -112,6 +112,11 @@ namespace Parallel.Core.Storage
             }
         }
 
+        public Task<string?> HashFileAsync(string remotePath, int bufferSize, CancellationToken ct)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)
         {
             if (!overwrite && await ExistsAsync(remotePath))

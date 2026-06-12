@@ -22,6 +22,7 @@ namespace Parallel.Cli.Commands
         private readonly Option<int> _daysOpt = new(["--days", "-d"], "Specified number of days before the reference point.");
         private readonly Option<bool> _forceOpt = new(["--force", "-f"], "Forces pruning, bypassing safe guards.");
         private readonly Option<bool> _dryRunOpt = new(["--dry-run"], "Previews the command without executing it.");
+        private readonly Option<bool> _verboseOpt = new(["--verbose", "-v"], "Shows verbose output.");
 
         private readonly Command addCmd = new("add", "Adds a new path to the prune list.");
         private readonly Command listCmd = new("list", "Shows all directories in the prune list.");
@@ -126,7 +127,6 @@ namespace Parallel.Cli.Commands
         {
             CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
             IReadOnlyList<LocalFile> files = await (syncManager.Database?.GetFilesAsync(path, timestamp, true) ?? Task.FromResult<IReadOnlyList<LocalFile>>([]));
-
             if (files.Count == 0)
             {
                 CommandLine.WriteLine($"No prunable files were found!", ConsoleColor.Yellow);

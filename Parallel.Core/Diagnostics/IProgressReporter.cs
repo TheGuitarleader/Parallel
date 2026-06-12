@@ -9,10 +9,8 @@ namespace Parallel.Core.Diagnostics
         Archived,
         Restored,
         Synced,
-        Downloading,
-        Uploading,
-        Hashing,
-        Pruned
+        Pruned,
+        Scrubbed
     }
 
     /// <summary>

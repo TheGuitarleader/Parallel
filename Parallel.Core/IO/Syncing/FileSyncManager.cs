@@ -40,7 +40,7 @@ namespace Parallel.Core.IO.Syncing
                 if (!file.TryGenerateCheckSums()) return;
 
                 SemaphoreSlim threadLock = threadPool.GetOrAdd(file.RemoteCheckSum!, _ => new SemaphoreSlim(1, 1));
-                string remotePath = PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!);
+                string remotePath = PathBuilder.GetObjectFile(RemoteVault, file.RemoteCheckSum!);
                 await threadLock.WaitAsync(ct);
 
                 try
@@ -104,7 +104,7 @@ namespace Parallel.Core.IO.Syncing
                     if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir)) Directory.CreateDirectory(parentDir);
 
                     Log.Debug($"Restoring file: {file.Fullname} ({file.RemoteCheckSum})");
-                    RemoteFile? remoteFile = await StorageProvider.DownloadFileAsync(file, PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!), ct);
+                    RemoteFile? remoteFile = await StorageProvider.DownloadFileAsync(file, PathBuilder.GetObjectFile(RemoteVault, file.RemoteCheckSum!), ct);
                     if (remoteFile == null || file.LocalCheckSum != remoteFile.RemoteCheckSum)
                     {
                         progress.Failed(file, "File not found!");
@@ -151,7 +151,7 @@ namespace Parallel.Core.IO.Syncing
                 {
                     if (!await (Database?.RemoveFileAsync(file) ?? Task.FromResult(false))) return;
                     if (!await (Database?.AddHistoryAsync(HistoryType.Pruned, file) ?? Task.FromResult(false))) Log.Error("Failed to add history: {Fullname}", file.Fullname);
-                    await StorageProvider.DeleteFileAsync(PathBuilder.GetObjectPath(RemoteVault, file.RemoteCheckSum!));
+                    await StorageProvider.DeleteFileAsync(PathBuilder.GetObjectFile(RemoteVault, file.RemoteCheckSum!));
                     progress.Report(ProgressOperation.Pruned, file);
                 }
                 catch (Exception ex)
@@ -161,6 +161,50 @@ namespace Parallel.Core.IO.Syncing
                 finally
                 {
                     Interlocked.Increment(ref completed);
+                }
+            });
+            
+            return completed;
+        }
+
+        public override async Task<int> ScrubFilesAsync(IReadOnlyList<LocalFile> files, IProgressReporter progress)
+        {
+            if (!files.Any()) return 0;
+            int completed = 0;
+            
+            ConcurrentDictionary<string, SemaphoreSlim> threadPool = new ConcurrentDictionary<string, SemaphoreSlim>();
+            await System.Threading.Tasks.Parallel.ForEachAsync(files, ParallelConfig.Options, async (file, ct) =>
+            {
+                SemaphoreSlim threadLock = threadPool.GetOrAdd(file.LocalCheckSum!, _ => new SemaphoreSlim(1, 1));
+                await threadLock.WaitAsync(ct);
+
+                try
+                {
+                    string? remoteHash = await StorageProvider.HashFileAsync(PathBuilder.GetObjectFile(RemoteVault, file.RemoteCheckSum!), 81920, ct);
+                    if (string.IsNullOrEmpty(remoteHash))
+                    {
+                        // This is true when the remote file is not in the vault.
+                        progress.Failed(file, "File not found!");
+                        return;
+                    }
+
+                    if (file.RemoteCheckSum != remoteHash)
+                    {
+                        // Is it true is the file stored is corrupted
+                        progress.Failed(file, "File corrupted!");
+                        return;
+                    }
+                    
+                    progress.Report(ProgressOperation.Scrubbed, file);
+                    Interlocked.Increment(ref completed);
+                }
+                catch (Exception ex)
+                {
+                    progress.Failed(file, ex.GetBaseException().ToString());
+                }
+                finally
+                {
+                    threadLock.Release();
                 }
             });
             
