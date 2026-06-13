@@ -126,7 +126,16 @@ namespace Parallel.Cli.Commands
         private async Task PruneInternalAsync(ISyncManager syncManager, string path, DateTime timestamp, bool force, bool dryRun)
         {
             CommandLine.WriteLine(syncManager.RemoteVault, $"Scanning for files in {path}...", ConsoleColor.DarkGray);
-            IReadOnlyList<LocalFile> files = await (syncManager.Database?.GetFilesAsync(path, timestamp, true) ?? Task.FromResult<IReadOnlyList<LocalFile>>([]));
+            IReadOnlyList<LocalFile> files;
+            if (force)
+            {
+                files = await (syncManager.Database?.GetFilesAsync(path, timestamp) ?? Task.FromResult<IReadOnlyList<LocalFile>>([]));
+            }
+            else
+            {
+                files = await (syncManager.Database?.GetFilesAsync(path, timestamp, true) ?? Task.FromResult<IReadOnlyList<LocalFile>>([]));
+            }
+            
             if (files.Count == 0)
             {
                 CommandLine.WriteLine($"No prunable files were found!", ConsoleColor.Yellow);
@@ -153,7 +162,7 @@ namespace Parallel.Cli.Commands
             else
             {
                 CommandLine.WriteLine(syncManager.RemoteVault, $"Pruning {files.Count:N0} files...", ConsoleColor.DarkGray);
-                int prunedFiles = await syncManager.PruneFilesAsync(files, new ProgressReport(syncManager.RemoteVault, files.Count));
+                int prunedFiles = await syncManager.PruneFilesAsync(files, new ProgressReporter(syncManager.RemoteVault, files.Count));
                 CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully pruned {prunedFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
                 await syncManager.DisconnectAsync();
             }

@@ -24,11 +24,6 @@ namespace Parallel.Core.Diagnostics
         void Report(ProgressOperation operation, LocalFile file);
 
         /// <summary>
-        /// Resets the ticking.
-        /// </summary>
-        void Reset();
-
-        /// <summary>
         /// Reports a failed update.
         /// </summary>
         void Failed(LocalFile file, string reason);

@@ -1,5 +1,6 @@
 ﻿// Copyright 2026 Kyle Ebbinga
 
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Parallel.Core.Database;
 using Parallel.Core.Database.Contexts;
@@ -48,6 +49,13 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public async Task<bool> ConnectAsync(bool force = false)
         {
+            if (!await StorageProvider.CheckConnectionAsync())
+            {
+                Log.Error("[{LocalVaultId}] Failed to connect to vault!", LocalVault.Id);
+                return false;
+            }
+            
+            
             string root = PathBuilder.GetRootDirectory(LocalVault);
             if (!await StorageProvider.ExistsAsync(root))
             {

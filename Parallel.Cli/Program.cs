@@ -27,9 +27,9 @@ namespace Parallel.Cli
             Settings = ParallelConfig.Load();
             AssemblyName assembly = Assembly.GetExecutingAssembly().GetName();
 #if DEBUG
-            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Sink(EventTracker).WriteTo.Console().CreateLogger();
+            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
 #else
-            Log.Logger = new LoggerConfiguration().WriteTo.Sink(EventTracker).CreateLogger();
+            Log.Logger = new LoggerConfiguration().WriteTo.File(PathBuilder.LogFile).CreateLogger();
 #endif
 
             Log.Information($"{assembly.Name} [Version {assembly.Version}]");
@@ -51,13 +51,6 @@ namespace Parallel.Cli
             {
                 // Clean successful logs
                 await Log.CloseAndFlushAsync();
-                if (EventTracker.ErrorCount > 0)
-                {
-                    string logDir = Path.Combine(PathBuilder.TempDirectory, "Logs");
-                    if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
-                    await File.WriteAllLinesAsync(Path.Combine(logDir, $"{DateTime.Now:MM-dd-yyyy hh-mm-ss}.log"), EventTracker.Logs.Reverse());
-                }
-                
                 Settings.Save();
             }
         }

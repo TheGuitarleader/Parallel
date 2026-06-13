@@ -111,11 +111,12 @@ namespace Parallel.Core.Database
         /// <returns></returns>
         Task<LocalFile?> GetFileAsync(string path);
 
-        Task<long> GetLocalSizeAsync();
+        Task<long> GetCurrentSizeAsync();
         Task<long> GetRemoteSizeAsync();
         Task<long> GetTotalSizeAsync();
         Task<long> GetTotalFilesAsync();
         Task<long> GetTotalFilesAsync(bool deleted);
+        Task<long> GetTotalRevisedFilesAsync();
 
         /// <summary>
         /// Gets a list of directories in ascending order.

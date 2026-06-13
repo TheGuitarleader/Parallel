@@ -136,7 +136,7 @@ namespace Parallel.Cli.Commands
             else
             {
                 CommandLine.WriteLine(syncManager.RemoteVault, $"Restoring {restoreFiles.Count:N0} files...", ConsoleColor.DarkGray);
-                IProgressReporter progressReporter = verbose ? new ProgressReport(syncManager.RemoteVault, restoreFiles.Count) : new NullProgressReporter(); 
+                IProgressReporter progressReporter = verbose ? new ProgressReporter(syncManager.RemoteVault, restoreFiles.Count) : new LoggingProgressReporter(syncManager.RemoteVault); 
                 int restoredFiles = await syncManager.RestoreFilesAsync(restoreFiles.ToArray(), progressReporter);
                 
                 CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully restored {restoredFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);   

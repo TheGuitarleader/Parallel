@@ -132,7 +132,7 @@ namespace Parallel.Cli.Commands
 
             if (!backupFolders.Any(dir => path.StartsWith(dir, StringComparison.OrdinalIgnoreCase)) || FileScanner.IsIgnored(path, ignoredFolders))
             {
-                CommandLine.WriteLine(syncManager.RemoteVault, $"The provided {(isFile ? "file" : "folder")} is set to be ignored!", ConsoleColor.Yellow);
+                CommandLine.WriteLine(syncManager.RemoteVault, $"The provided {(isFile ? "file" : "folder")} is not set to be synced!", ConsoleColor.Yellow);
                 return;
             }
 
@@ -147,7 +147,7 @@ namespace Parallel.Cli.Commands
             }
 
             CommandLine.WriteLine(syncManager.RemoteVault, $"Syncing {files.Length:N0} files...", ConsoleColor.DarkGray);
-            IProgressReporter progressReporter = verbose ? new ProgressReport(syncManager.RemoteVault, successFiles) : new NullProgressReporter();
+            IProgressReporter progressReporter = verbose ? new ProgressReporter(syncManager.RemoteVault, successFiles) : new LoggingProgressReporter(syncManager.RemoteVault);
             int backedUpFiles = await syncManager.BackupFilesAsync(files, progressReporter, force);
             
             CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully synced {backedUpFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);

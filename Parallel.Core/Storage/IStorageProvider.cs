@@ -11,6 +11,12 @@ namespace Parallel.Core.Storage
     public interface IStorageProvider : IDisposable
     {
         /// <summary>
+        /// Checks the connection to the storage provider.
+        /// </summary>
+        /// <returns></returns>
+        Task<bool> CheckConnectionAsync();
+        
+        /// <summary>
         /// Creates all directories and subdirectories in the specified path unless they already exist.
         /// </summary>
         /// <param name="path"></param>

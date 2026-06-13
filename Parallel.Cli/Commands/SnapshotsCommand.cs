@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.CommandLine;
 using System.Diagnostics;
 using Parallel.Cli.Utils;
+using Parallel.Core.Diagnostics;
 using Parallel.Core.IO;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
