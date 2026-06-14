@@ -85,16 +85,9 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            try
+            foreach (string path in syncManager.RemoteVault.BackupDirectories)
             {
-                foreach (string path in syncManager.RemoteVault.BackupDirectories)
-                {
-                    await SyncInternalAsync(syncManager, path, force, verbose);
-                }
-            }
-            finally
-            {
-                await syncManager.DisconnectAsync();
+                await SyncInternalAsync(syncManager, path, force, verbose);
             }
         }
 
@@ -107,14 +100,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            try
-            {
-                await SyncInternalAsync(syncManager, path, force, verbose);
-            }
-            finally
-            {
-                await syncManager.DisconnectAsync();
-            }
+            await SyncInternalAsync(syncManager, path, force, verbose);
         }
 
         private async Task SyncInternalAsync(ISyncManager syncManager, string path, bool force, bool verbose)
@@ -151,6 +137,7 @@ namespace Parallel.Cli.Commands
             int backedUpFiles = await syncManager.BackupFilesAsync(files, progressReporter, force);
             
             CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully synced {backedUpFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);
+            await syncManager.DisconnectAsync();
         }
 
         #endregion

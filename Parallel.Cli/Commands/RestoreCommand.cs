@@ -77,16 +77,9 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            try
+            foreach (string path in syncManager.RemoteVault.BackupDirectories)
             {
-                foreach (string path in syncManager.RemoteVault.BackupDirectories)
-                {
-                    await RestoreInternalAsync(syncManager, path, timestamp, output, force, verbose, dryRun);
-                }
-            }
-            finally
-            {
-                await syncManager.DisconnectAsync();
+                await RestoreInternalAsync(syncManager, path, timestamp, output, force, verbose, dryRun);
             }
         }
 
