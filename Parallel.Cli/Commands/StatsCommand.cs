@@ -42,13 +42,12 @@ namespace Parallel.Cli.Commands
             }
 
             IDatabase? db = syncManager.Database;
-            long localSize = await (db?.GetLocalSizeAsync() ?? Task.FromResult(0L));
-            long remoteSize = await (db?.GetRemoteSizeAsync() ?? Task.FromResult(0L));
+            long localSize = await (db?.GetCurrentSizeAsync() ?? Task.FromResult(0L));
             long totalSize = await (db?.GetTotalSizeAsync() ?? Task.FromResult(0L));
             long totalFiles = await (db?.GetTotalFilesAsync() ?? Task.FromResult(0L));
             long totalLocalFiles = await (db?.GetTotalFilesAsync(false) ?? Task.FromResult(0L));
             long totalDeletedFiles = await (db?.GetTotalFilesAsync(true) ?? Task.FromResult(0L));
-            double spaceSaved = Math.Round((localSize - remoteSize) / (double)localSize * 100, 2);
+            long totalRevisedFiles = await (db?.GetTotalRevisedFilesAsync() ?? Task.FromResult(0L));
 
             CommandLine.WriteLine($"Using vault '{syncManager.RemoteVault.Name}' ({vault.Id}):");
             CommandLine.WriteLine($"Service Type:   {vault.Credentials.Service}");
@@ -56,10 +55,9 @@ namespace Parallel.Cli.Commands
             CommandLine.WriteLine($"Managed Files:  {totalFiles:N0}");
             CommandLine.WriteLine($"Local Files:    {totalLocalFiles:N0}");
             CommandLine.WriteLine($"Deleted Files:  {totalDeletedFiles:N0}");
-            CommandLine.WriteLine($"Revisions:      {totalFiles - (totalLocalFiles + totalDeletedFiles):N0}");
-            CommandLine.WriteLine($"Total Size:     {Formatter.FromBytes(localSize)}");
-            CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(totalSize)}");
-            CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(remoteSize)} ({(double.IsNaN(spaceSaved) ? 0 : spaceSaved)}%)");
+            CommandLine.WriteLine($"Revisions:      {totalRevisedFiles:N0}");
+            CommandLine.WriteLine($"Local Size:     {Formatter.FromBytes(localSize)}");
+            CommandLine.WriteLine($"Remote Size:    {Formatter.FromBytes(totalSize)}");
 
             if (vault.Credentials.Service.Equals(FileService.Local))
             {

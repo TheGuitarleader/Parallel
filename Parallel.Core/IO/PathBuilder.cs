@@ -29,6 +29,18 @@ namespace Parallel.Core.IO
 
         public static string TempFile => Path.Combine(TempDirectory, UnixTime.Now.TotalMilliseconds + ".tmp");
 
+        public static string LogDirectory
+        {
+            get
+            {
+                string logDir = Path.Combine(PathBuilder.TempDirectory, "Logs");
+                if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
+                return logDir;
+            }
+        }
+        
+        public static string LogFile => Path.Combine(LogDirectory, UnixTime.Now.TotalMilliseconds + ".log");
+
         /// <summary>
         /// Gets the corresponding directory for program data based on the <see cref="OSPlatform"/>.
         /// </summary>

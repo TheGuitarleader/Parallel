@@ -48,6 +48,12 @@ namespace Parallel.Core.Storage
             GC.SuppressFinalize(this);
         }
 
+        public Task<bool> CheckConnectionAsync()
+        {
+            InsureConnection();
+            return Task.FromResult(_client.IsConnected);
+        }
+
         /// <inheritdoc/>
         public async Task CreateDirectoryAsync(string path)
         {

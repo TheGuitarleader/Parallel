@@ -18,11 +18,6 @@ namespace Parallel.Core.Settings
         private static string ConfigFile { get; } = Path.Combine(PathBuilder.ProgramData, "Configuration.json");
 
         /// <summary>
-        /// The location of files for different file system credentials./>.
-        /// </summary>
-        public static string VaultsDir { get; } = Path.Combine(PathBuilder.ProgramData, "Vaults");
-
-        /// <summary>
         /// Gets a set of static options for <see cref="ParallelOptions"/>.
         /// </summary>
         public static ParallelOptions Options { get; } = new ParallelOptions
@@ -31,16 +26,10 @@ namespace Parallel.Core.Settings
         };
 
         /// <summary>
-        /// The address that will accept incoming commands.
-        /// <para>Default: 127.0.0.1</para>
+        /// Gets or sets the amount of time, in hours, to cache vault files.
+        /// <para>Default: 1</para>
         /// </summary>
-        public string Address { get; set; } = "127.0.0.1";
-
-        /// <summary>
-        /// The port number to listen for commands on.
-        /// <para>Default: 8192</para>
-        /// </summary>
-        public int ListenerPort { get; set; } = 8192;
+        public int CacheDuration { get; set; } = 1;
 
         /// <summary>
         /// Gets or sets the maximum number of concurrent vaults that can run.

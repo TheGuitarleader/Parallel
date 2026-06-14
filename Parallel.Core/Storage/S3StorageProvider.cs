@@ -1,11 +1,14 @@
 ﻿// Copyright 2026 Kyle Ebbinga
 
+using System.Diagnostics;
 using System.IO.Compression;
 using System.IO.Pipelines;
+using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
+using Parallel.Core.Diagnostics;
 using Parallel.Core.Models;
 using Parallel.Core.Security;
 using Parallel.Core.Settings;
@@ -32,7 +35,10 @@ namespace Parallel.Core.Storage
             AmazonS3Config config = new AmazonS3Config()
             {
                 ServiceURL = localVault.Credentials.Address,
-                ForcePathStyle = localVault.Credentials.ForceStyle
+                ForcePathStyle = localVault.Credentials.ForceStyle,
+                AuthenticationRegion = localVault.Credentials.Region,
+                DisableS3ExpressSessionAuth = true,
+                UseHttp = localVault.Credentials.Address?.StartsWith("http", StringComparison.OrdinalIgnoreCase) ?? false
             };
 
             _client = new AmazonS3Client(localVault.Credentials.Username, Encryption.Decode(localVault.Credentials.Password), config);
@@ -43,6 +49,19 @@ namespace Parallel.Core.Storage
         {
             _client.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        public async Task<bool> CheckConnectionAsync()
+        {
+            try
+            {
+                ListBucketsResponse? response = await _client.ListBucketsAsync();
+                return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task CreateDirectoryAsync(string path)
@@ -80,15 +99,14 @@ namespace Parallel.Core.Storage
 
         public async Task<bool> ExistsAsync(string path)
         {
-            try
+            ListObjectsV2Response? response = await _client.ListObjectsV2Async(new ListObjectsV2Request
             {
-                await _client.GetObjectMetadataAsync(_bucket, path);
-                return true;
-            }
-            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                return false;
-            }
+                BucketName = _bucket,
+                Prefix = path,
+                MaxKeys = 1
+            });
+
+            return response.KeyCount > 0;
         }
 
         public Task<string> GetDirectoryName(string path)
@@ -119,6 +137,7 @@ namespace Parallel.Core.Storage
 
         public async Task<RemoteFile?> UploadFileAsync(LocalFile file, string remotePath, bool overwrite = false, CancellationToken ct = default)
         {
+            Stopwatch sw = Stopwatch.StartNew();
             if (!overwrite && await ExistsAsync(remotePath))
             {
                 Log.Debug("Skipping file: {RemotePath}", remotePath);

@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.CommandLine;
 using System.Diagnostics;
 using Parallel.Cli.Utils;
+using Parallel.Core.Diagnostics;
 using Parallel.Core.IO;
 using Parallel.Core.IO.Syncing;
 using Parallel.Core.Models;
@@ -150,8 +151,8 @@ namespace Parallel.Cli.Commands
 
             CommandLine.WriteLine($"Loading snapshot {snapshotFile}");
             
-            string remoteSnapshotFile = PathBuilder.GetSnapshotFile(vault, snapshotFilename);
-            string localSnapshotFile = Path.Combine(PathBuilder.TempDirectory, snapshotFilename + ".json");
+            //string remoteSnapshotFile = PathBuilder.GetSnapshotFile(vault, snapshotFilename);
+            //string localSnapshotFile = Path.Combine(PathBuilder.TempDirectory, snapshotFilename + ".json");
         }
     }
 }

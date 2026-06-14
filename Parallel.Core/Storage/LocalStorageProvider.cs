@@ -34,6 +34,12 @@ namespace Parallel.Core.Storage
         }
 
         /// <inheritdoc/>
+        public Task<bool> CheckConnectionAsync()
+        {
+            return Task.FromResult(Directory.Exists(_vaultConfig.Credentials.RootDirectory));
+        }
+
+        /// <inheritdoc/>
         public Task CreateDirectoryAsync(string path)
         {
             Directory.CreateDirectory(path);

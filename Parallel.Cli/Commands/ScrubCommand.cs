@@ -107,7 +107,7 @@ namespace Parallel.Cli.Commands
             }
             
             CommandLine.WriteLine(syncManager.RemoteVault, $"Scrubbing {files.Count:N0} files...", ConsoleColor.DarkGray);
-            IProgressReporter progressReporter = verbose ? new ProgressReport(syncManager.RemoteVault, files.Count) : new NullProgressReporter();
+            IProgressReporter progressReporter = verbose ? new ProgressReporter(syncManager.RemoteVault, files.Count) : new LoggingProgressReporter(syncManager.RemoteVault);
             int scrubbedFiles = await syncManager.ScrubFilesAsync(files, progressReporter);
             
             CommandLine.WriteLine(syncManager.RemoteVault, $"Successfully scrubbed {scrubbedFiles:N0} files in {_sw.Elapsed}.", ConsoleColor.Green);

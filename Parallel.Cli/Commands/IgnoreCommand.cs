@@ -57,7 +57,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            CommandLine.WriteLine(vault, $"Successfully added '{path}'", ConsoleColor.Green);
+            CommandLine.WriteLine(vault, $"Successfully ignored '{path}'", ConsoleColor.Green);
             await syncManager.DisconnectAsync();
         }
 
@@ -89,7 +89,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            CommandLine.WriteLine(vault, $"Successfully removed '{path}'", ConsoleColor.Green);
+            CommandLine.WriteLine(vault, $"Successfully included '{path}'", ConsoleColor.Green);
             await syncManager.DisconnectAsync();
         }
     }

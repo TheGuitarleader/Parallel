@@ -115,7 +115,7 @@ namespace Parallel.Core.Settings
 
         public void Save(string path)
         {
-            File.WriteAllText(path, JsonConvert.SerializeObject(this, Formatting.Indented));
+            File.WriteAllText(path, JsonConvert.SerializeObject(this));
         }
     }
 }

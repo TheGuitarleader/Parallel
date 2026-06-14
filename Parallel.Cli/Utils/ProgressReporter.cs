@@ -7,14 +7,14 @@ using Parallel.Core.Settings;
 
 namespace Parallel.Cli.Utils
 {
-    public class ProgressReport : IProgressReporter
+    public class ProgressReporter : IProgressReporter
     {
         private Stopwatch _sw;
         private readonly LocalVaultConfig _localVault;
         private int _current;
         private readonly int _total;
 
-        public ProgressReport(LocalVaultConfig localVault, int totalFiles)
+        public ProgressReporter(LocalVaultConfig localVault, int totalFiles)
         {
             _sw = Stopwatch.StartNew();
             _localVault = localVault;
@@ -25,8 +25,8 @@ namespace Parallel.Cli.Utils
         public void Report(ProgressOperation operation, LocalFile file)
         {
             Interlocked.Increment(ref _current);
-            int percent = _current * 100 / _total;
-            CommandLine.WriteLine($"[{_localVault.Id}] ({percent}%) {operation}: {file.Fullname}");
+            double percent = _current * 100.0 / _total;
+            CommandLine.WriteLine($"[{_localVault.Id}] ({percent:N1}%) {operation}: {file.Fullname}");
         }
 
         /// <inheritdoc />

@@ -53,7 +53,7 @@ namespace Parallel.Core.Database.Contexts
         }
 
         /// <inheritdoc />
-        public async Task<long> GetLocalSizeAsync()
+        public async Task<long> GetCurrentSizeAsync()
         {
             string sql = "SELECT COALESCE(SUM(f.localsize), 0) FROM objects f JOIN (SELECT fullname, MAX(lastupdate) AS max_lastupdate FROM objects WHERE deleted = 0 GROUP BY fullname) latest ON f.fullname = latest.fullname AND f.lastupdate = latest.max_lastupdate;";
             return await _semaphore.QuerySingleAsync<long>(sql);
@@ -87,6 +87,12 @@ namespace Parallel.Core.Database.Contexts
             return await _semaphore.QuerySingleAsync<long>(sql, new { deleted });
         }
 
+        public async Task<long> GetTotalRevisedFilesAsync()
+        {
+            string sql = $"SELECT COUNT(*) FROM objects WHERE lastupdate NOT IN (SELECT MAX(lastupdate) FROM objects GROUP BY fullname);";
+            return await _semaphore.QuerySingleAsync<long>(sql);
+        }
+
         /// <inheritdoc />
         public async Task<IReadOnlyList<LocalFile>> GetLatestFilesAsync(string path, DateTime timestamp)
         {
@@ -97,9 +103,14 @@ namespace Parallel.Core.Database.Contexts
         /// <inheritdoc />
         public async Task<IReadOnlyList<LocalFile>> GetLatestFilesAsync(string path, DateTime timestamp, bool deleted)
         {
-            Log.Debug($"SELECT * FROM (SELECT * FROM objects WHERE fullname LIKE '{path}%' AND lastupdate <= {new UnixTime(timestamp).TotalMilliseconds} AND deleted = {deleted} ORDER BY lastwrite DESC) GROUP BY fullname;");
             string sql = "SELECT * FROM (SELECT * FROM objects WHERE fullname LIKE @Path AND lastupdate <= @Time AND deleted = @deleted ORDER BY lastwrite DESC) GROUP BY fullname;";
             return await _semaphore.QueryAsync<LocalFile>(sql, new { Path = $"{path}%", Time = new UnixTime(timestamp).TotalMilliseconds, deleted });
+        }
+        
+        public async Task<IReadOnlyList<LocalFile>> GetRevisedFilesAsync(string path)
+        {
+            string sql = $"SELECT * FROM objects WHERE fullname LIKE '{path}%' AND lastupdate NOT IN (SELECT MAX(lastupdate) FROM objects GROUP BY fullname) ORDER BY lastupdate DESC;";
+            return await _semaphore.QueryAsync<LocalFile>(sql, new { Path = $"{path}%" });
         }
         
         /// <inheritdoc />
