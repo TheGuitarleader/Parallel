@@ -49,12 +49,12 @@ namespace Parallel.Core.IO.Syncing
         /// <inheritdoc />
         public async Task<bool> ConnectAsync(bool force = false)
         {
+            // Checks if a valid connection can be made
             if (!await StorageProvider.CheckConnectionAsync())
             {
                 Log.Error("[{LocalVaultId}] Failed to connect to vault!", LocalVault.Id);
                 return false;
             }
-            
             
             string root = PathBuilder.GetRootDirectory(LocalVault);
             if (!await StorageProvider.ExistsAsync(root))

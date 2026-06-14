@@ -64,16 +64,9 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            try
+            foreach (string path in syncManager.RemoteVault.BackupDirectories)
             {
-                foreach (string path in syncManager.RemoteVault.BackupDirectories)
-                {
-                    await ScrubInternalAsync(syncManager, path, verbose);
-                }
-            }
-            finally
-            {
-                await syncManager.DisconnectAsync();
+                await ScrubInternalAsync(syncManager, path, verbose);
             }
         }
 
@@ -86,14 +79,7 @@ namespace Parallel.Cli.Commands
                 return;
             }
 
-            try
-            {
-                await ScrubInternalAsync(syncManager, path, verbose);
-            }
-            finally
-            {
-                await syncManager.DisconnectAsync();
-            }
+            await ScrubInternalAsync(syncManager, path, verbose);
         }
 
         private async Task ScrubInternalAsync(ISyncManager syncManager, string path, bool verbose)
